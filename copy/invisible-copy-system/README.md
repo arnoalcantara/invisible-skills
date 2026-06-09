@@ -12,14 +12,14 @@ A inteligência mora na `base/` (fonte única de verdade). Os agentes são finos
 Arquivo Base de Curso  (pronto, feito fora deste sistema)
         │
         ▼
-   AGENTE ESTRATEGISTA  (estrategista/SKILL.md)
+   AGENTE ESTRATEGISTA  (invisible-estrategista-copy/SKILL.md)
    lê o Arquivo Base → conduz com aprovação → produz o
         │
         ▼
    BRIEFING DE CAMPANHA  (a partir de briefing/template-briefing.md)
         │                 — pode haver vários por produto —
         ▼
-   AGENTE COPYWRITER  (copywriter/SKILL.md)
+   AGENTE COPYWRITER  (invisible-copywriter/SKILL.md)
    lê Briefing + Arquivo de Voz + módulo do formato → produz
         │
         ▼
@@ -133,6 +133,6 @@ Este sistema é distribuído como **plugin** dentro do marketplace público `arn
 /plugin install invisible-copy@arno-skills
 ```
 
-Isso instala as duas skills: **`estrategista-campanha`** e **`copywriter-campanha`**, já com a `base/` compartilhada e o `briefing/` juntos no plugin. Os outputs continuam indo para `campanhas/` no diretório onde você roda o Claude.
+Isso instala as duas skills: **`invisible-estrategista-copy`** e **`invisible-copywriter`**, já com a `base/` compartilhada e o `briefing/` juntos no plugin. Os outputs continuam indo para `campanhas/` no diretório onde você roda o Claude.
 
 **Empacotamento (como funciona por dentro):** as skills vivem em `skills/<agente>/SKILL.md`; a `base/` e o `briefing/` ficam na raiz do plugin e são referenciados pelas skills a partir de `../../`. `${CLAUDE_PLUGIN_ROOT}` não expande no corpo do SKILL.md, por isso cada skill confirma o caminho da base com `ls ../../base` antes de ler os módulos.
