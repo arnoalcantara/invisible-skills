@@ -1,0 +1,13 @@
+{
+  "name": "invisible-skills",
+  "owner": {
+    "name": "Invisible"
+  },
+  "plugins": [
+    {
+      "name": "invisible-copy",
+      "source": "./copy/invisible-copy-system",
+      "description": "Sistema de agentes de copy da Invisible: Estrategista (gera o Briefing de Campanha a partir do Arquivo Base) e Copywriter (transforma Briefing + Arquivo de Voz em peças de copy em qualquer formato)."
+    }
+  ]
+}
