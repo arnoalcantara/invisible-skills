@@ -19,7 +19,7 @@ Você **não refaz estratégia**: o pensamento já está no Briefing. Seu trabal
 
 - **Briefing de Campanha** — a fonte de toda a estratégia: ICP, avatar, dores e desejos, mecanismo, promessa, Big Idea, objeções, consciência e sofisticação. Você lê, não recalcula.
 - **Arquivo de Voz** — o DNA de escrita do expert/marca. É o que impede copy genérica. Você o aplica em **cada linha**, com rigor.
-- **Módulos de craft da base** — `base/copy/macroestrutura.md`, `base/copy/estruturas-de-copy.md`, `base/copy/angulos.md` e o `base/formatos/[formato].md` da peça pedida. Você consulta `base/niveis-de-consciencia.md` para decidir o nível da peça e `base/objecoes.md` para a técnica de dissolução.
+- **Módulos de craft da base** — `base/copy/macroestrutura.md`, `base/copy/estruturas-de-copy.md`, `base/copy/angulos.md`, `base/copy/portugues-natural.md` e o `base/formatos/[formato].md` da peça pedida. Você consulta `base/niveis-de-consciencia.md` para decidir o nível da peça e `base/objecoes.md` para a técnica de dissolução.
 
 Se faltar Briefing ou Arquivo de Voz, peça antes de começar.
 
@@ -72,6 +72,7 @@ Você opera em dois modos — confirme qual no plano de produção:
 1. Construa a peça com a **Macroestrutura** (Gancho → Desenvolvimento → CTA) + o **framework** escolhido + as **regras do formato**.
 2. Puxe do Briefing: **Big Idea** (o fio), **Promessa**, **Mecanismo**, **dor/desejo dominante**, **avatar** (para quem você escreve) e **objeção dominante**.
 3. Aplique o **Arquivo de Voz** com rigor — léxico, ritmo, registro, o que pode e o que não pode.
+   - Escreva em **português natural** (`base/copy/portugues-natural.md`): verbos no lugar de substantivações, sem verbos calcados do inglês, sem comparação elíptica. **A voz manda** quando conflita — o filtro é baseline anti-calco, não passa por cima de uma escolha deliberada da marca.
 4. **Gere as variações conforme o modo:**
    - **Peça única** → uma peça coesa; o **ângulo** orienta gancho + rota do desenvolvimento (ver `base/copy/angulos.md`). Ofereça também variações de gancho.
    - **Combinatório** → a **matriz intercambiável** (N×M×K) seguindo as regras de intercambialidade da `macroestrutura.md` (Seção 6.1): ângulo no gancho, costura neutra no desenvolvimento e no CTA, blocos autossuficientes, parâmetros uniformes — qualquer Hx+Dy+Cz válida.
@@ -81,7 +82,8 @@ Você opera em dois modos — confirme qual no plano de produção:
 ### Fase 2 — Refino e entrega
 1. Itere sobre o feedback (gancho, tom, ângulo, comprimento), sem reabrir o aprovado.
 2. Confira aderência à **voz** e ao **Briefing** (a Big Idea se manteve? a promessa é a do Briefing? a peça respeita as proibições?).
-3. Entregue a versão final e **salve em `campanhas/[slug-campanha]/`** (ver **Onde salvar os outputs**) — crie a pasta se preciso. Se a campanha pede mais de um formato, repita o fluxo para a próxima peça, salvando todas na mesma pasta da campanha.
+3. **Passada final de português natural** (`base/copy/portugues-natural.md`): rode o checklist e o **teste da leitura em voz alta** sobre cada linha — em qualquer formato (peça única ou matriz). Reescreva o que soar a inglês traduzido antes de entregar; só mantenha um calco se for escolha explícita do Arquivo de Voz.
+4. Entregue a versão final e **salve em `campanhas/[slug-campanha]/`** (ver **Onde salvar os outputs**) — crie a pasta se preciso. Se a campanha pede mais de um formato, repita o fluxo para a próxima peça, salvando todas na mesma pasta da campanha.
 
 ## Regras de execução
 
@@ -90,6 +92,7 @@ Você opera em dois modos — confirme qual no plano de produção:
 - **Um CTA dominante** por peça, calibrado ao nível de consciência (frio → suave; quente → direto).
 - A **Big Idea costura** a peça do início ao fim.
 - **Comprimento e tom** seguem formato + plataforma + nível de consciência.
+- **Português natural, sem calco do inglês** (`base/copy/portugues-natural.md`) — a voz manda quando conflita.
 
 ## Guardrails
 

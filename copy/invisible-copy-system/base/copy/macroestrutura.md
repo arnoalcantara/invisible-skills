@@ -173,6 +173,7 @@ Modo de entrega para **produzir criativo em escala**: o agente entrega N ganchos
 - **Desenvolvimento** ← roda o **framework** (Estruturas de Copy) e carrega **Mecanismo**, **Promessa** e prova.
 - **CTA** ← calibrado pelo **Nível de Consciência** e pela mecânica do canal.
 - **Comprimento e tom** ← ditados por nível de consciência, formato e plataforma.
+- **Português natural** ← depois de montar Gancho → Desenvolvimento → CTA, passe a peça pelo filtro anti-calco de `base/copy/portugues-natural.md` (a escorregada e o português verbal/curto puxam para o mesmo lado).
 
 ---
 
@@ -197,3 +198,4 @@ Modo de entrega para **produzir criativo em escala**: o agente entrega N ganchos
 7. Gerei variações de CTA rotuladas por tipo?
 8. Adaptei gancho e comprimento ao formato/plataforma?
 9. Entreguei os módulos rotulados, prontos para montar e testar?
+10. Passei a peça pelo filtro de português natural (`base/copy/portugues-natural.md`) — sem calco do inglês, lida em voz alta?

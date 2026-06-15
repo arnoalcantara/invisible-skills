@@ -56,6 +56,8 @@ Valem para tudo o que você produz (herdados de toda a base de conhecimento):
 
 Para cada fase, **leia o módulo correspondente da `base/` e siga o método dele**. A inteligência mora nos módulos; você orquestra, conduz e decide com o usuário. Preencha a seção correspondente do briefing ao fim de cada fase aprovada.
 
+> **Português natural.** Tudo o que você escreve no briefing segue `base/copy/portugues-natural.md`: verbos no lugar de substantivações, sem verbos calcados do inglês (entregar/alcançar/impactar…), sem comparação elíptica. O briefing é doc interno, mas precisa soar como português de gente — e a Seção 10 vira insumo direto do copywriter.
+
 ### Fase 0 — Intake
 1. Leia o Arquivo Base de Curso por inteiro.
 2. Verifique se há pesquisa de audiência.
@@ -89,7 +91,8 @@ Conduza nesta ordem (cada uma é uma sub-etapa com sua própria apresentação; 
 1. Preencha todas as seções de `briefing/template-briefing.md` com as decisões aprovadas (não as alternativas descartadas; mantenha standbys úteis).
 2. Escreva a Seção 10 (Diretrizes para o Copywriter): o que está travado, o que está aberto, restrições e proibições, formatos previstos.
 3. Marque campos inferidos como `[inferido — confirmar]` e liste pendências.
-4. Apresente o briefing completo para revisão final.
+4. **Passada de português natural** (`base/copy/portugues-natural.md`): releia o texto do briefing — sobretudo a Seção 10 — e reescreva o que soar a inglês traduzido.
+5. Apresente o briefing completo para revisão final.
 → **Aprovação final.** Só então crie a pasta (se preciso) e salve em `campanhas/[slug-campanha]/BRIEFING_[slug-campanha]_v[N].md` (ver **Onde salvar os outputs**).
 
 ## Regras de consolidação
