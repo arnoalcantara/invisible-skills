@@ -8,6 +8,11 @@
       "name": "invisible-copy",
       "source": "./copy/invisible-copy-system",
       "description": "Sistema de agentes de copy da Invisible: Estrategista (gera o Briefing de Campanha a partir do Arquivo Base) e Copywriter (transforma Briefing + Arquivo de Voz em peças de copy em qualquer formato)."
+    },
+    {
+      "name": "invisible-doc-to-presentation",
+      "source": "./apresentacoes/invisible-doc-to-presentation",
+      "description": "Transforma qualquer documento em apresentação: produz storyboard .md slide-a-slide e HTML navegável. Suporta múltiplos design systems; padrão é o da Invisible."
     }
   ]
 }
