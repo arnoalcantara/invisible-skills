@@ -35,14 +35,25 @@ Os módulos se citam por **caminho** (ex.: `base/sofisticacao.md`, `base/copy/an
 
 1. Edite os arquivos locais conforme o pedido.
 2. Garanta a coerência das referências cruzadas (regra de ouro acima).
-3. Commit com mensagem que descreve a intenção, no padrão:
+3. **Suba a versão em `.claude-plugin/plugin.json`** (ver "Versionamento" abaixo). O marketplace só entrega a atualização a quem já instalou se o número de versão mudar — esquecer o bump deixa o time preso na versão antiga.
+4. Commit com mensagem que descreve a intenção, no padrão:
    - `feat(base): ...` novo conhecimento ou módulo
    - `fix(base): ...` correção (inclui ponteiro quebrado)
    - `refactor: ...` reorganização sem mudar conteúdo
    - `docs: ...` README/CLAUDE/comentários
-   - `chore: ...` estrutura, empacotamento
+   - `chore: ...` estrutura, empacotamento (inclui bump de versão)
    Exemplo: `feat(base): adiciona ângulo de prova futura em angulos.md`
-4. Faça push apenas quando o usuário pedir. Prefira commits pequenos e temáticos a um commit gigante.
+5. Faça push apenas quando o usuário pedir. Prefira commits pequenos e temáticos a um commit gigante.
+
+## Versionamento (semver)
+
+A versão do plugin vive em `.claude-plugin/plugin.json` (campo `version`). Toda mudança que vai para a `main` e altera o comportamento do plugin precisa de bump — senão os instaladores não recebem nada novo. Regra:
+
+- **patch** (1.1.0 → 1.1.1): correção de bug, ajuste de texto, ponteiro quebrado.
+- **minor** (1.1.0 → 1.2.0): recurso novo compatível (módulo novo, formato novo, passo novo no fluxo).
+- **major** (1.1.0 → 2.0.0): mudança incompatível (renomear/remover skill, mudar fluxo de forma que quebra uso existente).
+
+Mudanças que **não** mexem no plugin entregue (ex.: só README/CLAUDE, organização interna) não exigem bump.
 
 ## O que NÃO versionar
 
