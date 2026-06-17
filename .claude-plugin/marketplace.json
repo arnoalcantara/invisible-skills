@@ -13,6 +13,11 @@
       "name": "invisible-doc-to-presentation",
       "source": "./apresentacoes/invisible-doc-to-presentation",
       "description": "Transforma qualquer documento em apresentação: produz storyboard .md slide-a-slide e HTML navegável. Suporta múltiplos design systems; padrão é o da Invisible."
+    },
+    {
+      "name": "invisible-class-slides",
+      "source": "./apresentacoes/invisible-class-slides",
+      "description": "Transforma transcrição, roteiro ou esboço de aula em apresentação didática para projeção ao vivo, regida pela ciência da aprendizagem. Entrega um plano slide-a-slide para aprovação e depois um HTML auto-contido com builds. Suporta múltiplos design systems; padrão é o da Invisible."
     }
   ]
 }
