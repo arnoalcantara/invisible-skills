@@ -57,6 +57,28 @@ exemplo real**.
 | 6 | Jornada de Origem | Construir autoridade + identificação com público que não conhece o produtor. A vulnerabilidade do começo é o ativo. |
 | 7 | Entrega de Valor + Loop Aberto | Dá um passo real e útil de graça como prova de competência; a lacuna ("isso é só o começo") puxa o clique. |
 
+### `modelos-de-copy-educacao-dos-filhos.md` — Nicho: Educação dos Filhos / 5 produtores (15 modelos)
+
+> Produtores analisados: Dr João Migowski, Mayra Gaiato, Bebeto Alfabeto, Telma Abrahão, Michelle Viegas Bottrel. 34 copies válidas. Ranking por longevidade disponível no arquivo (melhor proxy de conversão).
+
+| # | Modelo | Quando usar |
+|---|---|---|
+| 1 | Curiosidade por Lacuna Deliberada ★ | Isca gratuita (vídeo, aula, PDF) com método de nome próprio que dá para teasar mas não entregar. Público frio/cético. Entrega parcial real e segura o resto atrás do lead. |
+| 2 | Erro Invisível com Culpa Desarmada | Isca para público que já tenta resolver sozinho e fracassa sem entender por quê. Desarma a vergonha antes de oferecer a solução. |
+| 3 | Brinde por Comentário | Captação de lista quando há material concreto de valor (template, planilha, atividade). Troca brinde por ação pública medível (comentário). |
+| 4 | Espelho da Insegurança Profissional | Fundo de funil para aspirante ou profissional que se sente despreparado. Dissolve a objeção emocional "não estou pronto" para formações e certificações. |
+| 5 | A Especialista que Derruba Objeções | Isca em que a própria autora aparece e o público carrega objeções fortes contra métodos tradicionais do nicho. Credibilidade por título + negação do que o público odeia. |
+| 6 | Pergunta que Expõe a Lacuna | Público técnico que se orgulha do próprio método (professores, especialistas). A pergunta abre fissura de insegurança e a marca se oferece como quem domina o detalhe que falta. |
+| 7 | Caso Extremo Vira Ciência | Topo de funil e aquecimento, baixo nível de consciência. Constrói autoridade com história extrema e pesquisa real; ponte para a versão cotidiana do problema. |
+| 8 | Resposta de Especialista à Pergunta Aflitiva | Conteúdo de autoridade puro, sem oferta. Responde no detalhe técnico uma dúvida urgente. Cria dívida de reciprocidade para ofertas futuras. |
+| 9 | Contraste do Jeito Errado vs. Jeito Certo | Quando o método próprio se diferencia de prática comum e questionável. Mostra (não só afirma) a superioridade por demonstração e concordância forçada. |
+| 10 | O Reembolso Invertido | Oferta com objeção forte de preço, sobretudo quando o produto evita gastos futuros concretos. Reframe: o gasto vira economia. |
+| 11 | Avalanche de Prova com Janela que Fecha | Venda direta com vagas/turma para público que decide por comparação social e teme prejudicar o filho. Urgência por janela biológica + escassez de vagas. |
+| 12 | Oferta que o Público Já Pediu | Venda direta para audiência aquecida em abertura de carrinho/lançamento. Apresenta a oferta como resposta a pedido antigo e derruba objeções práticas de uma vez. |
+| 13 | Espelho da Dor Invisível | Conteúdo de vínculo e comunidade, não venda direta. Para público que carrega sofrimento que ninguém ao redor reconhece. Vende a relação e a lealdade à figura de autoridade. |
+| 14 | Marco do Dia da Virada | Isca gratuita para criar senso de oportunidade imediata sem agressividade. Bom para público cansado que precisa de esperança concreta agora. |
+| 15 | Entrega Cantada que Vicia | Produto consumido por repetição e decidido por afeto, não argumento. Funciona quando há personagem ou marca que pode virar hábito (público infantil, fãs, comunidade). |
+
 ---
 
 ## Manutenção do índice (rotina determinada)
