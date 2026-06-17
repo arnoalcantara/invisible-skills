@@ -30,6 +30,11 @@ Os módulos se citam por **caminho** (ex.: `base/sofisticacao.md`, `base/copy/an
 - **Idioma:** PT-BR.
 - **Estilo dos módulos:** propósito + lugar na cadeia + escopo no topo; "Como a IA deve usar"; conteúdo operacional; cruzamento com os módulos; notas Brasil; checklist final.
 - **Formatos de canal** ficam em `base/formatos/`; **craft de copy** (estruturas, macroestrutura, ângulos) em `base/copy/`; **conhecimento de público/oferta/ideia** na raiz de `base/`.
+- **Biblioteca de modelos** fica em `base/copy/modelos/` (esqueletos de persuasão de campanhas reais, um arquivo por produtor: `modelos-de-copy-[produtor].md`), com um `indice-modelos.md` que cataloga o que existe. **Esta camada é reproduzida com fidelidade máxima e não passa pelo corte de verdade/dignidade** — o usuário decide o que mantém na geração.
+
+## Rotina: indexar modelo novo
+
+Quando o Arno disser "coloquei um modelo novo" (ou pedir para indexar): leia o arquivo novo em `base/copy/modelos/`, extraia produtor + lista de modelos com "quando usar", acrescente a seção no Catálogo de `indice-modelos.md` (sem reescrever as existentes), confira a convenção de nome `modelos-de-copy-[produtor].md`, suba a versão (bump minor) e commite. O passo a passo completo está na seção "Manutenção do índice" do próprio `indice-modelos.md`.
 
 ## Fluxo de trabalho (Git)
 

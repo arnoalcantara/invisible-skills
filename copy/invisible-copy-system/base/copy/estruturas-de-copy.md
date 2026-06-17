@@ -14,6 +14,7 @@
 3. **Nunca nomeie a fórmula na copy final.** As estruturas são invisíveis para o leitor.
 4. **Especificidade vence generalidade.** "Em 21 dias" vence "rápido". "Mães de primeira viagem" vence "pessoas".
 5. **Uma ideia por peça.** Se a copy tenta vender dois ângulos, não vende nenhum.
+6. **Modelos observados (camada concreta).** Além destes frameworks genéricos, `base/copy/modelos/` reúne esqueletos de persuasão extraídos de campanhas reais de produtores específicos. Quando o usuário pede uma peça baseada num modelo, ele tem prioridade sobre o framework genérico e é reproduzido com fidelidade máxima — ver `base/copy/modelos/indice-modelos.md`.
 
 ---
 
