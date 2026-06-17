@@ -62,7 +62,6 @@ Mostram como ideias se relacionam no espaço.
 | Tipo | Ficha | Quando usar |
 |---|---|---|
 | Comparação lado a lado | [comparacao-lado-a-lado](fichas/comparacao-lado-a-lado.md) | 2–3 itens distinguidos nas mesmas dimensões. |
-| Textos paralelos / correspondência | [paralelo-textos](fichas/paralelo-textos.md) | Dois textos que se correspondem (promessa/cumprimento, lei/eco). |
 | Trade-off / prós e contras | [trade-off-pros-contras](fichas/trade-off-pros-contras.md) | Pesar vantagens contra custos de uma opção. |
 | Matriz 2×2 / quadrante | [matriz-2x2](fichas/matriz-2x2.md) | Posicionar itens em dois eixos cruzados. |
 | Taxonomia / hierarquia / árvore | [taxonomia-hierarquia](fichas/taxonomia-hierarquia.md) | Mostrar categorias e subcategorias. |

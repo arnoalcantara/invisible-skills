@@ -21,7 +21,7 @@
 
 **Build.** Recomendado: mostre o "antes", deixe o aluno absorver (ou prever o "depois"), então revele o "depois". A pausa entre os dois é o que faz o contraste pegar — combina bem com um ponto de predição.
 
-**Decisão visual (roteamento).** **Modo 0** — `.slide-contrast`: o "antes" em hairline esmaecido (`.side.wrong`), o "depois" preenchido com aresta de acento (`.side.right`), rótulos inequívocos. Para o build antes→depois, `.contrast.stack` com o "depois" em `.fragment`. Nunca o par antes/depois gerado por gerador de imagem quando há texto ou número crítico (erra o conteúdo e quebra o paralelismo). Ver [../producao-visual.md](../producao-visual.md). Se os dois estados são imagens reais de algo que existe (uma planta, um cômodo), Modo 1 (stock) por lado, mantendo enquadramento equivalente.
+**Decisão visual (roteamento).** **Modo 0** — dois painéis e a seta de transformação em HTML/CSS/SVG, com rótulos precisos. Nunca o par antes/depois gerado por gerador de imagem quando há texto ou número crítico (erra o conteúdo e quebra o paralelismo). Ver [../producao-visual.md](../producao-visual.md). Se os dois estados são imagens reais de algo que existe (uma planta, um cômodo), Modo 1 (stock) por lado, mantendo enquadramento equivalente.
 
 **Conexão posicional.** *Pede antes:* o critério da mudança (o que olhar) e, se houver, o método que a produziu. *Aponta para:* o passo-a-passo de *como* se chega do antes ao depois, ou uma síntese do ganho.
 

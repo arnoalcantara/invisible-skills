@@ -21,7 +21,7 @@
 
 **Build.** Recomendado: mostre o erro primeiro (talvez peça à turma se concorda — combina com [predicao](predicao.md)), deixe a tensão, e então revele o correto. O contraste fica mais forte com o intervalo.
 
-**Decisão visual (roteamento).** **Modo 0** — `.slide-contrast`: equívoco e correto **assimétricos**, o errado em hairline esmaecido (`.side.wrong`), o certo preenchido com aresta de acento (`.side.right`); distinção por rótulo + posição + aresta, nunca só cor. Para o build erro→correto, `.contrast.stack` com o lado certo em `.fragment`. Não roteia para gerador. Se o erro é visual (um gráfico mal lido, uma figura), mostre a figura pelo caminho próprio.
+**Decisão visual (roteamento).** **Modo 0** — contraste estrutural em HTML/CSS. Não roteia para gerador. Se o erro é visual (um gráfico mal lido, uma figura), mostre a figura pelo caminho próprio.
 
 **Conexão posicional.** *Pede antes:* o conceito correto já apresentado (em geral). *Aponta para:* a consolidação/takeaway, ou uma verificação que confirma que o erro foi desarmado.
 

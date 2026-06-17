@@ -51,11 +51,10 @@ arranque → Dial 1 (fidelidade, pela entrada) + Dial 2 (visual) + contexto/curs
   → APROVAÇÃO do usuário  ← portão obrigatório
   → PASSADA 2: instancia cada slide (ficha do tipo + 13 leis + consciência posicional)
         → produção visual (diagnóstico → roteamento → prompt → style bible) quando aplicável
-        → direção de arte: compõe cada slide e roda o checklist (composicao-visual.md)
-  → RENDER: HTML a partir do plano (base de composição + tokens do brand)
+  → RENDER: HTML a partir do plano
 ```
 
-Camadas encaixadas, sempre nesta prioridade: **filosofia → arco → tipologia → produção visual → composição visual**.
+Camadas encaixadas, sempre nesta prioridade: **filosofia → arco → tipologia → produção visual**.
 
 ---
 
@@ -86,7 +85,7 @@ Pergunte o modo visual (ou aceite o que o usuário já disse). Default = **Modo 
 > **Portabilidade (importante).** Os Modos 2 e 3 dependem de um gerador de imagem por IA conectado via MCP. **Não assuma que existe e nunca fixe o nome de um servidor no texto.** No momento de gerar imagem, descubra em runtime se há alguma ferramenta MCP de geração de imagem na sessão. Se houver, use-a. **Se não houver, avise o usuário e caia para o Modo 0/1** — não pare nem invente. Regras completas em [references/producao-visual.md](references/producao-visual.md).
 
 ### 4. Design system
-Apresente os design systems disponíveis (`ls ../../design-systems/` e liste os nomes). **Ignore arquivos com prefixo `_`** (ex.: `_base.md`) — são partials de composição compartilhados, não brands selecionáveis. **Recomende o Invisible** como padrão. Aguarde confirmação. Cada curso pode ter o seu (basta soltar um `.md` de tokens na pasta — herda a composição da base).
+Apresente os design systems disponíveis (`ls ../../design-systems/` e liste os nomes). **Recomende o Invisible** como padrão. Aguarde confirmação. Cada curso pode ter o seu (basta soltar um `.md` na pasta).
 
 ### 5. Contexto e referência visual (quando houver)
 Peça/aceite, sem travar se faltarem:
@@ -145,20 +144,16 @@ Para cada slide do plano:
 1. Abra a **ficha** do tipo em [references/fichas/](references/fichas/) (a tipologia linka cada uma). A ficha remove a ambiguidade: anatomia, slots, regras de carga (números), build, decisão visual, erro comum, comportamento por dial.
 2. Preencha o slide com o **conteúdo concreto**, aplicando as **13 leis** ([references/filosofia.md](references/filosofia.md)) e a consciência posicional.
 3. **Título é asserção, não tópico** ("A pressão cai conforme a altitude sobe", não "Pressão e altitude"). Uma ideia por slide. Mostrar, não listar.
-4. **Componha**, não só preencha: ao escolher layout, variante (`.hero`, `.center`, `.numbered`, `.tight`, `.lead`, `.dense`, `.grid`, `.critical`, `.verdict`, `.chain`, `.cycle`, `.tree`, `.stack`, `.fill`, `.hairline`, `.edge`) e primitivos (`.accent-bar`, `.index-numeral`, `.emphasis`, `.rule`), siga [references/composicao-visual.md](references/composicao-visual.md). É o que faz o slide ocupar o quadro com foco, não flutuar no vazio. Duas regras de ouro: **varie a forma entre slides consecutivos** (não repita "fileira de caixas" nem "frase solta no centro") e **lidere com tipografia, menos caixa** — a relação entre N coisas raramente é N retângulos.
 
 ### Produção visual (quando o slide pede imagem)
 Siga [references/producao-visual.md](references/producao-visual.md): diagnóstico → roteamento de ferramenta → prompt (com style bible) → geração. Lembre: **gráfico com dado real nunca vai a modelo de imagem** (inventa número, desalinha eixo) — renderize o gráfico de verdade em código/SVG. Geração por IA só nos Modos 2/3 e só se houver gerador conectado (senão, fallback Modo 0/1).
 
-### Render HTML (base + skin)
-1. Leia **a base de composição** (`../../design-systems/_base.md`) e **o skin escolhido** (`../../design-systems/[sistema].md`) **integralmente**. A base traz o esqueleto, o CSS estrutural e o player; o skin traz os tokens (`:root`), os font links, o wordmark e a tabela tipo→classe.
-2. **Monte o HTML = base + skin:** use o esqueleto da base; injete no `<head>` o `{{FONT_LINKS}}` e o bloco `:root` de tokens do skin (depois do `:root` de defaults da base); mantenha o CSS estrutural da base intacto. Para cada slide do plano, crie o `<div class="slide ...">` com o conteúdo aprovado, mapeando o tipo da tipologia para a classe (skin) e aplicando a variante/composição da direção de arte.
+### Render HTML
+1. Leia o design system escolhido (`../../design-systems/[sistema].md`) **integralmente** — ele traz o template HTML base, os tipos de slide e as regras visuais.
+2. Use o template base como raiz. Para cada slide do plano, crie o `<div class="slide ...">` com o conteúdo aprovado, mapeando o tipo da tipologia para a classe de slide do design system.
 3. Implemente os **builds** (revelação progressiva) quando o plano pedir.
 4. Preencha o array `notes` com as notas do professor, uma por slide, na ordem.
-5. HTML **auto-contido** — um único arquivo (o conteúdo da base é inlinado, não vira dependência), sem dependências externas além de Google Fonts via CDN. Nunca entregue HTML quebrado; se preciso, gere por partes e valide.
-
-### Direção de arte (passo de composição — depois do HTML montado)
-Antes de entregar, rode o passo de [references/composicao-visual.md](references/composicao-visual.md): percorra **cada slide** contra o checklist (quadro preenchido? foco único legível em 1s? densidade casa com o layout — quebrar/fundir? diagrama comprimido pedindo grid? hierarquia distinta ou chapada? acento em um só lugar com função? alinhado ao grid? **silhuetas variando entre slides vizinhos? caixa justificada por função ou inércia? zero `style=` inline ou classe improvisada?**) e **recomponha** o que falhar, com a variante ou o primitivo certo. O objetivo não é checar — é consertar. É o segundo olhar que separa o deck que entende a aula do que também a mostra bem.
+5. HTML **auto-contido** — um único arquivo, sem dependências externas além de Google Fonts via CDN. Nunca entregue HTML quebrado; se preciso, gere por partes e valide.
 
 Salve em `class-slides/[nome-slug]/[nome-slug].html`. Confirme ao usuário os dois arquivos e onde foram salvos.
 
