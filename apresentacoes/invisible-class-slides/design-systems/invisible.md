@@ -70,7 +70,7 @@ Estes são os tokens que [`_base.md`](_base.md) exige, com os valores da Invisib
 
 ## Tratamento da marca
 
-- **Cor.** Coral só em ênfase singular (a asserção-chave, o passo crítico, o "certo" de um erro comum). Distinções de conteúdo (certo/errado, A/B) **nunca** dependem só de cor — use também posição, rótulo ou forma.
+- **Cor.** Coral só em ênfase singular (a asserção-chave, o passo crítico, o "certo" de um erro comum). Pode ocupar uma **aresta** (`.edge`, `.side.right`), um **conector** (`.slide-parallel`), o **elo de virada** (`.turn`) ou uma **palavra-chave** (`<span class="accent">` dentro de `.emphasis`) — sempre **um só momento por slide**, nunca diluído em vários labels. Distinções de conteúdo (certo/errado, A/B) **nunca** dependem só de cor — use também posição, rótulo ou forma.
 - **Profundidade** por camadas (`--bg-1` → `--surface-1` → `--surface-2`), nunca por gradiente ou sombra.
 - **Tipografia (usos e tamanhos, escala 1280×720):**
   - *Título-asserção:* `--font-label` 700, 34–40px (lei 2 — sempre presente).
@@ -85,22 +85,26 @@ Estes são os tokens que [`_base.md`](_base.md) exige, com os valores da Invisib
 
 ## Tipos de slide → tipologia didática
 
-Cada tipo da tipologia mapeia para uma classe CSS (definida em [`_base.md`](_base.md)). Tipos parentes compartilham classe (um molde serve vários). As variantes de composição (`.hero`, `.center`, `.lead`, `.dense`, `.grid`, `.critical`, `.verdict`) são escolhidas conforme [composicao-visual.md](../skills/invisible-class-slides/references/composicao-visual.md).
+Cada tipo da tipologia mapeia para uma classe CSS (definida em [`_base.md`](_base.md)). Tipos parentes compartilham classe (um molde serve vários). As variantes de composição (`.hero`, `.center`, `.numbered`, `.tight`, `.lead`, `.dense`, `.grid`, `.critical`, `.verdict`, `.chain`, `.cycle`, `.tree`, `.stack`, `.fill`, `.hairline`, `.edge`, e o primitivo `.emphasis`) são escolhidas conforme [composicao-visual.md](../skills/invisible-class-slides/references/composicao-visual.md).
 
 | Classe CSS | Tipos da tipologia que atende |
 |---|---|
 | `.slide-cover` | abertura-titulo |
 | `.slide-assert` | asseracao-evidencia (padrão), definicao, declaracao-soco (`.hero`), exemplo-caso, analogia-metafora |
 | `.slide-list` | objetivos, roteiro-agenda, sintese, recursos-referencias, takeaway (variante) |
-| `.slide-two-col` | comparacao-lado-a-lado, trade-off-pros-contras, antes-depois, venn-sobreposicao |
-| `.slide-diagram` | passo-a-passo, causa-efeito, ciclo-loop, arvore-de-decisao, taxonomia-hierarquia, anatomia-diagrama-rotulado, progressao-jornada |
+| `.slide-two-col` | comparacao-lado-a-lado, trade-off-pros-contras, venn-sobreposicao |
+| `.slide-contrast` | erro-comum, antes-depois |
+| `.slide-parallel` | paralelo-textos |
+| `.slide-diagram` | passo-a-passo, causa-efeito (`.flow.chain`), ciclo-loop (`.flow.cycle`), arvore-de-decisao (`.flow.tree`), taxonomia-hierarquia (`.flow.tree`), anatomia-diagrama-rotulado, progressao-jornada |
 | `.slide-timeline` | linha-do-tempo, espectro-continuum |
 | `.slide-number` | numero-grande, destaque-sobre-dado |
 | `.slide-chart` | grafico, infografico (chart real em SVG/código) |
 | `.slide-image` | imagem-tela-cheia, imagem-texto, exemplo-anotado |
 | `.slide-prompt` | pergunta-provocacao, predicao, enquete, problema-para-resolver, preencher-lacuna, pense-converse-compartilhe, verificacao-entendimento |
 | `.slide-quote` | citacao-autoridade |
-| `.slide-divider` | divisor-secao, voce-esta-aqui, ponte-transicao, ativacao-conhecimento-previo, erro-comum (variante), mnemonico |
+| `.slide-divider` | divisor-secao, voce-esta-aqui, ponte-transicao, ativacao-conhecimento-previo, mnemonico |
 | `.slide-closing` | fechamento da aula |
 
-> A skill escolhe o **tipo** pela tipologia; aqui encontra a **classe**; em [composicao-visual.md](../skills/invisible-class-slides/references/composicao-visual.md) decide a **variante/composição**. Se um tipo precisar de layout que nenhuma classe cobre, componha com utilitários (`.label`, `.assert-title`, `.accent-bar`, `.rule`, `.fragment`) mantendo as regras acima.
+> **`.slide-rail`** não é um tipo 1:1 — é uma **variante de composição** (a moldura assimétrica de §6 do ofício): split aside/main com numeral, label ou asserção curta na coluna estreita. Use para `divisor-secao`, `voce-esta-aqui`, `progressao-jornada` e asserções esparsas que pedem âncora posicional, no lugar de frase solta no centro.
+
+> A skill escolhe o **tipo** pela tipologia; aqui encontra a **classe**; em [composicao-visual.md](../skills/invisible-class-slides/references/composicao-visual.md) decide a **variante/composição**. Se um tipo precisar de layout que nenhuma classe cobre, componha com utilitários (`.label`, `.assert-title`, `.accent-bar`, `.emphasis`, `.rule`, `.fragment`) mantendo as regras acima.

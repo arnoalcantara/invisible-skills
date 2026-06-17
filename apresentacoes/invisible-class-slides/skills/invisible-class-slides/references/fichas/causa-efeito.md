@@ -20,7 +20,7 @@
 
 **Build.** Fortemente recomendado: revele elo a elo, narrando o nexo de cada um. É onde a revelação progressiva (lei 8) mais rende neste tipo — o aluno acompanha a corrente sendo montada e não pula para a conclusão. Veja [../producao-visual.md](../producao-visual.md).
 
-**Decisão visual (roteamento).** **Modo 0** — caixas e setas em HTML/CSS/SVG, com rótulos precisos. Nunca um diagrama causal gerado por gerador de imagem (erra setas, troca rótulos, inverte o sentido da causa). Geração só para uma ilustração conceitual ao lado de um elo, se necessário.
+**Decisão visual (roteamento).** **Modo 0** — `.flow.chain`: nós **sem caixa** (`.cnode`) ligados por setas SVG em acento esmaecido, com rótulo de seta (`.carrow-label`) só onde o nexo precisa ser nomeado e `.turn` no elo de virada; cadeia longa ou com build → `.chain.vertical`. Não é fileira de caixas (a relação é causal, não paralela). Nunca um diagrama causal gerado por gerador de imagem (erra setas, troca rótulos, inverte o sentido da causa). Geração só para uma ilustração conceitual ao lado de um elo, se necessário.
 
 **Conexão posicional.** *Pede antes:* os elementos da cadeia já nomeados e o porquê de importarem. *Aponta para:* uma síntese da consequência final, um exemplo que mostra a cadeia rodando, ou um ponto de processamento (o aluno prevê o próximo elo).
 

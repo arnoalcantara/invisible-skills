@@ -116,7 +116,11 @@ body { background:#0a0a0a; display:flex; align-items:center; justify-content:cen
 .label { font-family:var(--font-label); font-size:13px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); }
 .label-muted { font-family:var(--font-label); font-size:13px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; color:var(--ink-3); }
 .assert-title { font-family:var(--font-label); font-size:38px; font-weight:700; line-height:1.15; letter-spacing:-0.01em; color:var(--ink-1); }
+.assert-title.tight { font-size:clamp(30px,3vw,34px); line-height:1.2; max-width:22ch; }   /* asserção curta: 1–2 linhas, sem competir com o corpo */
 .accent { color:var(--accent); }
+/* Ênfase sem caixa: liderar com tipografia em vez de moldura. Use dentro de .evidence / .slide-list,
+   ou como bloco esparso. A palavra-chave vira acento com <span class="accent"> (um só ponto de cor). */
+.emphasis { font-family:var(--font-display); font-weight:900; font-size:clamp(34px,4.4vw,52px); line-height:1.12; letter-spacing:-0.02em; color:var(--ink-1); max-width:20ch; }
 .wordmark { position:absolute; bottom:26px; right:38px; font-family:var(--font-label); font-size:11px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase; color:rgba(255,255,255,0.08); user-select:none; }
 .slide-num { position:absolute; bottom:26px; left:38px; font-family:var(--font-label); font-size:11px; font-weight:500; letter-spacing:0.1em; color:rgba(255,255,255,0.22); }
 
@@ -149,6 +153,10 @@ body { background:#0a0a0a; display:flex; align-items:center; justify-content:cen
 .slide-assert.hero { justify-content:center; gap:var(--s-5); }
 .slide-assert.hero .assert-lead { font-family:var(--font-display); font-size:clamp(48px,6.2vw,76px); font-weight:900; line-height:1.06; letter-spacing:-0.02em; color:var(--ink-1); max-width:18ch; }
 .slide-assert.hero .sub { font-family:var(--font-ui); font-size:26px; color:var(--ink-2); max-width:760px; }
+/* numbered: numeral grande como âncora posicional (top-left), dá segundo registro à frase esparsa */
+.slide-assert.numbered .top { display:flex; align-items:flex-start; gap:var(--s-5); }
+.slide-assert.numbered .top .index-numeral { font-size:clamp(64px,8vw,104px); flex-shrink:0; }
+.slide-assert.numbered .top .top-text { display:flex; flex-direction:column; gap:var(--s-2); padding-top:var(--s-2); }
 
 /* --- List (objetivos, roteiro, síntese, takeaway) ---
    gap deriva da escala; .lead (poucos itens, grandes) preenche o quadro; .dense aperta.
@@ -189,11 +197,65 @@ body { background:#0a0a0a; display:flex; align-items:center; justify-content:cen
 .slide-diagram .flow.grid.cols-2 { grid-template-columns:repeat(2,1fr); }
 .slide-diagram .fbox { background:var(--surface-1); border:1px solid var(--border); border-radius:var(--radius); flex:1; display:flex; flex-direction:column; padding:var(--s-5) var(--s-4); gap:var(--s-2); }
 .slide-diagram .fbox.critical { border-color:var(--accent); background:var(--surface-2); }
+/* Tratamentos de caixa — escolha um por função (varie entre slides; a borda-padrão não é default por inércia) */
+.slide-diagram .fbox.fill { border:none; background:var(--surface-1); }                                    /* preenchida, sem borda */
+.slide-diagram .fbox.hairline { border:1px solid var(--border-subtle); background:transparent; }            /* só linha fina */
+.slide-diagram .fbox.edge { border:none; background:transparent; border-left:3px solid var(--accent); padding-left:var(--s-4); }   /* uma aresta de acento */
 .slide-diagram .fbox .fn { font-family:var(--font-display); font-size:44px; font-weight:900; color:var(--accent-dim); line-height:1; }
 .slide-diagram .fbox.critical .fn { color:var(--accent); }
 .slide-diagram .fbox .ftitle { font-family:var(--font-label); font-size:21px; font-weight:700; color:var(--ink-1); line-height:1.2; }
 .slide-diagram .fbox .fsub { font-family:var(--font-ui); font-size:18px; color:var(--ink-2); line-height:1.45; }
 .slide-diagram .arrow { width:40px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:var(--border); font-size:22px; }
+
+/* --- flow.chain: cadeia causal (causa-efeito) ---
+   .cnode SEM borda (palavra-chave sobre um tick de acento), ligados por .carrow (linha+seta em --accent-dim).
+   .cnode.turn marca o elo de virada; .carrow-label nomeia o nexo; .chain.vertical para cadeias longas/builds. */
+.slide-diagram .flow.chain { align-items:center; gap:0; }
+.slide-diagram .flow.chain .cnode { flex:1; display:flex; flex-direction:column; gap:var(--s-2); padding:0 var(--s-3); border:none; background:transparent; min-width:0; }
+.slide-diagram .flow.chain .cnode::before { content:''; display:block; width:28px; height:3px; background:var(--accent-dim); margin-bottom:var(--s-2); }
+.slide-diagram .flow.chain .cnode.turn::before { background:var(--accent); }
+.slide-diagram .flow.chain .cnode .clabel { font-family:var(--font-label); font-size:22px; font-weight:700; color:var(--ink-1); line-height:1.2; }
+.slide-diagram .flow.chain .cnode.turn .clabel { color:var(--accent); }
+.slide-diagram .flow.chain .cnode .csub { font-family:var(--font-ui); font-size:17px; color:var(--ink-2); line-height:1.4; }
+.slide-diagram .flow.chain .carrow { flex-shrink:0; width:52px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; color:var(--accent-dim); }
+.slide-diagram .flow.chain .carrow svg { width:48px; height:14px; display:block; }
+.slide-diagram .flow.chain .carrow .carrow-label { font-family:var(--font-label); font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-3); text-align:center; line-height:1.2; max-width:84px; }
+.slide-diagram .flow.chain.vertical { flex-direction:column; align-items:stretch; justify-content:center; }
+.slide-diagram .flow.chain.vertical .cnode { flex:none; padding:var(--s-2) 0; }
+.slide-diagram .flow.chain.vertical .carrow { width:100%; height:34px; flex-direction:row; gap:var(--s-3); }
+.slide-diagram .flow.chain.vertical .carrow svg { transform:rotate(90deg); }
+
+/* --- flow.cycle: processo que retorna ao início (ciclo-loop) ---
+   3–6 .cnode posicionados num anel (.pos-1..6) sobre um caminho circular SVG (.cycle-svg) em --accent-dim.
+   Para 3 nós use pos-1/3/5; para 4 use pos-1/2/4/5; para 6 use todos. */
+.slide-diagram .flow.cycle { position:relative; display:block; flex:1; min-height:0; }
+.slide-diagram .flow.cycle .cycle-svg { position:absolute; inset:0; width:100%; height:100%; color:var(--accent-dim); pointer-events:none; }
+.slide-diagram .flow.cycle .cnode { position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center; max-width:210px; border:none; background:var(--bg-1); padding:var(--s-2) var(--s-3); }
+.slide-diagram .flow.cycle .cnode .clabel { font-family:var(--font-label); font-size:19px; font-weight:700; color:var(--ink-1); line-height:1.2; }
+.slide-diagram .flow.cycle .cnode .csub { font-family:var(--font-ui); font-size:15px; color:var(--ink-2); line-height:1.35; }
+.slide-diagram .flow.cycle .cnode.turn .clabel { color:var(--accent); }
+.slide-diagram .flow.cycle .cnode.pos-1 { top:9%;  left:50%; }
+.slide-diagram .flow.cycle .cnode.pos-2 { top:30%; left:88%; }
+.slide-diagram .flow.cycle .cnode.pos-3 { top:72%; left:84%; }
+.slide-diagram .flow.cycle .cnode.pos-4 { top:91%; left:50%; }
+.slide-diagram .flow.cycle .cnode.pos-5 { top:72%; left:16%; }
+.slide-diagram .flow.cycle .cnode.pos-6 { top:30%; left:12%; }
+
+/* --- flow.tree: raiz + ramos (taxonomia-hierarquia, arvore-de-decisao) ---
+   .troot no topo, .tconnect (haste), .tbranches (ramos lado a lado ligados por uma régua).
+   .tree.decision usa .branch-label para rotular ramos (sim/não). */
+.slide-diagram .flow.tree { flex-direction:column; align-items:center; justify-content:center; gap:0; }
+.slide-diagram .flow.tree .troot { display:flex; flex-direction:column; align-items:center; gap:4px; padding:var(--s-3) var(--s-5); background:var(--surface-1); border-left:3px solid var(--accent); }
+.slide-diagram .flow.tree .troot .clabel { font-family:var(--font-label); font-size:21px; font-weight:700; color:var(--ink-1); }
+.slide-diagram .flow.tree .tconnect { width:2px; height:var(--s-5); background:var(--border); }
+.slide-diagram .flow.tree .tbranches { display:flex; gap:var(--s-5); align-items:flex-start; justify-content:center; position:relative; padding-top:var(--s-4); }
+.slide-diagram .flow.tree .tbranches::before { content:''; position:absolute; top:0; left:20%; right:20%; height:2px; background:var(--border); }
+.slide-diagram .flow.tree .tbranch { display:flex; flex-direction:column; align-items:center; gap:var(--s-2); flex:1; max-width:280px; position:relative; }
+.slide-diagram .flow.tree .tbranch::before { content:''; width:2px; height:var(--s-4); background:var(--border); }
+.slide-diagram .flow.tree .tbranch .branch-label { font-family:var(--font-label); font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--accent); }
+.slide-diagram .flow.tree .tnode { display:flex; flex-direction:column; gap:4px; padding:var(--s-3) var(--s-4); border:1px solid var(--border-subtle); width:100%; }
+.slide-diagram .flow.tree .tnode .clabel { font-family:var(--font-label); font-size:19px; font-weight:700; color:var(--ink-1); line-height:1.2; }
+.slide-diagram .flow.tree .tnode .csub { font-family:var(--font-ui); font-size:16px; color:var(--ink-2); line-height:1.4; }
 
 /* --- Timeline / spectrum --- */
 .slide-timeline .top { margin-bottom:var(--s-6); }
@@ -211,6 +273,41 @@ body { background:#0a0a0a; display:flex; align-items:center; justify-content:cen
 .slide-number .unit { font-family:var(--font-ui); font-size:22px; color:var(--ink-2); margin-top:12px; }
 .slide-number .num-right { flex:1; display:flex; flex-direction:column; justify-content:center; padding:64px; gap:20px; }
 .slide-number .num-right .assert-title { font-size:34px; }
+
+/* --- Contrast (erro-comum, antes-depois) — equívoco vs. correto, ASSIMÉTRICO (não espelhado) ---
+   .side.wrong é hairline/esmaecida; .side.right carrega o acento numa aresta + texto pleno.
+   Distinção por rótulo + posição + aresta, nunca só cor. .contrast.stack empilha (build erro→correto). */
+.slide-contrast .top { margin-bottom:var(--s-5); }
+.slide-contrast .sides { flex:1; display:flex; gap:var(--s-5); min-height:0; }
+.slide-contrast .side { flex:1; display:flex; flex-direction:column; justify-content:center; gap:var(--s-3); padding:var(--s-5); }
+.slide-contrast .side .side-label { font-family:var(--font-label); font-size:14px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; }
+.slide-contrast .side .side-body { font-family:var(--font-ui); font-size:24px; line-height:1.45; }
+.slide-contrast .side.wrong { background:transparent; border:1px solid var(--border-subtle); }
+.slide-contrast .side.wrong .side-label { color:var(--ink-3); }
+.slide-contrast .side.wrong .side-body { color:var(--ink-3); }
+.slide-contrast .side.right { background:var(--surface-1); border-left:3px solid var(--accent); }
+.slide-contrast .side.right .side-label { color:var(--accent); }
+.slide-contrast .side.right .side-body { color:var(--ink-1); }
+.slide-contrast.stack .sides { flex-direction:column; gap:var(--s-4); }
+
+/* --- Parallel (paralelo-textos) — dois textos correspondentes + conector de cumprimento ---
+   .ptext SEM borda (lê como passagem, display itálico); o .connector central carrega o acento UMA vez. */
+.slide-parallel .top { margin-bottom:var(--s-5); }
+.slide-parallel .pair { flex:1; display:flex; flex-direction:column; justify-content:center; gap:var(--s-4); min-height:0; }
+.slide-parallel .ptext { font-family:var(--font-display); font-size:clamp(24px,2.8vw,32px); font-style:italic; line-height:1.4; color:var(--ink-1); max-width:62ch; }
+.slide-parallel .ptext .pref { display:block; font-family:var(--font-label); font-size:13px; font-style:normal; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-3); margin-bottom:var(--s-1); }
+.slide-parallel .connector { display:flex; align-items:center; gap:var(--s-3); }
+.slide-parallel .connector .c-rule { height:1px; background:var(--accent-dim); flex:1; }
+.slide-parallel .connector .connector-label { font-family:var(--font-label); font-size:13px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); white-space:nowrap; }
+.slide-parallel .connector .c-glyph { width:10px; height:10px; border:2px solid var(--accent); transform:rotate(45deg); flex-shrink:0; }
+
+/* --- Rail — split assimétrico genérico (a moldura que o ofício §6 prega) ---
+   .rail-aside (~38%, --bg-0, âncora: numeral/label/assert curta) + .rail-main (evidência). .slide-rail.right inverte. */
+.slide-rail { flex-direction:row; padding:0; }
+.slide-rail .rail-aside { width:38%; flex-shrink:0; background:var(--bg-0); display:flex; flex-direction:column; justify-content:center; gap:var(--s-3); padding:var(--s-7) var(--s-6); border-right:1px solid var(--border-subtle); }
+.slide-rail .rail-main { flex:1; display:flex; flex-direction:column; justify-content:center; gap:var(--s-4); padding:var(--s-7); min-width:0; }
+.slide-rail.right { flex-direction:row-reverse; }
+.slide-rail.right .rail-aside { border-right:none; border-left:1px solid var(--border-subtle); }
 
 /* --- Chart (chart REAL em SVG/código dentro de .chart-area) --- */
 .slide-chart .top { margin-bottom:var(--s-4); }
@@ -338,7 +435,8 @@ scaleStage(); render();
 6. **Preencha o array `notes`** — uma string por slide, na ordem. As notas carregam o que a voz do professor diz (lei 6): o difícil de mostrar.
 7. **Cada slide termina com** `<div class="slide-num">N / T</div><div class="wordmark">{{WORDMARK}}</div>`.
 8. **Gráficos** (`.slide-chart`): renderize o chart **de verdade** em SVG/HTML dentro de `.chart-area` — nunca uma imagem de gráfico gerada.
-9. **Composição:** a escolha de layout, variante (`.hero`, `.center`, `.lead`, `.dense`, `.grid`, `.critical`, `.verdict`) e primitivo (`.accent-bar`, `.index-numeral`, `.rule`) segue [composicao-visual.md](../skills/invisible-class-slides/references/composicao-visual.md). Sem emojis, sem ícones decorativos, sem gradiente (exceto o overlay de imagem), sem border-radius acima do `--radius` do brand.
+9. **Composição:** a escolha de layout, variante (`.hero`, `.center`, `.numbered`, `.tight`, `.lead`, `.dense`, `.grid`, `.critical`, `.verdict`, `.chain`, `.cycle`, `.tree`, `.stack`, `.fill`, `.hairline`, `.edge`) e primitivo (`.accent-bar`, `.index-numeral`, `.emphasis`, `.rule`) segue [composicao-visual.md](../skills/invisible-class-slides/references/composicao-visual.md). Sem emojis, sem ícones decorativos, sem gradiente (exceto o overlay de imagem), sem border-radius acima do `--radius` do brand.
+10. **Sem inline, sem classe improvisada.** Se um tratamento não existe no ferramental, ele é **adicionado a esta base** — nunca a um `style=`. Se você se pegar escrevendo `<p style="…">` ou inventando uma classe nova com CSS próprio, pare: o componente certo já está acima, ou deve ser criado aqui. É onde a consistência e o gosto morrem. As setas/glifos de `chain`/`cycle`/`tree` são SVG com `stroke="currentColor"` (a cor vem da classe, não de `style=`).
 
 ### Exemplo — Asserção + evidência (workhorse), top-anchored, com build
 ```html
@@ -377,5 +475,142 @@ scaleStage(); render();
     <div class="fbox"><div class="fn">6</div><div class="ftitle">Retorno</div><div class="fsub">O ciclo recomeça.</div></div>
   </div>
   <div class="slide-num">12 / 18</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Contraste (erro-comum / antes-depois): equívoco vs. correto, assimétrico
+```html
+<div class="slide slide-contrast">
+  <div class="top"><div class="label">Equívoco comum</div>
+    <div class="assert-title tight">Fé não é o oposto de razão.</div></div>
+  <div class="sides">
+    <div class="side wrong">
+      <div class="side-label">O que se pensa</div>
+      <div class="side-body">Crer é desligar o juízo: aceitar sem evidência, contra a inteligência.</div>
+    </div>
+    <div class="side right fragment">
+      <div class="side-label">O que é</div>
+      <div class="side-body">A fé <strong>pressupõe</strong> a razão e a leva além do que ela alcança sozinha — não a contradiz.</div>
+    </div>
+  </div>
+  <div class="slide-num">9 / 22</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Textos paralelos (paralelo-textos): correspondência ligada por um conector
+```html
+<div class="slide slide-parallel">
+  <div class="top"><div class="label">Promessa e cumprimento</div>
+    <div class="assert-title tight">O que Isaías anuncia, o Apocalipse consuma.</div></div>
+  <div class="pair">
+    <p class="ptext"><span class="pref">Isaías 65,17</span>"Eis que vou criar novos céus e nova terra."</p>
+    <div class="connector"><span class="c-glyph"></span><span class="connector-label">Cumpre-se em</span><span class="c-rule"></span></div>
+    <p class="ptext"><span class="pref">Apocalipse 21,1</span>"Vi então um novo céu e uma nova terra."</p>
+  </div>
+  <div class="slide-num">14 / 22</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Cadeia causal (causa-efeito): nós sem caixa, ligados por setas SVG
+```html
+<div class="slide slide-diagram">
+  <div class="top"><div class="label">Mecanismo</div>
+    <div class="assert-title">O pecado fecha o homem em si e seca a caridade.</div></div>
+  <div class="flow chain">
+    <div class="cnode"><div class="clabel">Soberba</div><div class="csub">O eu vira o centro.</div></div>
+    <div class="carrow">
+      <svg viewBox="0 0 48 14" fill="none" stroke="currentColor" stroke-width="2"><line x1="0" y1="7" x2="42" y2="7"/><polyline points="36,2 44,7 36,12"/></svg>
+      <span class="carrow-label">fecha em</span>
+    </div>
+    <div class="cnode turn"><div class="clabel">Isolamento</div><div class="csub">O outro vira ameaça.</div></div>
+    <div class="carrow">
+      <svg viewBox="0 0 48 14" fill="none" stroke="currentColor" stroke-width="2"><line x1="0" y1="7" x2="42" y2="7"/><polyline points="36,2 44,7 36,12"/></svg>
+      <span class="carrow-label">seca</span>
+    </div>
+    <div class="cnode"><div class="clabel">Caridade</div><div class="csub">Sem o outro, não há amor.</div></div>
+  </div>
+  <div class="slide-num">11 / 22</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Ciclo (ciclo-loop): 4 nós num anel sobre caminho circular SVG
+```html
+<div class="slide slide-diagram">
+  <div class="top"><div class="label">Vida sacramental</div>
+    <div class="assert-title">A graça é um ciclo que se realimenta, não uma linha.</div></div>
+  <div class="flow cycle">
+    <svg class="cycle-svg" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="0.8" preserveAspectRatio="none">
+      <path d="M50 14 A36 36 0 1 1 49.9 14" stroke-dasharray="2 2"/>
+      <polyline points="46,16 50,12 54,16"/>
+    </svg>
+    <div class="cnode pos-1"><div class="clabel">Graça</div><div class="csub">Deus dá o primeiro passo.</div></div>
+    <div class="cnode pos-2"><div class="clabel">Conversão</div><div class="csub">O coração responde.</div></div>
+    <div class="cnode pos-4"><div class="clabel">Caridade</div><div class="csub">O amor transborda em obra.</div></div>
+    <div class="cnode pos-5"><div class="clabel">Abertura</div><div class="csub">A obra dispõe a mais graça.</div></div>
+  </div>
+  <div class="slide-num">18 / 22</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Árvore de decisão (taxonomia/árvore): raiz + ramos rotulados
+```html
+<div class="slide slide-diagram">
+  <div class="top"><div class="label">Discernimento</div>
+    <div class="assert-title tight">A consolação tem origem — e ela se testa.</div></div>
+  <div class="flow tree decision">
+    <div class="troot"><div class="clabel">Moção interior</div></div>
+    <div class="tconnect"></div>
+    <div class="tbranches">
+      <div class="tbranch">
+        <div class="branch-label">Leva a Deus</div>
+        <div class="tnode"><div class="clabel">Consolação</div><div class="csub">Cresce em fé, paz, humildade.</div></div>
+      </div>
+      <div class="tbranch">
+        <div class="branch-label">Afasta de Deus</div>
+        <div class="tnode"><div class="clabel">Engano</div><div class="csub">Termina em inquietação e orgulho.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="slide-num">20 / 22</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Rail (split assimétrico) com numeral de seção como âncora
+```html
+<div class="slide slide-rail">
+  <div class="rail-aside">
+    <div class="label-muted">Parte II</div>
+    <div class="index-numeral">02</div>
+    <div class="assert-title tight">A nova criação</div>
+  </div>
+  <div class="rail-main">
+    <div class="emphasis">O fim não é fuga do mundo, mas sua <span class="accent">transfiguração</span>.</div>
+  </div>
+  <div class="slide-num">13 / 22</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Asserção-herói liderada por tipografia (`.emphasis`), sem caixa
+```html
+<div class="slide slide-assert hero">
+  <div class="accent-bar"></div>
+  <div class="emphasis">Deus não conserta o velho. Ele faz <span class="accent">novas todas as coisas</span>.</div>
+  <div class="sub">A redenção é criação, não reparo.</div>
+  <div class="slide-num">21 / 22</div><div class="wordmark">{{WORDMARK}}</div>
+</div>
+```
+
+### Exemplo — Caixas com tratamento variado (`.fill` / `.hairline` / `.edge`) em vez de borda-padrão
+```html
+<div class="slide slide-diagram">
+  <div class="top"><div class="label">Três sentidos</div>
+    <div class="assert-title">A Escritura se lê em mais de um nível.</div></div>
+  <div class="flow grid cols-2">
+    <div class="fbox fill"><div class="ftitle">Literal</div><div class="fsub">O que o texto diz de fato.</div></div>
+    <div class="fbox hairline"><div class="ftitle">Alegórico</div><div class="fsub">O que aponta em Cristo.</div></div>
+    <div class="fbox hairline"><div class="ftitle">Moral</div><div class="fsub">O que pede da conduta.</div></div>
+    <div class="fbox edge"><div class="ftitle">Anagógico</div><div class="fsub">O que antecipa do fim.</div></div>
+  </div>
+  <div class="slide-num">7 / 22</div><div class="wordmark">{{WORDMARK}}</div>
 </div>
 ```
