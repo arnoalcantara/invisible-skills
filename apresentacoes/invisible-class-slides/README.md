@@ -12,8 +12,9 @@ arranque → define os 2 dials (fidelidade + visual) + contexto + design system
      [Esboço/Ideia]        pesquisa e desenvolve a aula
   → PASSADA 1: arco da aula + sequência de tipos de slide = PLANO  ◀── Output 1
   → APROVAÇÃO do usuário  (portão obrigatório)
-  → PASSADA 2: instancia cada slide (ficha do tipo + 13 leis)
-  → RENDER em HTML auto-contido  ◀── Output 2
+  → PASSADA 2: instancia cada slide (ficha do tipo + 13 leis + composição visual)
+  → DIREÇÃO DE ARTE: compõe e revisa cada slide (preenche o quadro, foco, grid)
+  → RENDER em HTML auto-contido (base de composição + skin do brand)  ◀── Output 2
 ```
 
 - **Output 1 — Plano (storyboard):** a arquitetura da aula slide-a-slide. Fonte da verdade. Aprovado antes de qualquer render.
@@ -27,7 +28,8 @@ invisible-class-slides/
 ├── README.md
 ├── CLAUDE.md
 ├── design-systems/
-│   └── invisible.md                 # design system padrão (extensível: 1 .md por tema/curso)
+│   ├── _base.md                     # camada de composição compartilhada (estrutura + player, só via vars)
+│   └── invisible.md                 # skin padrão (tokens da marca; extensível: 1 .md por tema/curso)
 └── skills/invisible-class-slides/
     ├── SKILL.md                     # orquestrador fino (dials, 2 passadas, 2 outputs)
     └── references/
@@ -36,6 +38,7 @@ invisible-class-slides/
         ├── tipologia.md             # 8 famílias, ~47 tipos de slide (TOC + links)
         ├── fichas/                  # uma ficha executável por tipo
         ├── producao-visual.md       # roteamento de imagem, 4 modos, geração agnóstica
+        ├── composicao-visual.md     # o ofício de compor o slide + checklist de direção de arte
         ├── proveniencia.md          # contrato de fidelidade à aula do professor
         └── outputs.md               # plano → aprovação → HTML
 ```
@@ -56,14 +59,14 @@ class-slides/[nome-slug]/
 
 `class-slides/` é criada no diretório de trabalho atual. Os outputs **não** são versionados no plugin — pertencem ao seu trabalho.
 
-## Como adicionar um design system
+## Como adicionar um design system (base + skin)
 
-Cada curso pode ter o seu tema visual. Para adicionar um:
+A inteligência de composição — layouts, densidade, hierarquia, grid, player — vive uma vez só na **base** (`design-systems/_base.md`), escrita só com variáveis. Cada brand é apenas o **skin**: os tokens da marca. Por isso um brand novo herda toda a composição de graça.
 
-1. Crie um `.md` em `design-systems/` (ex.: `bem-grandes.md`), seguindo o formato do `invisible.md`: paleta, tipografia, fundamentos, tabela de tipos de slide → classe CSS, **template HTML completo com o player** e instruções de uso.
-2. Pronto. A skill descobre o novo design system sozinha (`ls ../../design-systems/`) e o oferece na escolha. Não é preciso editar o SKILL.md.
+1. Copie o bloco de tokens (`:root`) de `invisible.md` para um novo `.md` em `design-systems/` (ex.: `bem-grandes.md`) e re-tematize: outra paleta, outras fontes, outro radius. Ajuste o font link, o wordmark e a tabela tipo→classe se quiser.
+2. Pronto. A skill descobre o brand sozinha (`ls ../../design-systems/`, ignorando os `_…`) e o oferece na escolha. Não precisa editar o SKILL.md nem reescrever nenhum CSS estrutural — ele vem da base.
 
-O padrão é o **Invisible** (modo escuro editorial, com piso de legibilidade de sala).
+O padrão é o **Invisible** (modo escuro editorial, com piso de legibilidade de sala). O contrato de tokens que todo skin precisa definir está no topo de `_base.md`.
 
 ## Geração de imagem (portátil)
 
