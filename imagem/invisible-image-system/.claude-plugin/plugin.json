@@ -1,0 +1,8 @@
+{
+  "name": "invisible-image",
+  "description": "Diretor de Fotografia cinematográfico. Gera imagens via Higgsfield CLI + Nano Banana 2. Decide câmera, lente, luz e post sozinho — entrega a imagem sem perguntar.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Arno Alcantara"
+  }
+}
