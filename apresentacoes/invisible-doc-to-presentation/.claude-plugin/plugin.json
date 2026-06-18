@@ -1,7 +1,7 @@
 {
   "name": "invisible-doc-to-presentation",
-  "description": "Transforma qualquer documento em uma apresentação estruturada com dois outputs: storyboard .md slide-a-slide e apresentação HTML navegável. Suporta múltiplos design systems; padrão é o da Invisible.",
-  "version": "1.0.0",
+  "description": "Transforma qualquer insumo (documento, prompt solto, briefing, transcrição, link do Drive ou texto colado) em apresentação: storyboard .md slide-a-slide e apresentação HTML navegável. Reorganiza informação fora de ordem em narrativa lógica e enriquece com dados pesquisados, citando a fonte. Suporta múltiplos design systems; padrão é o da Invisible.",
+  "version": "1.1.0",
   "author": {
     "name": "Arno Alcantara"
   }
