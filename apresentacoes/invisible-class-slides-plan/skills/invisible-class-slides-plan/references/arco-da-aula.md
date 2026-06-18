@@ -52,8 +52,8 @@ Trabalho de *designer instrucional*, não de diagramador:
 
 O resultado é o storyboard slide-a-slide — o **PLANO**, que o usuário aprova. É a fonte da verdade.
 
-### Passada 2 — Instanciação → o RENDER (Output 2)
-Só depois da aprovação. Preencher cada slide do plano: abrir a **ficha** do tipo, aplicar as **13 leis** e o conteúdo concreto, resolver o visual e renderizar. Detalhes no SKILL.md e em [outputs.md](outputs.md).
+### Passada 2 — Instanciação (dentro do plano)
+Acontece na própria Passada 1, ao escrever cada bloco do plano: abrir a **ficha** do tipo, aplicar as **13 leis**, fixar o conteúdo concreto e **declarar** a intenção visual no campo `Visual:`. O resultado é o plano completo no contrato `slides-plan` v1 ([slides-plan-spec.md](slides-plan-spec.md)). O **render em HTML** é um passo posterior, feito por outro plugin (`invisible-slides-plan-visual`) a partir do plano aprovado — não acontece aqui.
 
 > **Por que separar.** Na Passada 1 você pensa na aula como um todo — o fio, o ritmo, os respiros. Na Passada 2 você pensa em cada slide como um artefato. Misturar as duas leva a otimizar slides lindos que não formam uma aula. Sem a Passada 1, o deck vira lista; com ela, ganha espinha (lei 13).
 
@@ -72,4 +72,4 @@ Só depois da aprovação. Preencher cada slide do plano: abrir a **ficha** do t
 - [filosofia.md](filosofia.md) — as leis 12 (processamento ativo) e 13 (espinha narrativa) vivem aqui.
 - [tipologia.md](tipologia.md) — a sequência de tipos da Passada 1 sai da tipologia, escolhida por função.
 - [proveniencia.md](proveniencia.md) — o mapa de proveniência é uma sub-etapa da Passada 1 no Modo Transcrição.
-- [outputs.md](outputs.md) — o plano (Passada 1) é o Output 1; o render (Passada 2) é o Output 2.
+- [slides-plan-spec.md](slides-plan-spec.md) — o formato em que a Passada 1 escreve o plano (o output desta skill); o render derivado é responsabilidade do `invisible-slides-plan-visual`.

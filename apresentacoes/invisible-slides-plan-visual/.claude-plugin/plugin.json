@@ -1,0 +1,8 @@
+{
+  "name": "invisible-slides-plan-visual",
+  "description": "Renderizador genérico de slides: transforma um PLANO de slides (contrato slides-plan v1) numa apresentação HTML auto-contida, linda de projetar em tela cheia — navegação por teclado, builds (revelação progressiva), notas do apresentador, fullscreen, escala responsiva. Consome o plano da invisible-class-slides-plan e também storyboards da invisible-doc-to-presentation. Suporta múltiplos design systems; padrão é o da Invisible.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Arno Alcantara"
+  }
+}

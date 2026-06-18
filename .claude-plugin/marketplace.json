@@ -15,9 +15,14 @@
       "description": "Transforma qualquer documento em apresentação: produz storyboard .md slide-a-slide e HTML navegável. Suporta múltiplos design systems; padrão é o da Invisible."
     },
     {
-      "name": "invisible-class-slides",
-      "source": "./apresentacoes/invisible-class-slides",
-      "description": "Transforma transcrição, roteiro ou esboço de aula em apresentação didática para projeção ao vivo, regida pela ciência da aprendizagem. Entrega um plano slide-a-slide para aprovação e depois um HTML auto-contido com builds. Suporta múltiplos design systems; padrão é o da Invisible."
+      "name": "invisible-class-slides-plan",
+      "source": "./apresentacoes/invisible-class-slides-plan",
+      "description": "Metade didática da criação de slides de aula: transforma transcrição, roteiro ou esboço de aula num PLANO de slides (contrato slides-plan v1) regido pela ciência da aprendizagem. Emite semântica didática, nunca HTML — o render é feito pela invisible-slides-plan-visual."
+    },
+    {
+      "name": "invisible-slides-plan-visual",
+      "source": "./apresentacoes/invisible-slides-plan-visual",
+      "description": "Renderizador genérico de slides: transforma um PLANO (contrato slides-plan v1) numa apresentação HTML auto-contida com builds, notas, fullscreen e escala responsiva. Consome o plano da invisible-class-slides-plan e storyboards da invisible-doc-to-presentation. Suporta múltiplos design systems; padrão é o da Invisible."
     }
   ]
 }

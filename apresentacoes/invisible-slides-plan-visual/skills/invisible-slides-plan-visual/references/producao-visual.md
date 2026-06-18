@@ -81,7 +81,8 @@ O style bible também orienta o Modo 0: a paleta e a tipografia vêm do **design
 
 ## Cruzamento com os outros módulos
 
-- [filosofia.md](filosofia.md) — leis 3 (carga mínima), 4 (hierarquia/ponto focal), 7 (rótulo junto) e 10 (espaço em branco) governam o que entra como imagem.
-- [tipologia.md](tipologia.md) — cada ficha traz o campo "decisão visual (roteamento)": o modo default daquele tipo e quando manda (ou não) para gerador.
-- [outputs.md](outputs.md) — o Modo 0 é HTML/CSS/SVG puro, que vive nativo no render HTML.
-- O design system em `../../design-systems/[sistema].md` é a fonte da paleta, tipografia e tipos de slide.
+- [slides-plan-spec.md](slides-plan-spec.md) — o campo `Visual:` do plano (Modo 0-3 + intenção) é o que este documento ensina a tratar.
+- [tipo-layout-map.md](tipo-layout-map.md) — a classe de slide escolhida (ex.: `.slide-chart`, `.slide-image`) condiciona o tratamento visual.
+- O design system em `../../design-systems/[sistema].md` é a fonte da paleta, tipografia e tipos de slide; o Modo 0 (HTML/CSS/SVG puro) vive nativo no render. O style bible de imagem deve concordar com ele.
+
+> **Nota de proveniência.** Este documento veio do plugin antigo `invisible-class-slides`, que misturava didática e visual. As leis citadas no corpo (carga mínima, ponto focal, rótulo junto, espaço em branco) vivem agora no lado didático (`invisible-class-slides-plan/references/filosofia.md`); aqui funcionam como princípios de bom render, não como dependência de arquivo.

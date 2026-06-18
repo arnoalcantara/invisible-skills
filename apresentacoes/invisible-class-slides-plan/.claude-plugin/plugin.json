@@ -1,0 +1,8 @@
+{
+  "name": "invisible-class-slides-plan",
+  "description": "Designer instrucional: transforma transcrição, roteiro ou esboço de aula em um PLANO de slides (storyboard slide-a-slide) regido pela ciência da aprendizagem (carga cognitiva, multimídia de Mayer, asserção-evidência). Emite o contrato slides-plan v1 — semântica didática, nunca HTML. O render visual é feito pelo plugin invisible-slides-plan-visual.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Arno Alcantara"
+  }
+}

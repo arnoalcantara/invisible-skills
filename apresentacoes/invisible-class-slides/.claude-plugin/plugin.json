@@ -1,8 +1,0 @@
-{
-  "name": "invisible-class-slides",
-  "description": "Transforma transcrição, roteiro ou esboço de aula em apresentação didática para o professor projetar ao vivo numa turma, regida pela ciência da aprendizagem (carga cognitiva, multimídia de Mayer, asserção-evidência). Entrega primeiro um PLANO de slides para aprovação; depois renderiza em HTML auto-contido. Suporta múltiplos design systems; padrão é o da Invisible.",
-  "version": "1.3.0",
-  "author": {
-    "name": "Arno Alcantara"
-  }
-}
