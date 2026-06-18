@@ -43,7 +43,7 @@ Todo plano começa com:
 | Campo | Você | Como |
 |---|---|---|
 | **título-asserção** | honra | vira o `<h2>` / título do slide |
-| **Família / Tipo** | **honra (load-bearing)** | chave da tabela [tipo-layout-map.md](tipo-layout-map.md) → classe CSS. Desconhecido → fallback `.slide-content` + comentário |
+| **Família / Tipo** | **honra (load-bearing)** | chave da tabela [tipo-layout-map.md](tipo-layout-map.md) → classe CSS. Desconhecido → fallback `s-conteudo` + comentário |
 | **Função no arco** | **ignora** | didático; não afeta pixel |
 | **Proveniência** | **ignora** | contrato de fidelidade do lado didático; não afeta pixel |
 | **Build** | **honra** | `revela em N etapas` → elementos `class="fragment"`, um por etapa, na ordem. `estático` → sem fragments |

@@ -11,7 +11,7 @@ O **renderizador genérico** de slides. Pega um PLANO de slides (contrato `slide
 1. **Skill fina, visual nos design systems.** A skill orquestra (intake, mapeamento, render) e **aponta** para as references e o design system. Não embuta CSS nem template no SKILL.md; consome o design system escolhido. Mantenha o SKILL.md < 500 linhas.
 2. **O design system manda no visual.** A aparência (cores, tipografia, classes de slide, template HTML, player) vive no design system e é seguida à risca. **Escala refinada sempre** — inflar a tipografia foi o erro do plugin antigo; não repita.
 3. **Fidelidade ao plano.** Renderize o que o plano diz. Não reescreva conteúdo, não reordene slides, não "melhore" o argumento — isso é decisão do plano (didática), não do renderizador.
-4. **Genérico, nunca quebra.** Tipo desconhecido → fallback `.slide-content` + comentário HTML. Qualquer plano no contrato v1 renderiza, venha de aula ou não.
+4. **Genérico, nunca quebra.** Tipo desconhecido → fallback `s-conteudo` + comentário HTML. Qualquer plano no contrato v1 renderiza, venha de aula ou não.
 5. **Não inventar dado.** Gráfico com número real é renderizado de verdade (SVG/código), **nunca** "desenhado" por modelo de imagem.
 6. **HTML auto-contido.** Um único arquivo, sem dependências além de Google Fonts via CDN. Nunca entregar HTML quebrado.
 
@@ -30,7 +30,7 @@ O contrato `slides-plan` v1 é a keystone entre os dois plugins. A mesma spec vi
 ## Design systems (extensível)
 
 - Vivem em `design-systems/`, na raiz do plugin. A skill os referencia a partir de `../../design-systems/` (dois níveis acima de `skills/invisible-slides-plan-visual/`) e confirma o caminho com `ls ../../design-systems/` antes de ler. **Mantenha esse padrão** — é o mesmo dos plugins `invisible-copy` e `invisible-doc-to-presentation` e funciona quando o plugin está instalado em outra máquina. Não troque por caminho absoluto nem variável no corpo em prosa do SKILL.md.
-- O `invisible.md` deste plugin foi derivado do design system da `invisible-doc-to-presentation` (a escala editorial aprovada), estendido com 5 layouts didáticos (timeline, chart, image, prompt, divider) na **mesma escala refinada** e com um player que suporta **builds** (`fragment`). Há um comentário de proveniência no topo do arquivo — em mudança de marca, sincronize manualmente com a fonte.
+- O `invisible.md` deste plugin **adota integralmente** a inteligência visual da `invisible-doc-to-presentation` (a versão oficial testada): paleta, tipografia, escala, o sistema de classes `s-*` e o template. É um **sistema misto** (cada tipo decide fundo claro/escuro; o claro recebe a classe `light`), não um modo escuro fixo. Sobre essa base estão acopladas as extensões da aula: o player com **builds** (`fragment`) e 5 layouts didáticos extras (`s-timeline`, `s-chart`, `s-image`, `s-prompt`, `s-divider`) desenhados na **mesma escala e linguagem** `s-`. **Não alterar a lógica visual oficial — só acrescentar.** Há um comentário de proveniência no topo do arquivo; em mudança de marca, sincronize manualmente com a fonte (`invisible-doc-to-presentation/design-systems/invisible.md`).
 - Adicionar um novo: criar um `.md` em `design-systems/` no formato do `invisible.md` (paleta, tipografia, fundamentos, tabela tipo→classe, template HTML completo com player, instruções). A skill o descobre sozinha — não é preciso editar o SKILL.md. Padrão = `invisible`.
 
 ## Geração de imagem (portabilidade)

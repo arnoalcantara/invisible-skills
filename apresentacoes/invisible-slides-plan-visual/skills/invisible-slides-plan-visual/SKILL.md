@@ -54,7 +54,7 @@ intake → lê o plano + escolhe design system + confirma slug/pasta
 
 Para cada slide do plano, resolva três coisas:
 
-1. **Tipo → classe CSS.** Use a tabela [references/tipo-layout-map.md](references/tipo-layout-map.md) para mapear o `Família / Tipo` do slide à classe do design system. **Tipo desconhecido → fallback `.slide-content`** + comentário HTML `<!-- tipo não mapeado: X -->`. Nunca quebre por um tipo fora do vocabulário.
+1. **Tipo → classe CSS.** Use a tabela [references/tipo-layout-map.md](references/tipo-layout-map.md) para mapear o `Família / Tipo` do slide à classe do design system. **Tipo desconhecido → fallback `s-conteudo`** + comentário HTML `<!-- tipo não mapeado: X -->`. Nunca quebre por um tipo fora do vocabulário.
 2. **Build → fragments.** Se o campo `Build:` diz "revela em N etapas", marque os elementos correspondentes com `class="fragment"` (uma classe por etapa, na ordem). `estático` → sem fragments.
 3. **Visual → modo de imagem.** Leia o campo `Visual:` (Modo 0-3 + intenção). Decida o tratamento seguindo [references/producao-visual.md](references/producao-visual.md). A maioria resolve em **Modo 0** (HTML/CSS/SVG).
 
@@ -67,7 +67,7 @@ Para cada slide do plano, resolva três coisas:
 3. **Implemente os builds** marcando `class="fragment"` onde o plano pediu.
 4. **Produção visual** (quando o slide pede imagem): siga [references/producao-visual.md](references/producao-visual.md). **Gráfico com dado real nunca vai a modelo de imagem** — renderize o chart de verdade em SVG/código dentro de `.chart-area`. Geração por IA só nos Modos 2/3 e só se houver gerador conectado (senão, fallback Modo 0/1 — avise o usuário).
 5. **Preencha o array `notes`** com as `Notas do professor:` do plano, uma string por slide, na ordem.
-6. **HTML auto-contido** — um único arquivo. Nunca entregue HTML quebrado; se preciso, gere por partes e valide. Cada slide termina com `slide-num` e `wordmark`.
+6. **HTML auto-contido** — um único arquivo. Nunca entregue HTML quebrado; se preciso, gere por partes e valide. Cada slide termina com `slide-num` (`N / T`) e o selo da marca (`logo-invisible`), conforme o template do design system.
 
 Salve em `[pasta-do-plano]/[nome-slug].html`. Confirme ao usuário o arquivo e onde foi salvo.
 
@@ -78,6 +78,6 @@ Salve em `[pasta-do-plano]/[nome-slug].html`. Confirme ao usuário o arquivo e o
 - **Fidelidade ao plano.** Renderize o que o plano diz. Não reescreva conteúdo, não reordene slides, não "melhore" o argumento — isso é decisão do plano, não sua.
 - **Não invente conteúdo nem dado.** Faltou algo, marque `[confirmar]` e avise. Gráfico com dado real é renderizado de verdade (SVG/código), jamais "desenhado" por modelo de imagem.
 - **Escala refinada.** Use os tamanhos do design system. Inflar tipografia foi o erro que deixou a versão antiga pesada — não repita.
-- **Tipo desconhecido nunca quebra.** Fallback `.slide-content` + comentário. Genericidade é requisito: planos fora do domínio "aula" também renderizam.
+- **Tipo desconhecido nunca quebra.** Fallback `s-conteudo` + comentário. Genericidade é requisito: planos fora do domínio "aula" também renderizam.
 - **Portabilidade de MCP:** nunca referencie um ID de servidor MCP específico (ex.: `mcp__<hash>__...`). Descubra ferramentas de geração de imagem em runtime; sem gerador, caia para Modo 0/1.
 - **HTML é derivado do plano.** Nunca gere export convertendo o HTML; sempre do plano.
