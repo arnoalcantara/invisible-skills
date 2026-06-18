@@ -38,9 +38,15 @@ PLURAIS = {
     "INTRODUCAO": "INTRODUCOES",
     "CONCLUSAO": "CONCLUSOES",
     "PROVA": "PROVAS",
+    "PROVA SOCIAL": "PROVAS SOCIAIS",
     "OFERTA": "OFERTAS",
     "BONUS": "BONUS",
+    "LEAD": "LEADS",
+    "VIRADA": "VIRADAS",
 }
+
+# Palavras que não flexionam (preposições/artigos no meio de seções compostas).
+INVARIAVEIS = {"DE", "DA", "DO", "DOS", "DAS", "E", "A", "O", "AO", "PARA", "COM", "EM"}
 
 
 def desescapar_md(texto):
@@ -48,20 +54,40 @@ def desescapar_md(texto):
     return re.sub(r"\\([\[\]!*_().#+\-])", r"\1", texto)
 
 
+def pluralizar_palavra(p):
+    """Plural PT-BR de uma única palavra (heurística)."""
+    if p in INVARIAVEIS:
+        return p
+    if p.endswith("ÃO"):
+        return p[:-2] + "ÕES"
+    if p.endswith("AO"):
+        return p[:-2] + "OES"
+    if p.endswith(("R", "Z")):
+        return p + "ES"
+    if p.endswith("IL"):
+        return p[:-2] + "IS"                       # FUNIL→FUNIS
+    if p.endswith(("AL", "EL", "OL", "UL")):
+        return p[:-1] + "IS"                       # SOCIAL→SOCIAIS, FINAL→FINAIS
+    if p.endswith("S"):
+        return p                                    # já plural/invariável (BONUS)
+    return p + "S"
+
+
 def pluralizar(nome):
     n = nome.upper().strip()
     if n in PLURAIS:
         return PLURAIS[n]
-    # heurística simples PT-BR
-    if n.endswith("ÃO"):
-        return n[:-2] + "ÕES"
-    if n.endswith("AO"):
-        return n[:-2] + "OES"
-    if n.endswith(("R", "S", "Z")):
-        return n + "ES"
-    if n.endswith("L"):
-        return n[:-1] + "IS"
-    return n + "S"
+    palavras = n.split()
+    if len(palavras) == 1:
+        return pluralizar_palavra(n)
+    # Composta. Se há preposição, só o núcleo antes dela flexiona
+    # (VIRADA DE CHAVE → VIRADAS DE CHAVE). Senão, todas flexionam
+    # (PROVA SOCIAL → PROVAS SOCIAIS), pois aí são substantivo+adjetivo.
+    idx_prep = next((i for i, p in enumerate(palavras) if p in INVARIAVEIS), None)
+    if idx_prep is not None:
+        nucleo = [pluralizar_palavra(p) for p in palavras[:idx_prep]]
+        return " ".join(nucleo + palavras[idx_prep:])
+    return " ".join(pluralizar_palavra(p) for p in palavras)
 
 
 def eh_header(linha):
