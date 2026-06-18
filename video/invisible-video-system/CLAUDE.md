@@ -24,7 +24,8 @@ de propósito — é onde futuras skills de vídeo entram (legendagem, montagem,
 
 Em `skills/invisible-video-bruto-desmembrador/scripts/`:
 
-- `bootstrap.py` — detecta/instala ffmpeg (brew) e WhisperX (uv venv por projeto). Idempotente.
+- `bootstrap.py` — detecta/instala ffmpeg (brew) e WhisperX (uv venv por projeto); detecta se
+  o modelo já está no cache HF (`modelo_pronto`) para não avisar download à toa. Idempotente.
 - `descobrir_pares.py` — pareia vídeo+roteiro por prefixo de nome, tolerante a sufixos.
 - `parse_roteiro.py` — extrai seções e frases-âncora; ignora marcação de palco.
 - `transcrever.py` — WhisperX com cache (JSON por vídeo, chave nome+tamanho+mtime).

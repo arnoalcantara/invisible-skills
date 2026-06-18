@@ -43,6 +43,13 @@ brew; venv + WhisperX via uv). Siga as `instrucoes` que vierem no JSON se algo n
 ser instalado automaticamente. O venv do WhisperX é **por projeto**, em
 `.transcricao/.wxenv` dentro da pasta do projeto.
 
+**Modelo já baixado?** O JSON traz `modelo_pronto` e o bloco `modelo` (com `asr` e
+`alinhamento_pt`). Se `modelo_pronto: true`, o usuário **já tem** o modelo no cache do
+Hugging Face — **não avise sobre download nem demora de baixar** na transcrição. Só se
+`modelo_pronto: false` é que a 1ª transcrição baixa (~1.5GB o ASR) — aí sim avise. O
+WhisperX usa o cache HF padrão automaticamente; não há o que configurar quando o modelo
+já existe.
+
 ---
 
 ## O fluxo (com pontos de confirmação)
@@ -84,7 +91,9 @@ python3 scripts/transcrever.py <video> \
 
 Extrai áudio mono 16k e roda WhisperX (`large-v3`, `pt`, `cpu`, `int8`). Cacheia o JSON
 por nome+tamanho+mtime; em re-execução com o mesmo arquivo, não re-transcreve
-(`"cacheado": true`). A 1ª vez baixa o modelo e demora; avise o usuário.
+(`"cacheado": true`). Se o bootstrap reportou `modelo_pronto: false`, a 1ª transcrição
+baixa o modelo e demora — avise. Se `modelo_pronto: true`, não há download; é só o tempo
+de transcrição em si (CPU).
 
 ### 4. Achar as bordas — `achar_bordas.py` (o coração)
 
