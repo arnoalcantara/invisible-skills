@@ -23,6 +23,11 @@
       "name": "invisible-slides-plan-visual",
       "source": "./apresentacoes/invisible-slides-plan-visual",
       "description": "Renderizador genérico de slides: transforma um PLANO (contrato slides-plan v1) numa apresentação HTML auto-contida com builds, notas, fullscreen e escala responsiva. Consome o plano da invisible-class-slides-plan e storyboards da invisible-doc-to-presentation. Suporta múltiplos design systems; padrão é o da Invisible."
+    },
+    {
+      "name": "invisible-video-system",
+      "source": "./video/invisible-video-system",
+      "description": "Desmembra vídeos brutos em cortes por seção do roteiro (gancho, desenvolvimento, CTA...). Transcreve com WhisperX, casa roteiro×transcrição×silêncio para achar bordas precisas, recodifica preservando specs e salva cada seção em pasta própria."
     }
   ]
 }

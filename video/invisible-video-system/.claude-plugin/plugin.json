@@ -1,0 +1,8 @@
+{
+  "name": "invisible-video-system",
+  "description": "Sistema de vídeo da Invisible. Skill invisible-video-bruto-desmembrador: desmembra vídeos brutos em cortes por seção do roteiro (gancho, desenvolvimento, CTA...), transcrevendo com WhisperX, casando roteiro×transcrição×silêncio para achar bordas precisas, recodificando preservando specs e salvando cada seção em pasta própria.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Arno Alcantara"
+  }
+}
