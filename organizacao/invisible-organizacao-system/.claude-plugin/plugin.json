@@ -1,0 +1,8 @@
+{
+  "name": "invisible-organizacao",
+  "description": "Sistema de organização de pastas de empresa pelo método PARA (Tiago Forte) + forma numerada (Jeff Su). Classifica cada item por acionabilidade, propõe um plano de movimentação e aplica com reversibilidade (manifesto + reversor).",
+  "version": "1.0.0",
+  "author": {
+    "name": "Arno Alcantara"
+  }
+}

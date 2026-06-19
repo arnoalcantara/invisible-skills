@@ -28,6 +28,11 @@
       "name": "invisible-video-system",
       "source": "./video/invisible-video-system",
       "description": "Desmembra vídeos brutos em cortes por seção do roteiro (gancho, desenvolvimento, CTA...). Transcreve com WhisperX, casa roteiro×transcrição×silêncio para achar bordas precisas, recodifica preservando specs e salva cada seção em pasta própria."
+    },
+    {
+      "name": "invisible-organizacao",
+      "source": "./organizacao/invisible-organizacao-system",
+      "description": "Reorganiza pastas de empresa pelo sistema PARA (Tiago Forte) + forma numerada (Jeff Su): classifica cada item por acionabilidade, propõe plano de movimentação e aplica com reversibilidade (manifesto + reversor)."
     }
   ]
 }
