@@ -31,9 +31,10 @@ saída pronta pra concatenar. Sem --normalizar, preserva as specs do original.
 
 Uso:
     python3 otimizar.py <arquivo_ou_pasta> [--out-dir <dir>]
-        [--silence-noise -35dB] [--silence-min 0.3]
-        [--modo conservador|justo]   # preset de respiro (0.10/0.25 ou 0.05/0.18)
-        [--respiro-entrada 0.10] [--respiro-saida 0.25]   # sobrepõem o --modo
+        [--modo-silencio conservador|justo]  # -35dB/0.3s ou -33dB/0.15s
+        [--silence-noise -35dB] [--silence-min 0.3]   # sobrepõem o --modo-silencio
+        [--modo-respiro conservador|justo]   # respiro 0.10/0.25 ou 0.05/0.18
+        [--respiro-entrada 0.10] [--respiro-saida 0.25]   # sobrepõem o --modo-respiro
         [--descartar "12.30-18.90,40.10-45.00"]
         [--crf 20] [--preset medium]
         [--normalizar --largura 1080 --altura 1920 --fps 30
@@ -50,14 +51,25 @@ import sys
 
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".avi", ".webm"}
 
-# Modos de corte = preset de respiro (entrada/saída em segundos).
-#   conservador: o critério validado em sessão real — preserva mais cauda/ataque.
-#   justo: corte mais apertado em ambas as pontas (ritmo mais seco).
-# Ambos assimétricos (saída > entrada): o fim da palavra decai suave e precisa de
-# mais margem que o início, que tem ataque alto.
-MODOS = {
+# DOIS eixos de modo, INDEPENDENTES (não se acoplam):
+#
+# 1) Respiro = margem deixada nas bordas da fala (entrada/saída em segundos).
+#    conservador: o critério validado em sessão real — preserva mais cauda/ataque.
+#    justo: margem menor nas duas pontas (ritmo mais seco).
+#    Ambos assimétricos (saída > entrada): o fim da palavra decai suave e precisa
+#    de mais margem que o início, que tem ataque alto.
+MODOS_RESPIRO = {
     "conservador": {"entrada": 0.10, "saida": 0.25},
     "justo": {"entrada": 0.05, "saida": 0.18},
+}
+# 2) Silêncio = o que conta como silêncio cortável (limiar de nível + duração mín).
+#    conservador: -35dB / 0.3s — fala fraca (decrescendo final) ainda é tratada
+#    como fala; só pausa de 0.3s+ é cortada.
+#    justo: -33dB / 0.15s — limiar mais alto pega mais coisa como silêncio e a
+#    duração menor corta pausas mais curtas. Mais agressivo.
+MODOS_SILENCIO = {
+    "conservador": {"noise": "-35dB", "min": 0.3},
+    "justo": {"noise": "-33dB", "min": 0.15},
 }
 
 RE_START = re.compile(r"silence_start:\s*([\d.]+)")
@@ -327,12 +339,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("entrada", help="arquivo de vídeo OU pasta (lote)")
     ap.add_argument("--out-dir", help="pasta de saída (padrão: OTIMIZADOS/ ao lado)")
-    ap.add_argument("--silence-noise", default="-35dB")
-    ap.add_argument("--silence-min", type=float, default=0.3)
-    ap.add_argument("--modo", choices=list(MODOS), default="conservador",
-                    help="preset de respiro: conservador (0.10/0.25, validado) "
+    ap.add_argument("--modo-silencio", choices=list(MODOS_SILENCIO),
+                    default="conservador",
+                    help="o que conta como silêncio: conservador (-35dB/0.3s, "
+                         "validado) ou justo (-33dB/0.15s, mais agressivo)")
+    # se passados, sobrepõem o preset do --modo-silencio.
+    ap.add_argument("--silence-noise", default=None)
+    ap.add_argument("--silence-min", type=float, default=None)
+    ap.add_argument("--modo-respiro", choices=list(MODOS_RESPIRO),
+                    default="conservador",
+                    help="margem nas bordas: conservador (0.10/0.25, validado) "
                          "ou justo (0.05/0.18, corte mais apertado)")
-    # se passados, sobrepõem o preset do --modo (ponta a ponta, em segundos).
+    # se passados, sobrepõem o preset do --modo-respiro (ponta a ponta, em segundos).
     ap.add_argument("--respiro-entrada", type=float, default=None)
     ap.add_argument("--respiro-saida", type=float, default=None)
     ap.add_argument("--descartar", default="",
@@ -354,11 +372,16 @@ def main():
     ap.add_argument("--canais", type=int, default=2)
     args = ap.parse_args()
 
-    # respiro: o --modo define o preset; --respiro-* explícito sobrepõe ponta a ponta.
+    # respiro: o --modo-respiro define o preset; --respiro-* sobrepõe ponta a ponta.
     resp_in = args.respiro_entrada if args.respiro_entrada is not None \
-        else MODOS[args.modo]["entrada"]
+        else MODOS_RESPIRO[args.modo_respiro]["entrada"]
     resp_out = args.respiro_saida if args.respiro_saida is not None \
-        else MODOS[args.modo]["saida"]
+        else MODOS_RESPIRO[args.modo_respiro]["saida"]
+    # silêncio: o --modo-silencio define o preset; --silence-* sobrepõe cada um.
+    noise = args.silence_noise if args.silence_noise is not None \
+        else MODOS_SILENCIO[args.modo_silencio]["noise"]
+    smin = args.silence_min if args.silence_min is not None \
+        else MODOS_SILENCIO[args.modo_silencio]["min"]
 
     # parse de --descartar "ini-fim,ini-fim"
     descartar = []
@@ -408,13 +431,15 @@ def main():
     resultados = []
     for v in videos:
         resultados.append(otimizar_um(
-            v, out_dir, args.silence_noise, args.silence_min,
+            v, out_dir, noise, smin,
             resp_in, resp_out, args.crf, args.preset,
             alvo, descartar))
 
     saida_json = {"out_dir": out_dir, "resultados": resultados, "alvo": alvo,
-                  "modo": args.modo,
-                  "respiros": {"entrada": resp_in, "saida": resp_out}}
+                  "modo_respiro": args.modo_respiro,
+                  "respiros": {"entrada": resp_in, "saida": resp_out},
+                  "modo_silencio": args.modo_silencio,
+                  "silencio": {"noise": noise, "min": smin}}
     if aviso_lote:
         saida_json["aviso"] = aviso_lote
     print(json.dumps(saida_json, ensure_ascii=False, indent=2))

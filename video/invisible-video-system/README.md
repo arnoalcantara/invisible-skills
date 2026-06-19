@@ -73,9 +73,10 @@ transcreve com WhisperX, agrupa as repetições pelo texto e fica com a **últim
 **normaliza o formato** (resolução/fps/códec/áudio), entregando o corte pronto pra
 concatenar. Aceita arquivo único ou pasta (lote). Invocada como `/invisible-video-otimizador`.
 
-Critério de silêncio validado: trecho **≥0.3s** abaixo de **-35dB**; **respiro assimétrico**
-em dois modos à escolha — **conservador** 0.10/0.25 (default) ou **justo** 0.05/0.18 (corte
-mais seco); preserva ataque e cauda da fala; só silêncios
+Dois eixos de modo independentes, cada um **conservador** (default, validado) ou **justo**:
+**modo de silêncio** (o que conta como silêncio — conservador -35dB/0.3s, justo -33dB/0.15s)
+e **modo de respiro** (margem nas bordas, assimétrica — conservador 0.10/0.25, justo
+0.05/0.18). Preserva ataque e cauda da fala; só silêncios
 internos; corte ao frame exato. Verifica o resultado com `silencedetect`. Salva em
 `OTIMIZADOS/` com nome limpo `<TIPO>_<ID>_OTIMIZADO.<ext>` (mantém rótulo + código, descarta `BRUTA` e ruído). O porquê de cada número (e o critério
 de seleção de takes) está em `skills/invisible-video-otimizador/referencia/METODO.md`.

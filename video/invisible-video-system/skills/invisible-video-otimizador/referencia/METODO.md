@@ -25,15 +25,18 @@ Os intervalos de descarte são **subtraídos dos segmentos a manter** antes de m
 - **Por arquivo.** Cada vídeo tem seus próprios intervalos; não roda em lote (`--descartar` vale só pra arquivo único).
 - **Ganchos com repetição legítima.** Se a fala genuinamente repete uma frase (ênfase retórica), os parâmetros `--gap`/`--sim` podem agrupar errado. O relatório existe pra pegar isso a olho.
 
-## 1. Detecção de silêncio: -35dB, 0.3s
+## 1. Detecção de silêncio (modos conservador -35dB/0.3s e justo -33dB/0.15s)
 
-`silencedetect=noise=-35dB:d=0.3` — silêncio = trecho **≥ 0.3s** abaixo de **-35dB**. O `d` é a duração **mínima** pra contar como silêncio: pausa de 0.3s ou mais entra pro corte; pausa menor fica intacta.
+`silencedetect=noise=<X>dB:d=<T>` — silêncio = trecho **≥ T** abaixo de **X dB**. O `d` é a duração **mínima** pra contar como silêncio: pausa de T+ entra pro corte; pausa menor fica intacta. Os dois números viram um **preset escolhido na hora** (`--modo-silencio`), independente do modo de respiro:
 
-### Por que -35dB e não -30
-A -30dB, a palavra final dita baixo caía como silêncio e era cortada. O professor naturalmente faz um **decrescendo** no fim da frase — a última sílaba sai fraca. A -30 esse final fraco é confundido com silêncio. **-35dB trata fala fraca como fala**, preservando o fim da frase. Mais permissivo que isso (ex.: -40) começa a deixar passar pausa real como se fosse fala.
+- **`conservador`** (default): **-35dB / 0.3s**. O critério validado.
+- **`justo`**: **-33dB / 0.15s**. Limiar mais alto = mais coisa cai como silêncio; duração menor = corta pausas mais curtas. Mais agressivo, com risco de raspar fala fraca (vale o aviso ao usuário).
 
-### Por que 0.3s de duração mínima
-Começou em 0.5s. Apertado para **0.3s** (jun/2026): 0.5s deixava passar pausas mortas curtas que arrastavam o ritmo; 0.3s isola mais pausa morta sem ainda comer a respiração natural da fala (que fica abaixo de 0.3s). Abaixo de 0.3s o corte começa a ficar afobado e robótico.
+### Por que -35dB e não -30 (no conservador)
+A -30dB, a palavra final dita baixo caía como silêncio e era cortada. O professor naturalmente faz um **decrescendo** no fim da frase — a última sílaba sai fraca. A -30 esse final fraco é confundido com silêncio. **-35dB trata fala fraca como fala**, preservando o fim da frase. Mais permissivo que isso (ex.: -40) começa a deixar passar pausa real como se fosse fala. O modo `justo` aceita -33 (um passo na direção do agressivo) porque troca esse risco por ritmo mais seco — escolha do usuário, não default.
+
+### Por que 0.3s de duração mínima (no conservador)
+Começou em 0.5s. Apertado para **0.3s** (jun/2026): 0.5s deixava passar pausas mortas curtas que arrastavam o ritmo; 0.3s isola mais pausa morta sem ainda comer a respiração natural da fala (que fica abaixo de 0.3s). Abaixo de 0.3s o corte começa a ficar afobado e robótico — por isso 0.15s é o modo `justo`, não o default.
 
 ## 2. Respiro assimétrico (modos conservador 0.10/0.25 e justo 0.05/0.18)
 
@@ -43,7 +46,7 @@ Ao reconstruir os trechos de fala, cada um ganha uma margem (respiro) nas bordas
 - **Saída 0.25s** (depois de o trecho terminar, em `silence_start`): fim de palavra **decai suave** — a cauda baixa de um "S", de uma vogal átona, do decrescendo final. Precisa de mais margem ou come a consoante final.
 
 ### Dois modos: conservador e justo
-O respiro vira um **preset escolhido na hora** (`--modo`), não um número fixo:
+O respiro vira um **preset escolhido na hora** (`--modo-respiro`), não um número fixo:
 
 - **`conservador`** (default) — 0.10s entrada / 0.25s saída. Os números validados acima, com folga: prioriza não mutilar palavra, ao custo de deixar respiros um pouco mais longos.
 - **`justo`** — 0.05s entrada / 0.18s saída. Aperta as duas pontas para um ritmo mais seco, quando o usuário aceita o risco de cortes mais rentes. Continua **assimétrico** (saída > entrada) pela mesma razão física: o fim da palavra decai suave e precisa de mais margem que o início.
@@ -71,7 +74,8 @@ Pausas residuais ~0.3–0.49s são **esperadas, não erro**: são o respiro pres
 
 ## 6. Parâmetros (defaults, ajustáveis por argumento)
 - seleção de takes: **off** por padrão (só roda quando há repetição a resolver); `--gap 0.6`, `--sim 0.75`, `--min-palavras 4`.
-- `silence_noise = -35dB`, `silence_min = 0.3s`
-- `modo = conservador` (respiro 0.10s/0.25s) | `justo` (respiro 0.05s/0.18s); `--respiro-entrada`/`--respiro-saida` sobrepõem ponta a ponta
+- `modo_silencio = conservador` (-35dB / 0.3s) | `justo` (-33dB / 0.15s); `--silence-noise`/`--silence-min` sobrepõem cada um
+- `modo_respiro = conservador` (0.10s / 0.25s) | `justo` (0.05s / 0.18s); `--respiro-entrada`/`--respiro-saida` sobrepõem ponta a ponta
+- os dois eixos são **independentes** (qualquer combinação)
 - `crf = 20`, `preset = medium`
 - normalização: **off** por padrão; `--normalizar` liga, com alvo FHD vertical default.
