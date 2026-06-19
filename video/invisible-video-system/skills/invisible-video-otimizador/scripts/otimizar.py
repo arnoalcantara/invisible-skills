@@ -32,7 +32,8 @@ saída pronta pra concatenar. Sem --normalizar, preserva as specs do original.
 Uso:
     python3 otimizar.py <arquivo_ou_pasta> [--out-dir <dir>]
         [--silence-noise -35dB] [--silence-min 0.3]
-        [--respiro-entrada 0.10] [--respiro-saida 0.25]
+        [--modo conservador|justo]   # preset de respiro (0.10/0.25 ou 0.05/0.18)
+        [--respiro-entrada 0.10] [--respiro-saida 0.25]   # sobrepõem o --modo
         [--descartar "12.30-18.90,40.10-45.00"]
         [--crf 20] [--preset medium]
         [--normalizar --largura 1080 --altura 1920 --fps 30
@@ -48,6 +49,16 @@ import subprocess
 import sys
 
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".avi", ".webm"}
+
+# Modos de corte = preset de respiro (entrada/saída em segundos).
+#   conservador: o critério validado em sessão real — preserva mais cauda/ataque.
+#   justo: corte mais apertado em ambas as pontas (ritmo mais seco).
+# Ambos assimétricos (saída > entrada): o fim da palavra decai suave e precisa de
+# mais margem que o início, que tem ataque alto.
+MODOS = {
+    "conservador": {"entrada": 0.10, "saida": 0.25},
+    "justo": {"entrada": 0.05, "saida": 0.18},
+}
 
 RE_START = re.compile(r"silence_start:\s*([\d.]+)")
 RE_END = re.compile(r"silence_end:\s*([\d.]+)")
@@ -318,8 +329,12 @@ def main():
     ap.add_argument("--out-dir", help="pasta de saída (padrão: OTIMIZADOS/ ao lado)")
     ap.add_argument("--silence-noise", default="-35dB")
     ap.add_argument("--silence-min", type=float, default=0.3)
-    ap.add_argument("--respiro-entrada", type=float, default=0.10)
-    ap.add_argument("--respiro-saida", type=float, default=0.25)
+    ap.add_argument("--modo", choices=list(MODOS), default="conservador",
+                    help="preset de respiro: conservador (0.10/0.25, validado) "
+                         "ou justo (0.05/0.18, corte mais apertado)")
+    # se passados, sobrepõem o preset do --modo (ponta a ponta, em segundos).
+    ap.add_argument("--respiro-entrada", type=float, default=None)
+    ap.add_argument("--respiro-saida", type=float, default=None)
     ap.add_argument("--descartar", default="",
                     help='intervalos de takes a remover: "ini-fim,ini-fim" (segundos). '
                          "Só para arquivo único.")
@@ -338,6 +353,12 @@ def main():
     ap.add_argument("--sample-rate", default="48000")
     ap.add_argument("--canais", type=int, default=2)
     args = ap.parse_args()
+
+    # respiro: o --modo define o preset; --respiro-* explícito sobrepõe ponta a ponta.
+    resp_in = args.respiro_entrada if args.respiro_entrada is not None \
+        else MODOS[args.modo]["entrada"]
+    resp_out = args.respiro_saida if args.respiro_saida is not None \
+        else MODOS[args.modo]["saida"]
 
     # parse de --descartar "ini-fim,ini-fim"
     descartar = []
@@ -388,10 +409,12 @@ def main():
     for v in videos:
         resultados.append(otimizar_um(
             v, out_dir, args.silence_noise, args.silence_min,
-            args.respiro_entrada, args.respiro_saida, args.crf, args.preset,
+            resp_in, resp_out, args.crf, args.preset,
             alvo, descartar))
 
-    saida_json = {"out_dir": out_dir, "resultados": resultados, "alvo": alvo}
+    saida_json = {"out_dir": out_dir, "resultados": resultados, "alvo": alvo,
+                  "modo": args.modo,
+                  "respiros": {"entrada": resp_in, "saida": resp_out}}
     if aviso_lote:
         saida_json["aviso"] = aviso_lote
     print(json.dumps(saida_json, ensure_ascii=False, indent=2))

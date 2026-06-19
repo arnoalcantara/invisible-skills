@@ -35,15 +35,23 @@ A -30dB, a palavra final dita baixo caía como silêncio e era cortada. O profes
 ### Por que 0.3s de duração mínima
 Começou em 0.5s. Apertado para **0.3s** (jun/2026): 0.5s deixava passar pausas mortas curtas que arrastavam o ritmo; 0.3s isola mais pausa morta sem ainda comer a respiração natural da fala (que fica abaixo de 0.3s). Abaixo de 0.3s o corte começa a ficar afobado e robótico.
 
-## 2. Respiro assimétrico: 0.10s entrada, 0.25s saída
+## 2. Respiro assimétrico (modos conservador 0.10/0.25 e justo 0.05/0.18)
 
 Ao reconstruir os trechos de fala, cada um ganha uma margem (respiro) nas bordas para não cortar a palavra. A margem é **assimétrica de propósito**:
 
 - **Entrada 0.10s** (antes de o trecho de fala começar, após `silence_end`): início de palavra tem **ataque alto e abrupto** — 0.10s já segura o começo.
 - **Saída 0.25s** (depois de o trecho terminar, em `silence_start`): fim de palavra **decai suave** — a cauda baixa de um "S", de uma vogal átona, do decrescendo final. Precisa de mais margem ou come a consoante final.
 
+### Dois modos: conservador e justo
+O respiro vira um **preset escolhido na hora** (`--modo`), não um número fixo:
+
+- **`conservador`** (default) — 0.10s entrada / 0.25s saída. Os números validados acima, com folga: prioriza não mutilar palavra, ao custo de deixar respiros um pouco mais longos.
+- **`justo`** — 0.05s entrada / 0.18s saída. Aperta as duas pontas para um ritmo mais seco, quando o usuário aceita o risco de cortes mais rentes. Continua **assimétrico** (saída > entrada) pela mesma razão física: o fim da palavra decai suave e precisa de mais margem que o início.
+
+A assimetria é mantida nos dois modos; o que muda é o aperto global. `--respiro-entrada`/`--respiro-saida` ainda existem para sobrepor ponta a ponta quando o usuário quer um valor específico.
+
 ### Por que NÃO simétrico
-Respiro simétrico (mesmo valor dos dois lados) ou come a consoante final (se igualar pelo lado curto) ou deixa pausa demais no começo (se igualar pelo lado longo). A assimetria é o que dá ritmo enxuto **sem** mutilar palavra.
+Respiro simétrico (mesmo valor dos dois lados) ou come a consoante final (se igualar pelo lado curto) ou deixa pausa demais no começo (se igualar pelo lado longo). A assimetria é o que dá ritmo enxuto **sem** mutilar palavra — e por isso ambos os modos a preservam.
 
 ## 3. Só silêncios internos
 
@@ -64,6 +72,6 @@ Pausas residuais ~0.3–0.49s são **esperadas, não erro**: são o respiro pres
 ## 6. Parâmetros (defaults, ajustáveis por argumento)
 - seleção de takes: **off** por padrão (só roda quando há repetição a resolver); `--gap 0.6`, `--sim 0.75`, `--min-palavras 4`.
 - `silence_noise = -35dB`, `silence_min = 0.3s`
-- `respiro_entrada = 0.10s`, `respiro_saida = 0.25s`
+- `modo = conservador` (respiro 0.10s/0.25s) | `justo` (respiro 0.05s/0.18s); `--respiro-entrada`/`--respiro-saida` sobrepõem ponta a ponta
 - `crf = 20`, `preset = medium`
 - normalização: **off** por padrão; `--normalizar` liga, com alvo FHD vertical default.

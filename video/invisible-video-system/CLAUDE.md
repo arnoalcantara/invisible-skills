@@ -60,7 +60,8 @@ Em `skills/invisible-video-otimizador/scripts/`:
   descarte (a última vence). Stdlib puro, sem ffmpeg. Devolve os intervalos `descartar` +
   relatório. Não toca no vídeo.
 - `otimizar.py` — subtrai os intervalos de take descartada (via `--descartar`) dos
-  keep-segments, roda silencedetect (≥0.3s) → keep-segments com respiro assimétrico →
+  keep-segments, roda silencedetect (≥0.3s) → keep-segments com respiro assimétrico
+  (preset `--modo`: conservador 0.10/0.25 ou justo 0.05/0.18; `--respiro-*` sobrepõe) →
   filter_complex (trim/atrim+concat, com `scale+pad+setsar` opcional via `--normalizar`)
   → reencode → verifica. Descarte de take, corte de silêncio e normalização no MESMO
   reencode. Aceita arquivo ou pasta (lote); `--descartar` vale só pra arquivo único. Por

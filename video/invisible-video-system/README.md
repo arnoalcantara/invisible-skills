@@ -74,7 +74,8 @@ transcreve com WhisperX, agrupa as repetições pelo texto e fica com a **últim
 concatenar. Aceita arquivo único ou pasta (lote). Invocada como `/invisible-video-otimizador`.
 
 Critério de silêncio validado: trecho **≥0.3s** abaixo de **-35dB**; **respiro assimétrico**
-de 0.10s na entrada e 0.25s na saída (preserva ataque e cauda da fala); só silêncios
+em dois modos à escolha — **conservador** 0.10/0.25 (default) ou **justo** 0.05/0.18 (corte
+mais seco); preserva ataque e cauda da fala; só silêncios
 internos; corte ao frame exato. Verifica o resultado com `silencedetect`. Salva em
 `OTIMIZADOS/` com nome limpo `<TIPO>_<ID>_OTIMIZADO.<ext>` (mantém rótulo + código, descarta `BRUTA` e ruído). O porquê de cada número (e o critério
 de seleção de takes) está em `skills/invisible-video-otimizador/referencia/METODO.md`.
