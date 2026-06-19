@@ -37,18 +37,26 @@ mede (wav2vec2) e acerta dentro de ~40ms. Detalhe em
 
 ### `invisible-video-combinador`
 
-Combina **ganchos × desenvolvimentos** (cortes que o desmembrador produziu) para
-gerar anúncios novos — mas só os cruzamentos que fazem **sentido retórico**.
-Invocada como `/invisible-video-combinador`.
+Concatena cortes de **N segmentos** (cortes que o desmembrador produziu) numa
+**cadeia ordenada** para gerar peças novas — anúncios curtos ou VSLs. Invocada como
+`/invisible-video-combinador`.
 
-1. **Descobre** os cortes em `GANCHOS/` e `DESENVOLVIMENTOS/`.
-2. **Transcreve** cada corte com WhisperX (com cache; aqui só importa o texto).
-3. **Analisa a matriz** N×M: casa o que o gancho **promete** com o **tipo de abertura**
-   do desenvolvimento (dor, revelação, contestação, depoimento) — nunca pela forma
-   gramatical. Apresenta tabela ✅/⚠️/❌ justificada e **espera aprovação**.
-4. **Normaliza** cada corte para um alvo comum (`scale+pad+setsar=1`) e **concatena**
-   por `-c copy` (specs mistas quebrariam o concat sem isso).
-5. **Salva** em `COMBINAÇÕES/` como `GANCHO_VAV<xx>__DESENVOLVIMENTO_VAV<yy>.<ext>`.
+Os segmentos são pastas de **nome livre** e podem ser **duas ou mais**. O padrão
+Invisible é `GANCHOS/`, `DESENVOLVIMENTOS/`, `CTAS/`, mas pode ser `LEAD/`,
+`HISTORIA/`, `OFERTA/`, `FECHAMENTO/` — o que o projeto tiver. **Quem dirige é o
+usuário:** ele diz quais segmentos entram, em que ordem, quais **variam** (cruzam) e
+quais ficam **fixos/nativos** (o corte de mesmo código de origem acompanha, sem cruzar).
+
+1. **Descobre** os segmentos: toda subpasta com vídeo vira um segmento candidato
+   (sugere a ordem retórica dos nomes conhecidos). Ou recebe `--segmentos` na ordem.
+2. **Pergunta o esquema**: quais segmentos, ordem, o que varia × o que é nativo.
+3. **Transcreve** os cortes dos segmentos que variam (com cache; só o texto importa).
+4. **Julga par-a-par** cada transição variável: casa o que a peça anterior **promete**
+   com o **tipo de abertura** da seguinte — nunca pela forma gramatical. Tabela
+   ✅/⚠️/❌ justificada e **espera aprovação**.
+5. **Normaliza** cada corte para um alvo comum (`scale+pad+setsar=1`) e **concatena**
+   na ordem da cadeia por `-c copy` (specs mistas quebrariam o concat sem isso).
+6. **Salva** em `COMBINAÇÕES/`, ex.: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57__OFERTA_VAV19.<ext>`.
 
 Saída padrão: Full HD vertical (1080×1920), 30fps, HEVC, MP4. Oferece 4K, MOV,
 resolução nativa e H.264 como alternativas.

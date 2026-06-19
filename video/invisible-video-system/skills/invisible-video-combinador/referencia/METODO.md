@@ -1,39 +1,93 @@
-# Método — Combinador (gancho × desenvolvimento)
+# Método — Combinador (cadeia de segmentos)
 
 Conhecimento fechado em sessão real com o Arno. Editou aqui, mudou o comportamento da skill.
 
-## 1. Julgamento da matriz: promessa × tipo de abertura
+## 0. Modelo: segmentos N-lados, dirigido pelo usuário
 
-A regra de ouro é **casar pelo que o gancho PROMETE com o tipo de abertura do desenvolvimento — nunca pela forma gramatical do gancho.**
+A peça final é a **concatenação ordenada** de um corte de cada segmento escolhido.
+Um segmento é uma pasta de cortes. Os nomes são **livres** e os segmentos podem ser
+**dois ou mais**:
 
-- **Gancho** — classifique pela promessa/continuação que ele pede: pergunta lida em voz alta, pergunta retórica, ordem ("presta atenção nisso"), promessa de mostrar algo ("vou te mostrar a vida dos meus alunos").
-- **Desenvolvimento** — classifique pelo **tipo de abertura**: dor, revelação, contestação, prova social/depoimento.
+- Anúncio curto (padrão Invisible): `GANCHOS/` → `DESENVOLVIMENTOS/` (→ `CTAS/`).
+- VSL: `LEAD/` → `HISTORIA/` → `OFERTA/` → `FECHAMENTO/`.
+- O que o projeto tiver. **Nunca travar em nomes.** `GANCHOS/DESENVOLVIMENTOS/CTAS`
+  são só os padrões sugeridos (e a ordem retórica de auto-descoberta).
 
-Um cruzamento é **fluido** quando o desenvolvimento abre como continuação natural da promessa do gancho: sem buraco lógico, sem repetir o que o gancho já disse, sem deixar a promessa sem cumprir.
+**Quem dirige é o usuário.** Na execução ele determina:
+1. quais segmentos entram;
+2. a ordem da cadeia (não se inverte);
+3. quais segmentos **variam** (cruzam) e quais ficam **fixos/nativos**.
+
+- **Varia:** todos os cortes do segmento entram no cruzamento.
+- **Fixo (nativo):** o corte que tem o **mesmo código** da peça base acompanha sem
+  cruzar. Ex.: "varia gancho × desenvolvimento, mas a OFERTA é a nativa de cada vídeo".
+
+A combinação mais usual é só gancho × desenvolvimento — mas é sempre o usuário que diz.
+
+## 1. Julgamento: promessa × tipo de abertura (par-a-par)
+
+A regra de ouro: **casar pelo que a peça anterior PROMETE com o tipo de abertura da
+peça seguinte — nunca pela forma gramatical.**
+
+- **Lado que abre a transição** — classifique pela promessa/continuação que pede:
+  pergunta lida, pergunta retórica, ordem, promessa de mostrar algo.
+- **Lado que recebe** — classifique pelo tipo de abertura: dor, revelação,
+  contestação, prova social/depoimento.
+
+Uma transição é **fluida** quando o lado seguinte abre como continuação natural da
+promessa do anterior: sem buraco lógico, sem repetir o que já foi dito, sem deixar
+promessa sem cumprir.
+
+**Com 3+ segmentos:** julgue **par-a-par cada transição vizinha que vai variar**
+(gancho→desenvolvimento, depois desenvolvimento→CTA). A cadeia é aprovada quando
+toda transição variável é fluida. Transições para um segmento **fixo nativo** não se
+julgam — vieram juntas do mesmo vídeo. Par-a-par escala; evita explodir a análise no
+produto cartesiano de N segmentos.
 
 ### O erro a não repetir
-Numa sessão, um gancho que promete "a vida dos meus alunos" foi reprovado contra um desenvolvimento que abre com **depoimento de aluno**, por uma regra gramatical cega (o gancho "não era pergunta"). Está errado: a promessa casa perfeitamente com o depoimento. **A promessa manda, não a gramática.**
+Um gancho que promete "a vida dos meus alunos" foi reprovado contra um desenvolvimento
+que abre com **depoimento de aluno**, por regra gramatical cega ("não era pergunta").
+Errado: a promessa casa com o depoimento. **A promessa manda, não a gramática.**
 
 ## 2. Rigor e pares nativos
 
-- Default: **aprovar só os fluidos.** ⚠️ para limítrofes (com ressalva escrita); ❌ para os que não casam.
-- **Pares nativos** (gancho + desenvolvimento extraídos do mesmo vídeo original) são combinações válidas — inclua sempre.
-- O usuário tem a palavra final: pode forçar uma célula ⚠️/❌ ou cortar uma ✅.
+- Default: **aprovar só os fluidos.** ⚠️ para limítrofes (com ressalva escrita); ❌
+  para os que não casam.
+- **Pares nativos** (cortes de mesma origem, mesmo código) são válidos — inclua sempre.
+- O usuário tem a palavra final: força uma ⚠️/❌ ou corta uma ✅.
 
-## 3. Por que normalizar ANTES de concatenar
+## 3. Código nativo
 
-`concat -c copy` (sem reencode) exige que todas as partes tenham specs idênticas: mesma resolução, fps, pix_fmt, códec, sample rate e nº de canais. Os cortes vêm de brutas diferentes — podem ser 4K vs 1080, mono vs stereo, mp4 vs mov. Concatenar specs mistas por copy quebra ou gera vídeo corrompido.
+O código no nome do corte (ex.: VAV19) identifica a origem. Cortes de segmentos
+diferentes com o mesmo código vieram do mesmo vídeo → peça nativa. É o que permite o
+modo "segmento fixo nativo": para cada peça base, pega-se o corte de mesmo código no
+segmento fixo.
 
-**Solução validada:** normalizar **cada corte uma vez** para o alvo (reencode com `scale+pad+setsar=1` + fps + aformat de áudio), e só então concatenar por `-c copy` — rápido e sem segundo reencode. Normalizar é o único reencode; o concat é cópia.
+## 4. Por que normalizar ANTES de concatenar
+
+`concat -c copy` (sem reencode) exige specs idênticas em todas as partes: resolução,
+fps, pix_fmt, códec, sample rate, nº de canais. Os cortes vêm de brutas diferentes —
+4K vs 1080, mono vs stereo, mp4 vs mov. Concatenar specs mistas por copy quebra ou
+corrompe.
+
+**Solução validada:** normalizar **cada corte uma vez** para o alvo (reencode com
+`scale+pad+setsar=1` + fps + aformat), e só então concatenar por `-c copy` — rápido,
+sem segundo reencode. Reusar a normalização de um corte entre todas as cadeias em que
+ele aparece.
 
 ### Aspect ratio
-`scale=W:H:force_original_aspect_ratio=decrease,pad=W:H:(ow-iw)/2:(oh-ih)/2,setsar=1` — encaixa preservando proporção, com barras quando a entrada não for 9:16. `setsar=1` evita SAR herdado que distorceria.
+`scale=W:H:force_original_aspect_ratio=decrease,pad=W:H:(ow-iw)/2:(oh-ih)/2,setsar=1`
+— encaixa preservando proporção, barras quando a entrada não for 9:16. `setsar=1`
+evita SAR herdado que distorceria.
 
-## 4. Specs do alvo
+## 5. Specs do alvo
 
-- **Padrão:** Full HD vertical 1080×1920, 30fps, HEVC (libx265 CRF20, `-tag:v hvc1`), AAC 48kHz stereo, `.mp4`.
-- **Alternativas oferecidas:** 4K (2160×3840); MOV; resolução nativa (a maior entre os dois cortes, sem rebaixar); H.264/x264.
+- **Padrão:** Full HD vertical 1080×1920, 30fps, HEVC (libx265 CRF20, `-tag:v hvc1`),
+  AAC 48kHz stereo, `.mp4`.
+- **Alternativas:** 4K (2160×3840); MOV; resolução nativa (a maior entre os cortes da
+  cadeia, sem rebaixar); H.264/x264.
 
-## 5. Nomenclatura
+## 6. Nomenclatura
 - Pasta `COMBINAÇÕES/` na raiz do projeto.
-- `GANCHO_VAV<xx>__DESENVOLVIMENTO_VAV<yy>.<ext>`.
+- Rótulos dos segmentos (singular, MAIÚSCULO) + código, na ordem da cadeia, unidos por
+  `__`: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57__OFERTA_VAV19.mp4`.
