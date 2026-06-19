@@ -9,7 +9,8 @@ O sistema de vídeo da Invisible. Três skills, encadeáveis na mesma pasta de p
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
 - **`invisible-video-combinador`** — cruza ganchos × desenvolvimentos por encaixe retórico
   e gera anúncios combinados (consome as saídas do desmembrador).
-- **`invisible-video-otimizador`** — remove silêncios internos sem comer palavra.
+- **`invisible-video-otimizador`** — remove silêncios internos sem comer palavra e,
+  opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra concatenar).
 
 O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
@@ -44,13 +45,18 @@ Em `skills/invisible-video-combinador/scripts/`:
 - `bootstrap.py`, `transcrever.py` — **cópias** das do desmembrador (cada skill autocontida).
 - `descobrir_cortes.py` — acha `GANCHOS/` e `DESENVOLVIMENTOS/`, extrai o código (VAVxx).
 - `normalizar.py` — normaliza um corte para o alvo (`scale+pad+setsar=1` + fps + aformat).
+  **Rede de segurança:** o ideal é os cortes já chegarem normalizados da otimizadora;
+  este script só entra quando algum corte ainda tem specs divergentes do alvo.
 - `combinar.py` — concat `-c copy` de gancho+desenvolvimento já normalizados.
 
 Em `skills/invisible-video-otimizador/scripts/`:
 
 - `bootstrap.py` — **cópia** (esta skill só usa a parte de ffmpeg; não usa WhisperX).
-- `otimizar.py` — silencedetect → keep-segments com respiro assimétrico → filter_complex
-  (trim/atrim+concat) → reencode → verifica. Aceita arquivo ou pasta (lote).
+- `otimizar.py` — silencedetect (≥0.3s) → keep-segments com respiro assimétrico →
+  filter_complex (trim/atrim+concat, com `scale+pad+setsar` opcional via `--normalizar`)
+  → reencode → verifica. Aceita arquivo ou pasta (lote). Por padrão preserva specs;
+  com `--normalizar` padroniza no mesmo passo (a normalização migrou do combinador
+  pra cá — fundir corte+normalização num só reencode evita uma geração extra).
 
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
 Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar nas três cópias.

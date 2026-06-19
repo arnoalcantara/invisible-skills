@@ -2,7 +2,8 @@
 """otimizar.py — remove silêncios internos de um vídeo sem comer palavra.
 
 Critério validado em sessão real (ver referencia/METODO.md):
-  - silêncio = trecho > 0.5s abaixo de -35dB (silencedetect).
+  - silêncio = trecho ≥ 0.3s abaixo de -35dB (silencedetect; `d` é a duração
+    MÍNIMA pra contar como silêncio — pausas menores ficam intactas).
     -35dB e não -30: a -30 a palavra final dita baixo (decrescendo do professor)
     caía como silêncio e era cortada. -35 trata fala fraca como fala.
   - respiro ASSIMÉTRICO: 0.10s na entrada (após silence_end), 0.25s na saída
@@ -17,11 +18,17 @@ recorta+concatena ao frame exato via filter_complex (trim/atrim + setpts/asetpts
 
 Aceita um ARQUIVO ou uma PASTA (lote: otimiza todos os vídeos da pasta).
 
+Normaliza no mesmo passo (opcional): com --normalizar, o corte de silêncio e a
+padronização de formato (resolução/fps/códec/áudio) viram um reencode único —
+saída pronta pra concatenar. Sem --normalizar, preserva as specs do original.
+
 Uso:
     python3 otimizar.py <arquivo_ou_pasta> [--out-dir <dir>]
-        [--silence-noise -35dB] [--silence-min 0.5]
+        [--silence-noise -35dB] [--silence-min 0.3]
         [--respiro-entrada 0.10] [--respiro-saida 0.25]
         [--crf 20] [--preset medium]
+        [--normalizar --largura 1080 --altura 1920 --fps 30
+         --vcodec libx265 --container mp4 --sample-rate 48000 --canais 2]
 
 Saída (stdout): JSON {"resultados": [{origem, saida, silencios, segmentos, verificacao}]}
 """
@@ -120,13 +127,24 @@ def segmentos_a_manter(silencios, duracao, resp_in, resp_out):
     return [(a, b) for (a, b) in segmentos if b - a > 0.01]
 
 
-def montar_filter_complex(segmentos):
-    """Gera filter_complex que recorta cada segmento (v+a) e concatena."""
+def montar_filter_complex(segmentos, alvo=None):
+    """Gera filter_complex que recorta cada segmento (v+a) e concatena.
+
+    Se `alvo` (dict com largura/altura) vier, NORMALIZA cada segmento de vídeo
+    no mesmo passo: scale preservando proporção + pad (barras) + setsar=1. Assim
+    o corte de silêncio e a normalização viram um reencode único — sem segunda
+    geração de reencode. Sem `alvo`, preserva as specs do original.
+    """
+    norm = ""
+    if alvo:
+        W, H = alvo["largura"], alvo["altura"]
+        norm = (f",scale={W}:{H}:force_original_aspect_ratio=decrease,"
+                f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2,setsar=1")
     partes = []
     labels = []
     for i, (a, b) in enumerate(segmentos):
         partes.append(
-            f"[0:v]trim=start={a:.3f}:end={b:.3f},setpts=PTS-STARTPTS[v{i}];")
+            f"[0:v]trim=start={a:.3f}:end={b:.3f},setpts=PTS-STARTPTS{norm}[v{i}];")
         partes.append(
             f"[0:a]atrim=start={a:.3f}:end={b:.3f},asetpts=PTS-STARTPTS[a{i}];")
         labels.append(f"[v{i}][a{i}]")
@@ -135,7 +153,8 @@ def montar_filter_complex(segmentos):
     return "".join(partes) + concat
 
 
-def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset):
+def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
+                alvo=None):
     specs = ffprobe_specs(video)
     if specs["duracao"] is None:
         return {"origem": video, "erro": "não consegui ler a duração (ffprobe)"}
@@ -144,7 +163,8 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset):
     segmentos = segmentos_a_manter(silencios, specs["duracao"], resp_in, resp_out)
 
     nome = os.path.splitext(os.path.basename(video))[0]
-    ext = os.path.splitext(video)[1] or ".mp4"
+    # com normalização, o container/ext vem do alvo; senão, preserva o original.
+    ext = ("." + alvo["container"]) if alvo else (os.path.splitext(video)[1] or ".mp4")
     os.makedirs(out_dir, exist_ok=True)
     saida = os.path.join(out_dir, f"{nome}__OTIMIZADO{ext}")
 
@@ -152,22 +172,31 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset):
         # nada a cortar — ainda assim entrega cópia reencodada? Não: só avisa.
         return {"origem": video, "saida": None,
                 "silencios": [], "segmentos": len(segmentos),
-                "aviso": "nenhum silêncio interno >%.2fs detectado; nada a otimizar"
+                "aviso": "nenhum silêncio interno ≥%.2fs detectado; nada a otimizar"
                          % dur_min}
 
-    fc = montar_filter_complex(segmentos)
-    venc = encoder_para_codec(specs["vcodec"])
+    fc = montar_filter_complex(segmentos, alvo)
+    # com alvo, o códec/fps/áudio são os do alvo; sem alvo, preserva o original.
+    if alvo:
+        venc = alvo["vcodec"]
+        fps = str(alvo["fps"])
+        ar = str(alvo["sample_rate"])
+        ac = str(alvo["canais"])
+    else:
+        venc = encoder_para_codec(specs["vcodec"])
+        fps = specs["fps"]
+        ar = str(specs["sample_rate"])
+        ac = str(specs["channels"])
 
     cmd = [
         "ffmpeg", "-y", "-i", video,
         "-filter_complex", fc, "-map", "[vout]", "-map", "[aout]",
         "-c:v", venc, "-crf", str(crf), "-preset", preset,
-        "-pix_fmt", specs["pix_fmt"], "-r", specs["fps"],
+        "-pix_fmt", "yuv420p" if alvo else specs["pix_fmt"], "-r", fps,
     ]
     if venc == "libx265":
         cmd += ["-tag:v", "hvc1"]
-    cmd += ["-c:a", "aac", "-ar", str(specs["sample_rate"]),
-            "-ac", str(specs["channels"]), saida]
+    cmd += ["-c:a", "aac", "-ar", ar, "-ac", ac, saida]
 
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
@@ -183,6 +212,7 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset):
         "saida": saida,
         "silencios": len(silencios),
         "segmentos": len(segmentos),
+        "normalizado": bool(alvo),
         "verificacao": {
             "silencios_residuais": len(residuais),
             "ok": len(residuais) == 0,
@@ -210,12 +240,32 @@ def main():
     ap.add_argument("entrada", help="arquivo de vídeo OU pasta (lote)")
     ap.add_argument("--out-dir", help="pasta de saída (padrão: OTIMIZADOS/ ao lado)")
     ap.add_argument("--silence-noise", default="-35dB")
-    ap.add_argument("--silence-min", type=float, default=0.5)
+    ap.add_argument("--silence-min", type=float, default=0.3)
     ap.add_argument("--respiro-entrada", type=float, default=0.10)
     ap.add_argument("--respiro-saida", type=float, default=0.25)
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--preset", default="medium")
+    # Normalização (opcional). Se QUALQUER uma destas vier, a otimizadora
+    # normaliza no mesmo reencode. Sem elas, preserva as specs do original.
+    ap.add_argument("--normalizar", action="store_true",
+                    help="normaliza para o alvo (default FHD vertical) no mesmo passo")
+    ap.add_argument("--largura", type=int, default=1080)
+    ap.add_argument("--altura", type=int, default=1920)
+    ap.add_argument("--fps", default="30")
+    ap.add_argument("--vcodec", default="libx265",
+                    help="libx265 (HEVC) ou libx264 (H.264)")
+    ap.add_argument("--container", default="mp4", help="mp4 ou mov")
+    ap.add_argument("--sample-rate", default="48000")
+    ap.add_argument("--canais", type=int, default=2)
     args = ap.parse_args()
+
+    alvo = None
+    if args.normalizar:
+        alvo = {
+            "largura": args.largura, "altura": args.altura, "fps": args.fps,
+            "vcodec": args.vcodec, "container": args.container,
+            "sample_rate": args.sample_rate, "canais": args.canais,
+        }
 
     entrada = os.path.abspath(args.entrada)
     if not os.path.exists(entrada):
@@ -235,9 +285,10 @@ def main():
     for v in videos:
         resultados.append(otimizar_um(
             v, out_dir, args.silence_noise, args.silence_min,
-            args.respiro_entrada, args.respiro_saida, args.crf, args.preset))
+            args.respiro_entrada, args.respiro_saida, args.crf, args.preset,
+            alvo))
 
-    print(json.dumps({"out_dir": out_dir, "resultados": resultados},
+    print(json.dumps({"out_dir": out_dir, "resultados": resultados, "alvo": alvo},
                      ensure_ascii=False, indent=2))
 
 

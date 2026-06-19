@@ -57,8 +57,8 @@ corte de mesmo código de origem acompanha, sem cruzar).
 4. **Julga par-a-par** cada transição variável: casa o que a peça anterior **promete**
    com o **tipo de abertura** da seguinte — nunca pela forma gramatical. Tabela
    ✅/⚠️/❌ justificada e **espera aprovação**.
-5. **Normaliza** cada corte para um alvo comum (`scale+pad+setsar=1`) e **concatena**
-   na ordem da cadeia por `-c copy` (specs mistas quebrariam o concat sem isso).
+5. **Normaliza se preciso** (rede de segurança: o ideal é os cortes já chegarem
+   normalizados da otimizadora) e **concatena** na ordem da cadeia por `-c copy`.
 6. **Salva** em `COMBINAÇÕES/`, ex.: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57__OFERTA_VAV19.<ext>`.
 
 Saída padrão: Full HD vertical (1080×1920), 30fps, HEVC, MP4. Oferece 4K, MOV,
@@ -67,14 +67,19 @@ resolução nativa e H.264 como alternativas.
 ### `invisible-video-otimizador`
 
 Remove os **silêncios internos** de um vídeo montado **sem comer palavra**, deixando
-o ritmo enxuto. Aceita arquivo único ou pasta (lote). Invocada como
-`/invisible-video-otimizador`.
+o ritmo enxuto — e, opcionalmente, **normaliza o formato** (resolução/fps/códec/áudio)
+no mesmo reencode, entregando o corte pronto pra concatenar. Aceita arquivo único ou
+pasta (lote). Invocada como `/invisible-video-otimizador`.
 
-Critério validado: silêncio = trecho >0.5s abaixo de **-35dB**; **respiro assimétrico**
+Critério validado: silêncio = trecho **≥0.3s** abaixo de **-35dB**; **respiro assimétrico**
 de 0.10s na entrada e 0.25s na saída (preserva ataque e cauda da fala); só silêncios
 internos; corte ao frame exato. Verifica o resultado com `silencedetect`. Salva em
 `OTIMIZADOS/` como `<nome>__OTIMIZADO.<ext>`. O porquê de cada número está em
 `skills/invisible-video-otimizador/referencia/METODO.md`.
+
+Com `--normalizar`, o corte de silêncio e a padronização viram **um reencode só**
+(alvo default Full HD vertical; aceita 4K, MOV, H.264). É a ordem preferível antes
+de combinar: cada corte é reencodado uma vez aqui, e a combinação vira `concat -c copy`.
 
 Só precisa de **ffmpeg** (não usa WhisperX).
 

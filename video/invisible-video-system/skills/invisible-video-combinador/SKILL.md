@@ -80,11 +80,13 @@ Pergunte, oferecendo o default entre colchetes:
 - **[Full HD vertical 1080×1920, 30fps, HEVC/x265 CRF20, AAC 48k stereo, .mp4]** ← padrão.
 - Alternativas: **4K** (2160×3840), **MOV**, **resolução nativa** (a maior entre os cortes da cadeia, sem rebaixar), **H.264/x264**.
 
-### Fase 6 — Normalizar e montar
-`concat -c copy` quebra com specs mistas. Por isso: **normalize cada corte uma vez** para o alvo, depois concatene por copy. Reuse a normalização de um corte entre todas as cadeias em que ele aparece.
+### Fase 6 — Normalizar (rede de segurança) e montar
+`concat -c copy` quebra com specs mistas. A normalização aqui é **rede de segurança**: o caminho ideal é os cortes já chegarem normalizados da `invisible-video-otimizador` (otimizados+normalizados pro mesmo alvo, em `OTIMIZADOS/`) — nesse caso o `concat -c copy` roda direto, sem reencode. O `normalizar.py` só entra quando algum corte ainda não está no alvo (specs divergentes).
+
+**Antes de normalizar, cheque as specs** de cada corte com ffprobe. Se já batem com o alvo, **pule** a normalização daquele corte. Reuse a normalização de um corte entre todas as cadeias em que ele aparece.
 
 Para cada cadeia aprovada (corte do segmento 1, do segmento 2, ... do segmento N, **na ordem da cadeia**):
-1. Normalize cada corte ainda não normalizado para este alvo:
+1. Normalize cada corte que **ainda não está** no alvo:
 ```bash
 python3 scripts/normalizar.py "<corte>" --out "<tmp>/<corte>.mp4" \
     --largura 1080 --altura 1920 --fps 30 --vcodec libx265 --crf 20 \
@@ -115,7 +117,7 @@ Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e apont
 - Decidir o esquema sozinho — quem diz o que varia, o que é fixo e a ordem é o **usuário**.
 - Inverter a ordem da cadeia.
 - Reprovar por **forma gramatical** (a promessa é que manda).
-- Concatenar sem normalizar antes (specs mistas quebram o `-c copy`).
+- Concatenar specs mistas (quebra o `-c copy`) — mas também não re-normalizar cortes que já chegaram no alvo da otimizadora: cheque specs antes e pule quem já bate.
 - Gerar antes da aprovação da matriz.
 - Transcrever segmentos fixos nativos à toa (não se julgam).
 - Rebaixar resolução quando o usuário pediu "nativa".
