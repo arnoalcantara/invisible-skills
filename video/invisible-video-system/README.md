@@ -41,11 +41,14 @@ Concatena cortes de **N segmentos** (cortes que o desmembrador produziu) numa
 **cadeia ordenada** para gerar peças novas — anúncios curtos ou VSLs. Invocada como
 `/invisible-video-combinador`.
 
-Os segmentos são pastas de **nome livre** e podem ser **duas ou mais**. O padrão
-Invisible é `GANCHOS/`, `DESENVOLVIMENTOS/`, `CTAS/`, mas pode ser `LEAD/`,
-`HISTORIA/`, `OFERTA/`, `FECHAMENTO/` — o que o projeto tiver. **Quem dirige é o
-usuário:** ele diz quais segmentos entram, em que ordem, quais **variam** (cruzam) e
-quais ficam **fixos/nativos** (o corte de mesmo código de origem acompanha, sem cruzar).
+Os segmentos têm **nome livre** e podem ser **dois ou mais**. O padrão Invisible é
+GANCHO, DESENVOLVIMENTO, CTA, mas pode ser LEAD, HISTORIA, OFERTA, FECHAMENTO — o que
+o projeto tiver. Os cortes podem estar em **subpastas** (`GANCHOS/`, `DESENVOLVIMENTOS/`)
+ou **soltos na mesma pasta**, distinguidos pelo rótulo no nome do arquivo (o nome
+sempre carrega o rótulo da sessão e o código/número, em qualquer ordem); o descobridor
+detecta os dois layouts sozinho. **Quem dirige é o usuário:** ele diz quais segmentos
+entram, em que ordem, quais **variam** (cruzam) e quais ficam **fixos/nativos** (o
+corte de mesmo código de origem acompanha, sem cruzar).
 
 1. **Descobre** os segmentos: toda subpasta com vídeo vira um segmento candidato
    (sugere a ordem retórica dos nomes conhecidos). Ou recebe `--segmentos` na ordem.

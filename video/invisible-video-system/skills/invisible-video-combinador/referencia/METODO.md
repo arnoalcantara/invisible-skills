@@ -5,13 +5,27 @@ Conhecimento fechado em sessão real com o Arno. Editou aqui, mudou o comportame
 ## 0. Modelo: segmentos N-lados, dirigido pelo usuário
 
 A peça final é a **concatenação ordenada** de um corte de cada segmento escolhido.
-Um segmento é uma pasta de cortes. Os nomes são **livres** e os segmentos podem ser
-**dois ou mais**:
+Um segmento é um grupo de cortes da mesma sessão. Os nomes são **livres** e os
+segmentos podem ser **dois ou mais**:
 
 - Anúncio curto (padrão Invisible): `GANCHOS/` → `DESENVOLVIMENTOS/` (→ `CTAS/`).
 - VSL: `LEAD/` → `HISTORIA/` → `OFERTA/` → `FECHAMENTO/`.
 - O que o projeto tiver. **Nunca travar em nomes.** `GANCHOS/DESENVOLVIMENTOS/CTAS`
   são só os padrões sugeridos (e a ordem retórica de auto-descoberta).
+
+### Dois layouts no disco (o descobridor cobre os dois)
+
+- **Subpastas:** cada segmento é uma pasta. `modo: subpastas`.
+- **Mesma pasta:** todos os cortes soltos numa pasta só. Aqui o segmento de cada
+  arquivo se lê do **nome**: o nome sempre carrega o **rótulo da sessão** (GANCHO,
+  DESENVOLVIMENTO...) e o **código/número** (19, VAV19, 28...), em qualquer ordem e
+  com qualquer separador (`_`, `-`, `.`, espaço). O descobridor agrupa por rótulo e
+  extrai o código à parte. `modo: mesma_pasta`. Rótulos fora dos conhecidos entram
+  por `--rotulos`. Sufixos como `__OTIMIZADO` são ignorados na leitura do código.
+
+O código é extraído como `VAVxx` (regex de letras+dígitos) ou, na falta, como número
+solto delimitado por não-dígito (tolerando `_`, que `\b` não delimita). É o mesmo
+código que casa os **pares nativos** entre segmentos.
 
 **Quem dirige é o usuário.** Na execução ele determina:
 1. quais segmentos entram;

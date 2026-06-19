@@ -14,7 +14,7 @@ Um segmento é uma pasta de cortes. O padrão Invisible é `GANCHOS/`, `DESENVOL
 
 ## Conceitos
 
-- **Segmento** — uma pasta de cortes (GANCHOS, DESENVOLVIMENTOS, OFERTA...). Nome livre.
+- **Segmento** — um grupo de cortes da mesma sessão (GANCHOS, DESENVOLVIMENTOS, OFERTA...). Nome livre. Pode ser uma **subpasta** ou um grupo de cortes **soltos na mesma pasta**, identificados pelo rótulo no nome do arquivo.
 - **Cadeia** — a ordem em que os segmentos se concatenam. Ex.: gancho → desenvolvimento → CTA. Definida/confirmada pelo usuário; **não se inverte**.
 - **Código nativo** — o código no nome do corte (ex.: VAV19). Cortes de segmentos diferentes com o **mesmo código** vieram do **mesmo vídeo de origem** → são a peça nativa daquele vídeo.
 - **Eixo que varia × segmento fixo:**
@@ -33,7 +33,14 @@ Com mais de dois segmentos, julgue **par-a-par cada transição vizinha que vai 
 `python3 scripts/bootstrap.py --check-only`. Garante ffmpeg + WhisperX. Se o modelo não estiver em cache, avise o download de ~1.5GB na 1ª transcrição.
 
 ### Fase 1 — Descobrir os segmentos
-`python3 scripts/descobrir_cortes.py "<pasta_projeto>"`. A skill lista TODAS as subpastas com vídeo como segmentos candidatos, marcando as de nome conhecido e ordenando por ordem retórica natural. Mostre ao usuário os segmentos achados (nome, nº de cortes, códigos).
+`python3 scripts/descobrir_cortes.py "<pasta_projeto>"`. O script aceita **dois layouts** e detecta sozinho qual usar (campo `modo` na saída):
+
+- **Subpastas** (`modo: subpastas`) — cada segmento é uma pasta (`GANCHOS/`, `DESENVOLVIMENTOS/`...). É o que ele tenta primeiro.
+- **Mesma pasta** (`modo: mesma_pasta`) — todos os cortes soltos numa pasta só, distinguidos pelo **nome**: o nome sempre carrega o **rótulo da sessão** (GANCHO, DESENVOLVIMENTO...) e o **código/número** (19, VAV19, 28...), em qualquer ordem. O script agrupa por rótulo e extrai o código de cada um. Cai nesse modo quando não há subpastas com vídeo.
+
+Se os cortes estão soltos e os rótulos **não** são os conhecidos (gancho, desenvolvimento, cta, lead, historia, oferta, fechamento, prova), declare-os: `--mesma-pasta "<pasta>" --rotulos LEAD OFERTA FECHAMENTO`. Arquivos cujo rótulo não foi reconhecido voltam em `sem_rotulo` — mostre-os ao usuário.
+
+Mostre ao usuário os segmentos achados (nome, nº de cortes, códigos) e o modo detectado.
 
 ### Fase 2 — Definir o esquema de combinação (DIRIGIDO PELO USUÁRIO)
 **Pergunte explicitamente** — não assuma. Confirme:
@@ -42,7 +49,8 @@ Com mais de dois segmentos, julgue **par-a-par cada transição vizinha que vai 
 3. **Quais variam e quais ficam fixos (nativos).** Ex.: "varia GANCHOS × DESENVOLVIMENTOS; OFERTA fixa na nativa de cada vídeo".
 
 Se o usuário não quiser usar a auto-descoberta, ele pode apontar os segmentos na ordem:
-`python3 scripts/descobrir_cortes.py "<projeto>" --segmentos GANCHOS DESENVOLVIMENTOS OFERTA`
+- subpastas: `python3 scripts/descobrir_cortes.py "<projeto>" --segmentos GANCHOS DESENVOLVIMENTOS OFERTA`
+- mesma pasta: `python3 scripts/descobrir_cortes.py "<projeto>" --mesma-pasta "<pasta>" --rotulos GANCHO DESENVOLVIMENTO OFERTA` (a ordem dos `--rotulos` orienta a ordem da cadeia)
 
 A combinação mais usual é só **gancho × desenvolvimento** — mas é o usuário que determina, sempre.
 
@@ -103,6 +111,7 @@ Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e apont
 
 ## Anti-padrões (não faça)
 - Travar em GANCHOS/DESENVOLVIMENTOS — os segmentos são de nome livre e podem ser 2 ou mais.
+- Assumir que os cortes estão em subpastas — podem estar soltos na mesma pasta, separados pelo rótulo no nome. Confira o `modo` na saída do descobridor.
 - Decidir o esquema sozinho — quem diz o que varia, o que é fixo e a ordem é o **usuário**.
 - Inverter a ordem da cadeia.
 - Reprovar por **forma gramatical** (a promessa é que manda).

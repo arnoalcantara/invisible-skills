@@ -27,7 +27,7 @@
     {
       "name": "invisible-video-system",
       "source": "./video/invisible-video-system",
-      "description": "Sistema de vídeo da Invisible, três skills. Desmembrador: corta brutos por seção do roteiro (gancho, desenvolvimento, CTA...) via WhisperX. Combinador: concatena cortes de N segmentos (pastas de nome livre) numa cadeia ordenada — o usuário dirige o que varia e o que fica nativo — julgando o encaixe retórico. Otimizador: remove silêncios internos sem comer palavra."
+      "description": "Sistema de vídeo da Invisible, três skills. Desmembrador: corta brutos por seção do roteiro (gancho, desenvolvimento, CTA...) via WhisperX. Combinador: concatena cortes de N segmentos de nome livre (em subpastas ou soltos na mesma pasta) numa cadeia ordenada — o usuário dirige o que varia e o que fica nativo — julgando o encaixe retórico. Otimizador: remove silêncios internos sem comer palavra."
     },
     {
       "name": "invisible-organizacao",
