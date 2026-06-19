@@ -49,6 +49,25 @@ Liste cada vídeo: silêncios cortados, segmentos mantidos, e o caminho em `OTIM
 - Pasta `OTIMIZADOS/` ao lado da origem (ou `--out-dir`).
 - Arquivo: `<nome_original>__OTIMIZADO.<ext>`.
 
+## Encadeamento com o combinador (otimizar ANTES de combinar)
+
+Esta skill é agnóstica de origem — otimiza qualquer vídeo ou pasta. Dá para
+otimizar os **cortes de segmento** (GANCHOS, DESENVOLVIMENTOS...) **antes** de
+combiná-los, e essa é a ordem **preferível**: cada corte é reencodado uma única vez
+na otimização, e a combinação vira `concat -c copy` (cópia, sem reencode) — menos
+gerações de reencode, menos perda acumulada do que otimizar a peça já combinada.
+
+Para esse fluxo, otimize cada pasta-segmento em lote, deixando a saída em
+`OTIMIZADOS/` (default), e aponte ao combinador via
+`--segmentos GANCHOS/OTIMIZADOS DESENVOLVIMENTOS/OTIMIZADOS ...`:
+```bash
+python3 scripts/otimizar.py "<projeto>/GANCHOS"
+python3 scripts/otimizar.py "<projeto>/DESENVOLVIMENTOS"
+```
+
+O sufixo `__OTIMIZADO` no nome **não atrapalha** o combinador: ele extrai o código
+de origem (ex.: VAV19) mesmo com o sufixo, então os pares nativos seguem casando.
+
 ## Anti-padrões (não faça)
 - Mexer nos números (-35dB, 0.5s, 0.10/0.25) sem o usuário pedir.
 - Usar respiro **simétrico** (come consoante final).
