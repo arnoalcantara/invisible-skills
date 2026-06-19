@@ -66,22 +66,27 @@ resolução nativa e H.264 como alternativas.
 
 ### `invisible-video-otimizador`
 
-Remove os **silêncios internos** de um vídeo montado **sem comer palavra**, deixando
-o ritmo enxuto — e, opcionalmente, **normaliza o formato** (resolução/fps/códec/áudio)
-no mesmo reencode, entregando o corte pronto pra concatenar. Aceita arquivo único ou
-pasta (lote). Invocada como `/invisible-video-otimizador`.
+Deixa um vídeo gravado pronto pra uso, em três etapas (todas num reencode só):
+**(1) escolhe a melhor take** quando o bruto tem várias tentativas da mesma fala —
+transcreve com WhisperX, agrupa as repetições pelo texto e fica com a **última**;
+**(2) remove os silêncios internos** sem comer palavra; **(3)** opcionalmente
+**normaliza o formato** (resolução/fps/códec/áudio), entregando o corte pronto pra
+concatenar. Aceita arquivo único ou pasta (lote). Invocada como `/invisible-video-otimizador`.
 
-Critério validado: silêncio = trecho **≥0.3s** abaixo de **-35dB**; **respiro assimétrico**
+Critério de silêncio validado: trecho **≥0.3s** abaixo de **-35dB**; **respiro assimétrico**
 de 0.10s na entrada e 0.25s na saída (preserva ataque e cauda da fala); só silêncios
 internos; corte ao frame exato. Verifica o resultado com `silencedetect`. Salva em
-`OTIMIZADOS/` como `<nome>__OTIMIZADO.<ext>`. O porquê de cada número está em
-`skills/invisible-video-otimizador/referencia/METODO.md`.
+`OTIMIZADOS/` como `<nome>__OTIMIZADO.<ext>`. O porquê de cada número (e o critério
+de seleção de takes) está em `skills/invisible-video-otimizador/referencia/METODO.md`.
 
-Com `--normalizar`, o corte de silêncio e a padronização viram **um reencode só**
-(alvo default Full HD vertical; aceita 4K, MOV, H.264). É a ordem preferível antes
-de combinar: cada corte é reencodado uma vez aqui, e a combinação vira `concat -c copy`.
+A seleção de takes é **opcional e por arquivo** (só roda quando há repetição; o
+original nunca é tocado, então corta sozinha pela última take e reporta o que
+descartou). Com `--normalizar`, o corte de silêncio e a padronização viram **um
+reencode só** (alvo default Full HD vertical; aceita 4K, MOV, H.264). É a ordem
+preferível antes de combinar: cada corte é reencodado uma vez aqui, e a combinação
+vira `concat -c copy`.
 
-Só precisa de **ffmpeg** (não usa WhisperX).
+Precisa de **ffmpeg** sempre; a seleção de takes precisa de **WhisperX** (faz bootstrap).
 
 ## Estrutura
 
@@ -100,7 +105,7 @@ video/invisible-video-system/
     referencia/METODO.md
   skills/invisible-video-otimizador/
     SKILL.md
-    scripts/   (bootstrap, otimizar)
+    scripts/   (bootstrap, transcrever, selecionar_takes, otimizar)
     referencia/METODO.md
 ```
 

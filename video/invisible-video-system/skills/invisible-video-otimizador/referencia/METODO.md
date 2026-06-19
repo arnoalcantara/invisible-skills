@@ -1,6 +1,29 @@
-# Método — Otimizador (remoção de silêncios internos)
+# Método — Otimizador (takes + remoção de silêncios internos)
 
 Critério fechado em três iterações com o Arno numa sessão real. Os números são validados — não mexa sem motivo. Editou aqui, mudou o comportamento da skill.
+
+## 0. Seleção de takes (quando o bruto tem várias tentativas)
+
+Um gancho gravado bruto costuma ter **várias tentativas da mesma fala** — a pessoa erra no meio, volta, repete. Antes de cortar silêncio, a skill escolhe a take boa. O critério, fechado com o Arno: **vence sempre a última take** (a pessoa repete até acertar; a última tende a ser a definitiva).
+
+### Como detecta sem o usuário informar a frase
+Decisão de design: a skill **não pede** o texto esperado. Ela transcreve com WhisperX e deduz as repetições pelo próprio texto:
+
+1. **Blocos de fala.** As palavras (com timestamp medido por palavra) são quebradas em blocos sempre que há uma pausa `≥ --gap` (0.6s default). Uma respirada longa marca o fim de uma tentativa e o começo de outra.
+2. **Agrupamento por similaridade.** Blocos cujo texto normalizado (minúsculas, sem acento/pontuação) tem similaridade `≥ --sim` (0.75 default, via `difflib.SequenceMatcher`) são a mesma fala repetida. O agrupamento é transitivo (A~B, B~C ⇒ mesmo grupo).
+3. **Última vence.** Em cada grupo com ≥2 takes, mantém o de maior timestamp; os anteriores entram na lista de descarte.
+
+`--min-palavras` (4 default) protege blocos curtos: um "é..." ou "então" solto nunca é descartado, mesmo que se pareça com outro.
+
+### Por que age sozinha (e mesmo assim é seguro)
+O original **nunca é alterado** — a saída vai pra `OTIMIZADOS/`. Descartar a take errada não destrói nada: o bruto continua lá. Por isso a skill corta sozinha pela última take e só **reporta** no resumo o que descartou (texto + timestamp), em vez de travar pedindo confirmação a cada take.
+
+### Por que fica no mesmo reencode do silêncio
+Os intervalos de descarte são **subtraídos dos segmentos a manter** antes de montar o `filter_complex`. Assim o corte de take, o corte de silêncio e a normalização opcional acontecem num único reencode — zero geração extra, mesma filosofia da normalização fundida (seção 4).
+
+### Limites conhecidos
+- **Por arquivo.** Cada vídeo tem seus próprios intervalos; não roda em lote (`--descartar` vale só pra arquivo único).
+- **Ganchos com repetição legítima.** Se a fala genuinamente repete uma frase (ênfase retórica), os parâmetros `--gap`/`--sim` podem agrupar errado. O relatório existe pra pegar isso a olho.
 
 ## 1. Detecção de silêncio: -35dB, 0.3s
 
@@ -39,6 +62,7 @@ Roda `silencedetect` de novo no resultado. **Não pode sobrar silêncio interno 
 Pausas residuais ~0.3–0.49s são **esperadas, não erro**: são o respiro preservado. O silencedetect mede a partir do cruzamento do limiar (-35dB), não da última sílaba audível — então o respiro de 0.25s + a cauda já abaixo do limiar somam uma "pausa" medida. Só investigue se sobrarem pausas **longas** reais.
 
 ## 6. Parâmetros (defaults, ajustáveis por argumento)
+- seleção de takes: **off** por padrão (só roda quando há repetição a resolver); `--gap 0.6`, `--sim 0.75`, `--min-palavras 4`.
 - `silence_noise = -35dB`, `silence_min = 0.3s`
 - `respiro_entrada = 0.10s`, `respiro_saida = 0.25s`
 - `crf = 20`, `preset = medium`

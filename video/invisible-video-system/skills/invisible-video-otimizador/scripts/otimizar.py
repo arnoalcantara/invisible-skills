@@ -18,6 +18,13 @@ recorta+concatena ao frame exato via filter_complex (trim/atrim + setpts/asetpts
 
 Aceita um ARQUIVO ou uma PASTA (lote: otimiza todos os vídeos da pasta).
 
+Descarte de takes (opcional): com --descartar "ini-fim,ini-fim,...", os intervalos
+indicados (tomadas repetidas/ruins, vindas do selecionar_takes.py) são REMOVIDOS do
+vídeo no mesmo reencode do corte de silêncio. Quem decide os intervalos é a SKILL
+(transcreve com WhisperX → selecionar_takes.py → última take vence); aqui só se
+aplica o recorte. Só faz sentido pra um ARQUIVO único (cada vídeo tem seus próprios
+intervalos), não pra lote.
+
 Normaliza no mesmo passo (opcional): com --normalizar, o corte de silêncio e a
 padronização de formato (resolução/fps/códec/áudio) viram um reencode único —
 saída pronta pra concatenar. Sem --normalizar, preserva as specs do original.
@@ -26,6 +33,7 @@ Uso:
     python3 otimizar.py <arquivo_ou_pasta> [--out-dir <dir>]
         [--silence-noise -35dB] [--silence-min 0.3]
         [--respiro-entrada 0.10] [--respiro-saida 0.25]
+        [--descartar "12.30-18.90,40.10-45.00"]
         [--crf 20] [--preset medium]
         [--normalizar --largura 1080 --altura 1920 --fps 30
          --vcodec libx265 --container mp4 --sample-rate 48000 --canais 2]
@@ -127,6 +135,38 @@ def segmentos_a_manter(silencios, duracao, resp_in, resp_out):
     return [(a, b) for (a, b) in segmentos if b - a > 0.01]
 
 
+def subtrair_descartes(segmentos, descartar):
+    """Remove dos segmentos a manter os intervalos de takes descartadas.
+
+    `descartar` é uma lista de (ini, fim) de tomadas ruins/repetidas. Cada um
+    pode partir um segmento de fala em dois (descarte no meio), encurtá-lo (na
+    ponta) ou eliminá-lo (descarte cobre o segmento inteiro). Roda o corte de
+    take no MESMO passo do corte de silêncio — sem reencode extra.
+    """
+    if not descartar:
+        return segmentos
+    descartar = sorted(descartar)
+    resultado = []
+    for (a, b) in segmentos:
+        pedacos = [(a, b)]
+        for (d_ini, d_fim) in descartar:
+            novos = []
+            for (s, e) in pedacos:
+                # sem sobreposição: pedaço intacto
+                if d_fim <= s or d_ini >= e:
+                    novos.append((s, e))
+                    continue
+                # sobra antes do descarte
+                if d_ini > s:
+                    novos.append((s, min(d_ini, e)))
+                # sobra depois do descarte
+                if d_fim < e:
+                    novos.append((max(d_fim, s), e))
+            pedacos = novos
+        resultado.extend(pedacos)
+    return [(a, b) for (a, b) in resultado if b - a > 0.01]
+
+
 def montar_filter_complex(segmentos, alvo=None):
     """Gera filter_complex que recorta cada segmento (v+a) e concatena.
 
@@ -154,13 +194,16 @@ def montar_filter_complex(segmentos, alvo=None):
 
 
 def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
-                alvo=None):
+                alvo=None, descartar=None):
+    descartar = descartar or []
     specs = ffprobe_specs(video)
     if specs["duracao"] is None:
         return {"origem": video, "erro": "não consegui ler a duração (ffprobe)"}
 
     silencios = detectar_silencios(video, noise, dur_min)
     segmentos = segmentos_a_manter(silencios, specs["duracao"], resp_in, resp_out)
+    # corte de takes no mesmo passo: remove os intervalos descartados da fala.
+    segmentos = subtrair_descartes(segmentos, descartar)
 
     nome = os.path.splitext(os.path.basename(video))[0]
     # com normalização, o container/ext vem do alvo; senão, preserva o original.
@@ -168,7 +211,7 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
     os.makedirs(out_dir, exist_ok=True)
     saida = os.path.join(out_dir, f"{nome}__OTIMIZADO{ext}")
 
-    if len(segmentos) <= 1 and not silencios:
+    if len(segmentos) <= 1 and not silencios and not descartar:
         # nada a cortar — ainda assim entrega cópia reencodada? Não: só avisa.
         return {"origem": video, "saida": None,
                 "silencios": [], "segmentos": len(segmentos),
@@ -212,6 +255,7 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
         "saida": saida,
         "silencios": len(silencios),
         "segmentos": len(segmentos),
+        "takes_descartadas": len(descartar),
         "normalizado": bool(alvo),
         "verificacao": {
             "silencios_residuais": len(residuais),
@@ -243,6 +287,9 @@ def main():
     ap.add_argument("--silence-min", type=float, default=0.3)
     ap.add_argument("--respiro-entrada", type=float, default=0.10)
     ap.add_argument("--respiro-saida", type=float, default=0.25)
+    ap.add_argument("--descartar", default="",
+                    help='intervalos de takes a remover: "ini-fim,ini-fim" (segundos). '
+                         "Só para arquivo único.")
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--preset", default="medium")
     # Normalização (opcional). Se QUALQUER uma destas vier, a otimizadora
@@ -258,6 +305,21 @@ def main():
     ap.add_argument("--sample-rate", default="48000")
     ap.add_argument("--canais", type=int, default=2)
     args = ap.parse_args()
+
+    # parse de --descartar "ini-fim,ini-fim"
+    descartar = []
+    if args.descartar.strip():
+        for par in args.descartar.split(","):
+            par = par.strip()
+            if not par:
+                continue
+            try:
+                ini, fim = par.split("-")
+                descartar.append((float(ini), float(fim)))
+            except ValueError:
+                print(json.dumps({"erro": f"intervalo inválido em --descartar: '{par}' "
+                                          "(esperado ini-fim, ex.: 12.3-18.9)"}))
+                sys.exit(1)
 
     alvo = None
     if args.normalizar:
@@ -277,6 +339,14 @@ def main():
         print(json.dumps({"erro": "nenhum vídeo encontrado"}))
         sys.exit(1)
 
+    # descartes de take só fazem sentido para um arquivo único — cada vídeo tem
+    # seus próprios intervalos. Em lote, ignoramos e avisamos.
+    aviso_lote = None
+    if descartar and len(videos) > 1:
+        aviso_lote = ("--descartar ignorado: vale só para arquivo único, não lote "
+                      "(cada vídeo tem seus próprios intervalos de take)")
+        descartar = []
+
     base = entrada if os.path.isdir(entrada) else os.path.dirname(entrada)
     out_dir = os.path.abspath(args.out_dir) if args.out_dir \
         else os.path.join(base, "OTIMIZADOS")
@@ -286,10 +356,12 @@ def main():
         resultados.append(otimizar_um(
             v, out_dir, args.silence_noise, args.silence_min,
             args.respiro_entrada, args.respiro_saida, args.crf, args.preset,
-            alvo))
+            alvo, descartar))
 
-    print(json.dumps({"out_dir": out_dir, "resultados": resultados, "alvo": alvo},
-                     ensure_ascii=False, indent=2))
+    saida_json = {"out_dir": out_dir, "resultados": resultados, "alvo": alvo}
+    if aviso_lote:
+        saida_json["aviso"] = aviso_lote
+    print(json.dumps(saida_json, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

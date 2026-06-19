@@ -9,8 +9,10 @@ O sistema de vídeo da Invisible. Três skills, encadeáveis na mesma pasta de p
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
 - **`invisible-video-combinador`** — cruza ganchos × desenvolvimentos por encaixe retórico
   e gera anúncios combinados (consome as saídas do desmembrador).
-- **`invisible-video-otimizador`** — remove silêncios internos sem comer palavra e,
-  opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra concatenar).
+- **`invisible-video-otimizador`** — escolhe a melhor take quando há várias tentativas
+  da mesma fala (transcrição WhisperX, última take vence), remove silêncios internos sem
+  comer palavra e, opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra
+  concatenar).
 
 O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
@@ -51,15 +53,23 @@ Em `skills/invisible-video-combinador/scripts/`:
 
 Em `skills/invisible-video-otimizador/scripts/`:
 
-- `bootstrap.py` — **cópia** (esta skill só usa a parte de ffmpeg; não usa WhisperX).
-- `otimizar.py` — silencedetect (≥0.3s) → keep-segments com respiro assimétrico →
+- `bootstrap.py`, `transcrever.py` — **cópias** das do desmembrador. O `transcrever.py`
+  só é usado quando há seleção de takes (transcrição WhisperX); o resto da skill é ffmpeg puro.
+- `selecionar_takes.py` — lê o JSON do WhisperX, quebra a fala em blocos por pausa longa,
+  agrupa blocos com texto parecido (`difflib`, transitivo) e marca as takes anteriores pra
+  descarte (a última vence). Stdlib puro, sem ffmpeg. Devolve os intervalos `descartar` +
+  relatório. Não toca no vídeo.
+- `otimizar.py` — subtrai os intervalos de take descartada (via `--descartar`) dos
+  keep-segments, roda silencedetect (≥0.3s) → keep-segments com respiro assimétrico →
   filter_complex (trim/atrim+concat, com `scale+pad+setsar` opcional via `--normalizar`)
-  → reencode → verifica. Aceita arquivo ou pasta (lote). Por padrão preserva specs;
-  com `--normalizar` padroniza no mesmo passo (a normalização migrou do combinador
-  pra cá — fundir corte+normalização num só reencode evita uma geração extra).
+  → reencode → verifica. Descarte de take, corte de silêncio e normalização no MESMO
+  reencode. Aceita arquivo ou pasta (lote); `--descartar` vale só pra arquivo único. Por
+  padrão preserva specs; com `--normalizar` padroniza no mesmo passo (a normalização migrou
+  do combinador pra cá — fundir tudo num só reencode evita gerações extras).
 
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
-Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar nas três cópias.
+Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar nas três cópias (agora as
+três têm `transcrever.py`).
 
 ## Convenções
 
