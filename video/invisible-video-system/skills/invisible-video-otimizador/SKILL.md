@@ -105,11 +105,11 @@ Cada resultado traz `verificacao`, `normalizado` e `takes_descartadas`:
 Se um vídeo voltar com `aviso` de "nenhum silêncio interno detectado" e não houver takes a descartar, não há o que otimizar — informe e siga.
 
 ### Fase 5 — Resumo
-Liste cada vídeo: takes descartadas (texto + tempo, se houve), silêncios cortados, segmentos mantidos, se foi normalizado (e pra qual alvo), e o caminho em `OTIMIZADOS/`.
+Liste cada vídeo: nome de saída (`nome_saida`, já limpo pra `TIPO_ID_OTIMIZADO`), takes descartadas (texto + tempo, se houve), silêncios cortados, segmentos mantidos, se foi normalizado (e pra qual alvo), e o caminho em `OTIMIZADOS/`.
 
 ## Saída
 - Pasta `OTIMIZADOS/` ao lado da origem (ou `--out-dir`).
-- Arquivo: `<nome_original>__OTIMIZADO.<ext>` (a `<ext>` segue o `--container` quando normaliza).
+- Arquivo: `<TIPO>_<ID>_OTIMIZADO.<ext>` — o nome é **limpo** a partir do original: mantém o rótulo (GANCHO, DES...) e o código/numeração (VAV19, 34...), e **descarta** `BRUTA` e qualquer outro token de ruído. `GANCHO_VAV19_BRUTA.mov` → `GANCHO_VAV19_OTIMIZADO.mov`. A `<ext>` segue o `--container` quando normaliza. O campo `nome_saida` no JSON mostra o nome final de cada vídeo.
 
 ## Encadeamento com o combinador (otimizar+normalizar ANTES de combinar)
 
@@ -129,14 +129,14 @@ Assim cada corte é reencodado **uma única vez** (silêncio + normalização ju
 
 > Use o **mesmo alvo** ao normalizar todas as pastas-segmento. Specs divergentes entre segmentos quebram o `concat -c copy` — a combinadora tem rede de segurança (re-normaliza se detectar divergência), mas isso custa um reencode extra que o alvo único evita.
 
-O sufixo `__OTIMIZADO` no nome **não atrapalha** o combinador: ele extrai o código de origem (ex.: VAV19) mesmo com o sufixo, então os pares nativos seguem casando.
+O nome limpo `TIPO_ID_OTIMIZADO` **não atrapalha** o combinador: ele extrai o código de origem (ex.: VAV19) do nome e trata `OTIMIZADO` como ruído, então os pares nativos seguem casando.
 
 ## Anti-padrões (não faça)
 - Mexer nos números de silêncio (-35dB, 0.3s, 0.10/0.25) sem o usuário pedir.
 - Usar respiro **simétrico** (come consoante final).
 - Cortar começo ou fim do vídeo — só silêncios **internos**.
 - Tratar residuais ~0.3–0.4s como falha — é o respiro projetado.
-- Reprocessar arquivos `__OTIMIZADO` num lote (o script já os pula).
+- Reprocessar arquivos que já têm `OTIMIZADO` no nome num lote (o script já os pula).
 - Normalizar pastas-segmento diferentes pra alvos diferentes quando vão ser combinadas.
 - Transcrever um vídeo que é fala única e limpa só por transcrever — a seleção de takes é pra quem tem repetição.
 - Tentar selecionar takes em lote (`--descartar` vale só pra arquivo único).

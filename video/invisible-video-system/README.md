@@ -76,7 +76,7 @@ concatenar. Aceita arquivo único ou pasta (lote). Invocada como `/invisible-vid
 Critério de silêncio validado: trecho **≥0.3s** abaixo de **-35dB**; **respiro assimétrico**
 de 0.10s na entrada e 0.25s na saída (preserva ataque e cauda da fala); só silêncios
 internos; corte ao frame exato. Verifica o resultado com `silencedetect`. Salva em
-`OTIMIZADOS/` como `<nome>__OTIMIZADO.<ext>`. O porquê de cada número (e o critério
+`OTIMIZADOS/` com nome limpo `<TIPO>_<ID>_OTIMIZADO.<ext>` (mantém rótulo + código, descarta `BRUTA` e ruído). O porquê de cada número (e o critério
 de seleção de takes) está em `skills/invisible-video-otimizador/referencia/METODO.md`.
 
 A seleção de takes é **opcional e por arquivo** (só roda quando há repetição; o

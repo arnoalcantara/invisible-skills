@@ -1,7 +1,7 @@
 {
   "name": "invisible-video-system",
   "description": "Sistema de vídeo da Invisible, com três skills. invisible-video-bruto-desmembrador: desmembra brutos em cortes por seção do roteiro (gancho, desenvolvimento, CTA...) via WhisperX. invisible-video-combinador: concatena cortes de N segmentos de nome livre (em subpastas OU soltos na mesma pasta, lidos pelo rótulo no nome) numa cadeia ordenada, com o usuário dirigindo o que varia e o que fica nativo, julgando o encaixe retórico par-a-par. invisible-video-otimizador: escolhe a melhor take quando há várias tentativas da mesma fala (transcrição WhisperX, última take vence), remove silêncios internos (≥0.3s) sem comer palavra e, opcionalmente, normaliza o formato (resolução/fps/códec/áudio) no mesmo reencode, entregando o corte pronto pra concatenar.",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "author": {
     "name": "Arno Alcantara"
   }

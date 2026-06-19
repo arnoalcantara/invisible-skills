@@ -52,6 +52,37 @@ VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".avi", ".webm"}
 RE_START = re.compile(r"silence_start:\s*([\d.]+)")
 RE_END = re.compile(r"silence_end:\s*([\d.]+)")
 
+# nome de saída = TIPO_ID_OTIMIZADO. O código (VAV19) ou um número solto é o ID;
+# o primeiro token alfabético é o TIPO (rótulo do segmento). Ruído (BRUTA e cia.)
+# e qualquer token que não seja TIPO nem ID são descartados.
+RE_CODIGO = re.compile(r"^[A-Za-z]{2,5}\d{1,4}$")  # VAV19, DES34...
+RUIDO_NOME = {"BRUTA", "BRUTO", "BRUTAS", "BRUTOS",
+              "OTIMIZADO", "OTIMIZADA", "RAW", "FINAL",
+              "VERTICAL", "HORIZONTAL"}
+
+
+def nome_saida_base(nome):
+    """Deriva TIPO_ID do nome original, descartando ruído.
+
+    Mantém o primeiro token-rótulo (alfabético, ex.: GANCHO/DES) e o primeiro
+    código/numeração (VAV19 ou número solto). Tudo que for ruído (BRUTA...) ou
+    não case com TIPO/ID é descartado — 'GANCHO_VAV19_BRUTA' vira 'GANCHO_VAV19'.
+    Fallbacks preservam a informação quando o nome foge do padrão (sem perder
+    tokens úteis). A capitalização do original é preservada.
+    """
+    tokens = [t for t in re.split(r"[_\-.\s]+", nome) if t]
+    uteis = [t for t in tokens if t.upper() not in RUIDO_NOME]
+
+    tipo = next((t for t in uteis if t.isalpha()), None)
+    cod = next((t for t in uteis
+                if RE_CODIGO.match(t) or any(c.isdigit() for c in t)), None)
+
+    if tipo and cod and tipo != cod:
+        return f"{tipo}_{cod}"
+    if uteis:
+        return "_".join(uteis)
+    return nome
+
 
 def ffprobe_specs(video):
     def probe(stream, entries):
@@ -206,10 +237,11 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
     segmentos = subtrair_descartes(segmentos, descartar)
 
     nome = os.path.splitext(os.path.basename(video))[0]
+    base = nome_saida_base(nome)  # TIPO_ID, sem ruído (BRUTA etc.)
     # com normalização, o container/ext vem do alvo; senão, preserva o original.
     ext = ("." + alvo["container"]) if alvo else (os.path.splitext(video)[1] or ".mp4")
     os.makedirs(out_dir, exist_ok=True)
-    saida = os.path.join(out_dir, f"{nome}__OTIMIZADO{ext}")
+    saida = os.path.join(out_dir, f"{base}_OTIMIZADO{ext}")
 
     if len(segmentos) <= 1 and not silencios and not descartar:
         # nada a cortar — ainda assim entrega cópia reencodada? Não: só avisa.
@@ -253,6 +285,7 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
     return {
         "origem": video,
         "saida": saida,
+        "nome_saida": os.path.basename(saida),
         "silencios": len(silencios),
         "segmentos": len(segmentos),
         "takes_descartadas": len(descartar),
@@ -274,7 +307,7 @@ def coletar_videos(caminho):
         p = os.path.join(caminho, entry)
         if (os.path.isfile(p) and not entry.startswith(".")
                 and os.path.splitext(entry)[1].lower() in VIDEO_EXT
-                and "__OTIMIZADO" not in entry):
+                and "OTIMIZADO" not in entry.upper()):
             vids.append(p)
     return vids
 

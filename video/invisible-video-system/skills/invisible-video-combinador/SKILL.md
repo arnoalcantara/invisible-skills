@@ -54,7 +54,7 @@ Se o usuário não quiser usar a auto-descoberta, ele pode apontar os segmentos 
 
 A combinação mais usual é só **gancho × desenvolvimento** — mas é o usuário que determina, sempre.
 
-**Cortes já otimizados.** Otimizar os cortes de segmento ANTES de combinar é a ordem preferível (um reencode só; a combinação vira cópia). Se o usuário fez isso com a `invisible-video-otimizador`, os cortes podem estar numa subpasta `OTIMIZADOS/` de cada segmento — aponte-os direto: `--segmentos GANCHOS/OTIMIZADOS DESENVOLVIMENTOS/OTIMIZADOS`. O sufixo `__OTIMIZADO` não atrapalha: o código de origem (VAV19) é extraído mesmo assim, e os pares nativos seguem casando.
+**Cortes já otimizados.** Otimizar os cortes de segmento ANTES de combinar é a ordem preferível (um reencode só; a combinação vira cópia). Se o usuário fez isso com a `invisible-video-otimizador`, os cortes podem estar numa subpasta `OTIMIZADOS/` de cada segmento — aponte-os direto: `--segmentos GANCHOS/OTIMIZADOS DESENVOLVIMENTOS/OTIMIZADOS`. O nome `TIPO_ID_OTIMIZADO` não atrapalha: o código de origem (VAV19) é extraído do nome e `OTIMIZADO` é tratado como ruído, então os pares nativos seguem casando.
 
 ### Fase 3 — Transcrever os cortes que serão julgados (com cache)
 Só os segmentos que **variam** precisam de transcrição (os fixos nativos não se julgam). Para cada corte desses:

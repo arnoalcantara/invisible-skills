@@ -21,7 +21,7 @@ segmentos podem ser **dois ou mais**:
   DESENVOLVIMENTO...) e o **código/número** (19, VAV19, 28...), em qualquer ordem e
   com qualquer separador (`_`, `-`, `.`, espaço). O descobridor agrupa por rótulo e
   extrai o código à parte. `modo: mesma_pasta`. Rótulos fora dos conhecidos entram
-  por `--rotulos`. Sufixos como `__OTIMIZADO` são ignorados na leitura do código.
+  por `--rotulos`. Tokens de processamento como `OTIMIZADO` são ignorados na leitura do código.
 
 O código é extraído como `VAVxx` (regex de letras+dígitos) ou, na falta, como número
 solto delimitado por não-dígito (tolerando `_`, que `\b` não delimita). É o mesmo
