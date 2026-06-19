@@ -43,15 +43,27 @@ def extrair_audio(video, wav):
     subprocess.run(cmd, check=True, capture_output=True)
 
 
-def whisperx_bin(venv):
-    cand = os.path.join(venv, "bin", "whisperx")
-    return cand if os.path.exists(cand) else "whisperx"
+def resolver_bin(whisperx_bin, venv):
+    """Decide qual whisperx chamar.
+
+    Prioridade: --whisperx-bin explícito → venv (central) → whisperx do PATH.
+    O bootstrap já resolve isso e passa o caminho em whisperx_bin; aqui é só o
+    fallback para quem chamar o script direto.
+    """
+    if whisperx_bin and os.path.exists(whisperx_bin):
+        return whisperx_bin
+    if venv:
+        cand = os.path.join(venv, "bin", "whisperx")
+        if os.path.exists(cand):
+            return cand
+    return "whisperx"  # confia no PATH
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("video")
-    ap.add_argument("--venv", required=True, help="caminho do venv com whisperx")
+    ap.add_argument("--whisperx-bin", help="caminho do binário whisperx (do bootstrap)")
+    ap.add_argument("--venv", help="venv central com whisperx (fallback)")
     ap.add_argument("--cache-dir", required=True)
     ap.add_argument("--model", default="large-v3")
     ap.add_argument("--lang", default="pt")
@@ -83,7 +95,7 @@ def main():
 
         # WhisperX escreve <nome_do_wav>.json no --output_dir
         cmd = [
-            whisperx_bin(args.venv), wav,
+            resolver_bin(args.whisperx_bin, args.venv), wav,
             "--model", args.model,
             "--language", args.lang,
             "--device", "cpu",

@@ -35,13 +35,20 @@ skill: `scripts/<nome>.py`.
 Antes de tudo, garanta as dependências. Rode:
 
 ```
-python3 scripts/bootstrap.py --venv <pasta_projeto>/.transcricao/.wxenv --check-only
+python3 scripts/bootstrap.py --check-only
 ```
 
 Se `pronto` for `false`, rode sem `--check-only` para instalar o que falta (ffmpeg via
-brew; venv + WhisperX via uv). Siga as `instrucoes` que vierem no JSON se algo não puder
-ser instalado automaticamente. O venv do WhisperX é **por projeto**, em
-`.transcricao/.wxenv` dentro da pasta do projeto.
+brew; WhisperX via uv). Siga as `instrucoes` que vierem no JSON se algo não puder ser
+instalado automaticamente.
+
+**WhisperX instala UMA vez, nunca rebaixa.** O bootstrap resolve nesta ordem e reporta
+em `whisperx_origem`: (1) `whisperx` no PATH do sistema → usa direto; (2) venv **central**
+(`~/.invisible-video/wxenv`) já existente → usa; (3) nada → cria o venv central **uma vez**
+(Python 3.12, baixado pelo uv) e instala. O venv é **central, fora da pasta do projeto** —
+nunca se duplica os GB do torch por projeto. Use sempre o `whisperx_bin` que o bootstrap
+devolve. (Python 3.12 é forçado de propósito: o 3.14 não tem wheel de numpy e quebra a
+instalação tentando compilar.)
 
 **Modelo já baixado?** O JSON traz `modelo_pronto` e o bloco `modelo` (com `asr` e
 `alinhamento_pt`). Se `modelo_pronto: true`, o usuário **já tem** o modelo no cache do
@@ -85,10 +92,12 @@ confirmado em `<pasta_projeto>/.transcricao/<prefixo>.secoes.json`.
 
 ```
 python3 scripts/transcrever.py <video> \
-  --venv <pasta_projeto>/.transcricao/.wxenv \
+  --whisperx-bin <whisperx_bin do bootstrap> \
   --cache-dir <pasta_projeto>/.transcricao/wx_out
 ```
 
+Passe em `--whisperx-bin` o caminho que o bootstrap devolveu (sistema ou venv central);
+o **cache-dir do JSON** continua na pasta do projeto (é leve e específico do vídeo).
 Extrai áudio mono 16k e roda WhisperX (`large-v3`, `pt`, `cpu`, `int8`). Cacheia o JSON
 por nome+tamanho+mtime; em re-execução com o mesmo arquivo, não re-transcreve
 (`"cacheado": true`). Se o bootstrap reportou `modelo_pronto: false`, a 1ª transcrição

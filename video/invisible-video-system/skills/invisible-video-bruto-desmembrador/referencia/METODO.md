@@ -77,7 +77,12 @@ Ao rodar a skill nessa pasta, as bordas devem reproduzir esses valores dentro de
 ## Dependências
 
 - **ffmpeg / ffprobe** (Homebrew, `/opt/homebrew/bin`).
-- **WhisperX** em venv isolado por projeto (uv), modelo `large-v3` + alinhamento `pt`,
+- **WhisperX** no PATH do sistema OU num venv **central** único (`~/.invisible-video/wxenv`,
+  uv, Python 3.12) — instalado **uma vez** e reusado por todos os projetos, nunca duplicado
+  por pasta (torch + numpy são vários GB). Modelo `large-v3` + alinhamento `pt`,
   `--device cpu --compute_type int8` (estável em Apple Silicon).
-- O modelo é baixado pelo WhisperX na 1ª transcrição; o JSON por vídeo é cacheado
-  (`transcrever.py`) por nome+tamanho+mtime e reusado em re-execuções.
+- O modelo é baixado pelo WhisperX na 1ª transcrição (se não estiver no cache HF); o JSON
+  por vídeo é cacheado (`transcrever.py`) por nome+tamanho+mtime, na pasta do projeto, e
+  reusado em re-execuções.
+- **Python 3.12 forçado** no venv: o 3.14 não tem wheel de numpy e quebra tentando compilar
+  (headers do Xcode CLT). O uv baixa o 3.12 sozinho.

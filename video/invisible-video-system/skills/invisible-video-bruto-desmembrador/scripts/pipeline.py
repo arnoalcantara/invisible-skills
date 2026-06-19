@@ -8,7 +8,7 @@ os pontos de confirmação no controle do agente, não enterrados no script.
 Etapas:
     descobrir   <pasta>                              → pares + órfãos
     parse       <roteiro>                            → seções
-    transcrever <video> --venv --cache-dir           → json_path
+    transcrever <video> --whisperx-bin --cache-dir   → json_path
     bordas      <video> <transcricao> <secoes>       → cortes
     cortar      <video> <cortes> --out-base          → arquivos gerados
 
@@ -44,7 +44,7 @@ def main():
 
     p = sub.add_parser("descobrir"); p.add_argument("pasta"); p.add_argument("--brutas-subdir", default="BRUTAS")
     p = sub.add_parser("parse"); p.add_argument("roteiro")
-    p = sub.add_parser("transcrever"); p.add_argument("video"); p.add_argument("--venv", required=True); p.add_argument("--cache-dir", required=True); p.add_argument("--model", default="large-v3"); p.add_argument("--lang", default="pt")
+    p = sub.add_parser("transcrever"); p.add_argument("video"); p.add_argument("--whisperx-bin"); p.add_argument("--venv"); p.add_argument("--cache-dir", required=True); p.add_argument("--model", default="large-v3"); p.add_argument("--lang", default="pt")
     p = sub.add_parser("bordas"); p.add_argument("video"); p.add_argument("transcricao"); p.add_argument("secoes"); p.add_argument("--respiro-inicio", default="0.15"); p.add_argument("--respiro-fim", default="0.30")
     p = sub.add_parser("cortar"); p.add_argument("video"); p.add_argument("cortes"); p.add_argument("--out-base", required=True); p.add_argument("--crf", default="18"); p.add_argument("--preset", default="medium")
 
@@ -55,7 +55,12 @@ def main():
     elif args.cmd == "parse":
         out = rodar("parse_roteiro.py", args.roteiro)
     elif args.cmd == "transcrever":
-        out = rodar("transcrever.py", args.video, "--venv", args.venv,
+        extra = []
+        if args.whisperx_bin:
+            extra += ["--whisperx-bin", args.whisperx_bin]
+        if args.venv:
+            extra += ["--venv", args.venv]
+        out = rodar("transcrever.py", args.video, *extra,
                     "--cache-dir", args.cache_dir, "--model", args.model, "--lang", args.lang)
     elif args.cmd == "bordas":
         out = rodar("achar_bordas.py", args.video, args.transcricao, args.secoes,
