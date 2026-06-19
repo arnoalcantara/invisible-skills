@@ -35,6 +35,38 @@ A skill faz **bootstrap**: detecta o que falta e instala, sem refazer o que já 
 mede (wav2vec2) e acerta dentro de ~40ms. Detalhe em
 `skills/invisible-video-bruto-desmembrador/referencia/METODO.md`.
 
+### `invisible-video-combinador`
+
+Combina **ganchos × desenvolvimentos** (cortes que o desmembrador produziu) para
+gerar anúncios novos — mas só os cruzamentos que fazem **sentido retórico**.
+Invocada como `/invisible-video-combinador`.
+
+1. **Descobre** os cortes em `GANCHOS/` e `DESENVOLVIMENTOS/`.
+2. **Transcreve** cada corte com WhisperX (com cache; aqui só importa o texto).
+3. **Analisa a matriz** N×M: casa o que o gancho **promete** com o **tipo de abertura**
+   do desenvolvimento (dor, revelação, contestação, depoimento) — nunca pela forma
+   gramatical. Apresenta tabela ✅/⚠️/❌ justificada e **espera aprovação**.
+4. **Normaliza** cada corte para um alvo comum (`scale+pad+setsar=1`) e **concatena**
+   por `-c copy` (specs mistas quebrariam o concat sem isso).
+5. **Salva** em `COMBINAÇÕES/` como `GANCHO_VAV<xx>__DESENVOLVIMENTO_VAV<yy>.<ext>`.
+
+Saída padrão: Full HD vertical (1080×1920), 30fps, HEVC, MP4. Oferece 4K, MOV,
+resolução nativa e H.264 como alternativas.
+
+### `invisible-video-otimizador`
+
+Remove os **silêncios internos** de um vídeo montado **sem comer palavra**, deixando
+o ritmo enxuto. Aceita arquivo único ou pasta (lote). Invocada como
+`/invisible-video-otimizador`.
+
+Critério validado: silêncio = trecho >0.5s abaixo de **-35dB**; **respiro assimétrico**
+de 0.10s na entrada e 0.25s na saída (preserva ataque e cauda da fala); só silêncios
+internos; corte ao frame exato. Verifica o resultado com `silencedetect`. Salva em
+`OTIMIZADOS/` como `<nome>__OTIMIZADO.<ext>`. O porquê de cada número está em
+`skills/invisible-video-otimizador/referencia/METODO.md`.
+
+Só precisa de **ffmpeg** (não usa WhisperX).
+
 ## Estrutura
 
 ```
@@ -46,4 +78,15 @@ video/invisible-video-system/
     SKILL.md
     scripts/   (bootstrap, descobrir_pares, parse_roteiro, transcrever, achar_bordas, cortar, pipeline)
     referencia/METODO.md
+  skills/invisible-video-combinador/
+    SKILL.md
+    scripts/   (bootstrap, transcrever, descobrir_cortes, normalizar, combinar)
+    referencia/METODO.md
+  skills/invisible-video-otimizador/
+    SKILL.md
+    scripts/   (bootstrap, otimizar)
+    referencia/METODO.md
 ```
+
+`bootstrap.py` e `transcrever.py` são copiados em cada skill que precisa deles, para
+que cada skill fique autocontida.

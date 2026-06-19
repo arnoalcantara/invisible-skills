@@ -27,7 +27,7 @@
     {
       "name": "invisible-video-system",
       "source": "./video/invisible-video-system",
-      "description": "Desmembra vídeos brutos em cortes por seção do roteiro (gancho, desenvolvimento, CTA...). Transcreve com WhisperX, casa roteiro×transcrição×silêncio para achar bordas precisas, recodifica preservando specs e salva cada seção em pasta própria."
+      "description": "Sistema de vídeo da Invisible, três skills. Desmembrador: corta brutos por seção do roteiro (gancho, desenvolvimento, CTA...) via WhisperX. Combinador: cruza ganchos × desenvolvimentos por encaixe retórico e gera anúncios combinados. Otimizador: remove silêncios internos sem comer palavra."
     },
     {
       "name": "invisible-organizacao",

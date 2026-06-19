@@ -4,9 +4,14 @@ Orienta qualquer instância de Claude que trabalhe neste plugin. Leia antes de e
 
 ## O que é
 
-O sistema de vídeo da Invisible. Hoje tem uma skill: **`invisible-video-bruto-desmembrador`**,
-que corta vídeos brutos em um vídeo por seção do roteiro. O nome do plugin é genérico
-de propósito — é onde futuras skills de vídeo entram (legendagem, montagem, export).
+O sistema de vídeo da Invisible. Três skills, encadeáveis na mesma pasta de projeto:
+
+- **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
+- **`invisible-video-combinador`** — cruza ganchos × desenvolvimentos por encaixe retórico
+  e gera anúncios combinados (consome as saídas do desmembrador).
+- **`invisible-video-otimizador`** — remove silêncios internos sem comer palavra.
+
+O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
 ## Arquitetura
 
@@ -33,6 +38,22 @@ Em `skills/invisible-video-bruto-desmembrador/scripts/`:
 - `achar_bordas.py` — o coração: âncora fuzzy × tomadas × silêncio → timestamps + respiros.
 - `cortar.py` — ffprobe specs + ffmpeg recodifica cada seção, pasta plural.
 - `pipeline.py` — atalho que expõe as etapas como subcomandos.
+
+Em `skills/invisible-video-combinador/scripts/`:
+
+- `bootstrap.py`, `transcrever.py` — **cópias** das do desmembrador (cada skill autocontida).
+- `descobrir_cortes.py` — acha `GANCHOS/` e `DESENVOLVIMENTOS/`, extrai o código (VAVxx).
+- `normalizar.py` — normaliza um corte para o alvo (`scale+pad+setsar=1` + fps + aformat).
+- `combinar.py` — concat `-c copy` de gancho+desenvolvimento já normalizados.
+
+Em `skills/invisible-video-otimizador/scripts/`:
+
+- `bootstrap.py` — **cópia** (esta skill só usa a parte de ffmpeg; não usa WhisperX).
+- `otimizar.py` — silencedetect → keep-segments com respiro assimétrico → filter_complex
+  (trim/atrim+concat) → reencode → verifica. Aceita arquivo ou pasta (lote).
+
+**Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
+Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar nas três cópias.
 
 ## Convenções
 
