@@ -205,6 +205,7 @@ def main():
             "plural": pluralizar(s["nome"]),
             "ancora_inicio": fs[0],
             "ancora_fim": fs[-1],
+            "texto": " ".join(fs),   # texto completo da seção (fonte do sidecar .md)
             "n_frases": len(fs),
         })
 

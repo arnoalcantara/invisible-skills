@@ -58,6 +58,8 @@ Em `skills/invisible-video-combinador/scripts/`:
   **Rede de segurança:** o ideal é os cortes já chegarem normalizados da otimizadora;
   este script só entra quando algum corte ainda tem specs divergentes do alvo.
 - `combinar.py` — concat `-c copy` de gancho+desenvolvimento já normalizados.
+- `sidecar_corte.py` — junta os `.md` (sidecar de roteiro) das partes no `.md` da combinação,
+  pra a cadeia montada carregar o rótulo+texto de cada seção adiante no pipeline.
 
 Em `skills/invisible-video-otimizador/scripts/`:
 
@@ -96,6 +98,13 @@ Em `skills/invisible-legenda-arquivos/scripts/`:
   no stderr. O `.json` traz `segments[].words[]` (start/end por palavra) — é o que o Remotion
   consome pra legenda animada. **Só JSON:** o `.srt` foi descartado (v2.0.0) — o pipeline só
   usa o timestamp por palavra, que só o JSON carrega; gerar SRT era peso morto. Sem `--formatos`.
+  Se há um sidecar de roteiro `<video>.md` ao lado, depois de gerar o `.json` chama
+  `marcar_secoes.py` pra taggear cada palavra com a `secao` (e injetar o bloco `secoes`).
+- `marcar_secoes.py` — marca cada palavra do `.json` com a seção do roteiro quando existe um
+  `<video>.md` ao lado: acha QUANDO cada seção começa casando o texto do MD contra a
+  transcrição por similaridade fuzzy (mesma técnica do `achar_bordas.py` do desmembrador),
+  não por tempos pré-gravados — robusto a edição entre combinar e legendar. Sem `.md`, o
+  `.json` sai sem `secao`.
 
 Em `skills/invisible-legendas-aplicador/scripts/` (+ `remotion/`):
 

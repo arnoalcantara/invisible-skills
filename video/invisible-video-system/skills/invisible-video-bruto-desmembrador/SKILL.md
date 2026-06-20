@@ -129,6 +129,8 @@ Lê as specs com ffprobe e recodifica cada seção (`libx265 -crf 18 -preset med
 preservando pix_fmt/fps/áudio), mapeando só v+a. Cria as pastas plural (GANCHOS/,
 DESENVOLVIMENTOS/, CTAS/) e salva `<nome_bruto>__<SECAO>.<ext>`.
 
+**Sidecar de roteiro:** ao lado de cada corte nasce um `<nome>.md` com `# SEÇÃO` + o texto do roteiro daquela seção (texto editorial, não transcrição). É a camada semântica que flui pelo pipeline: o otimizador propaga, o combinador junta, a legenda-arquivos usa pra marcar cada palavra do JSON com a seção. Não tem tempos — só rótulo + texto.
+
 ### 6. Fechamento
 
 Mostre o resumo: quais arquivos foram gerados, em que pastas, com que durações. Avise

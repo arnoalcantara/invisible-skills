@@ -31,6 +31,12 @@ import subprocess
 import sys
 import tempfile
 
+try:
+    from marcar_secoes import marcar_secoes_no_json
+except ImportError:  # módulo irmão; garante o dir do script no path
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from marcar_secoes import marcar_secoes_no_json
+
 EXTS_VIDEO = {".mp4", ".mov", ".mkv", ".m4v", ".webm", ".avi", ".mpg", ".mpeg", ".wmv", ".flv"}
 
 
@@ -114,8 +120,27 @@ def legendar_um(video, wx_bin, lang, model):
                     "etapa": "saida_json", "detalhe": "WhisperX não gerou json"}
         os.replace(origem, destino)  # sobrescreve em --forcar
 
-    return {"video": os.path.basename(video), "status": "gerado",
-            "saida": os.path.basename(destino)}
+    # sidecar de roteiro: se há <video>.md ao lado, marca cada palavra do JSON
+    # com a seção (gancho/desenvolvimento...) casando o texto contra a
+    # transcrição — tempo medido sobre o vídeo atual, robusto a edição.
+    secoes_rel = None
+    md_lado = os.path.splitext(video)[0] + ".md"
+    if os.path.isfile(md_lado):
+        try:
+            with open(destino, encoding="utf-8") as f:
+                data = json.load(f)
+            secoes_rel = marcar_secoes_no_json(data, md_lado)
+            if secoes_rel.get("marcado"):
+                with open(destino, "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False)
+        except (OSError, json.JSONDecodeError) as e:
+            secoes_rel = {"marcado": False, "erro": str(e)}
+
+    rep = {"video": os.path.basename(video), "status": "gerado",
+           "saida": os.path.basename(destino)}
+    if secoes_rel is not None:
+        rep["secoes"] = secoes_rel
+    return rep
 
 
 def main():

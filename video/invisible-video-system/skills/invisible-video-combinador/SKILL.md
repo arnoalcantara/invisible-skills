@@ -56,13 +56,18 @@ A combinação mais usual é só **gancho × desenvolvimento** — mas é o usu�
 
 **Cortes já otimizados.** Otimizar os cortes de segmento ANTES de combinar é a ordem preferível (um reencode só; a combinação vira cópia). Se o usuário fez isso com a `invisible-video-otimizador`, os cortes podem estar numa subpasta `OTIMIZADOS/` de cada segmento — aponte-os direto: `--segmentos GANCHOS/OTIMIZADOS DESENVOLVIMENTOS/OTIMIZADOS`. O nome `TIPO_ID_OTIMIZADO` não atrapalha: o código de origem (VAV19) é extraído do nome e `OTIMIZADO` é tratado como ruído, então os pares nativos seguem casando.
 
-### Fase 3 — Transcrever os cortes que serão julgados (com cache)
-Só os segmentos que **variam** precisam de transcrição (os fixos nativos não se julgam). Para cada corte desses:
+### Fase 3 — Obter o texto dos cortes que serão julgados (sidecar .md → senão transcreve)
+Só os segmentos que **variam** precisam do texto (os fixos nativos não se julgam). Para cada corte desses, **primeiro cheque o sidecar de roteiro** `<corte_sem_ext>.md` ao lado dele (vem do desmembrador, propagado pelo otimizador):
+
+- **Se o `.md` existe** → leia o texto dele. Não transcreva.
+- **Se falta** → transcreva e **grave o `.md`** ao lado do corte (assim a próxima combinação reusa):
 ```bash
 python3 scripts/transcrever.py "<corte>" --whisperx-bin <do bootstrap> \
     --cache-dir "<pasta_projeto>/.transcricao/wx_out"
+python3 scripts/sidecar_corte.py --json "<json_da_transcrição>" \
+    --rotulo <SEGMENTO_EM_MAIÚSCULAS> --out "<corte_sem_ext>.md"
 ```
-Para a matriz importa só o texto; a borda não. Reusa cache (chave nome+tamanho+mtime).
+O rótulo é o do segmento (GANCHO, DESENVOLVIMENTO...). Para a matriz importa só o texto; a borda não. A transcrição reusa cache (chave nome+tamanho+mtime).
 
 ### Fase 4 — Analisar e propor a matriz
 Classifique cada corte dos segmentos que variam:
@@ -92,11 +97,14 @@ python3 scripts/normalizar.py "<corte>" --out "<tmp>/<corte>.mp4" \
     --largura 1080 --altura 1920 --fps 30 --vcodec libx265 --crf 20 \
     --sample-rate 48000 --canais 2
 ```
-2. Concatene **na ordem da cadeia** (combinar.py aceita N partes):
+2. Concatene **na ordem da cadeia** (combinar.py aceita N partes). Passe também os **sidecars `.md` dos cortes ORIGINAIS** (os otimizados, com o `.md` ao lado — **não** as versões normalizadas temporárias), na MESMA ordem, para gerar o roteiro da combinação:
 ```bash
 python3 scripts/combinar.py "<seg1_norm>" "<seg2_norm>" "<segN_norm>" \
-    --out "<projeto>/COMBINAÇÕES/<nome_da_peça>.mp4"
+    --out "<projeto>/COMBINAÇÕES/<nome_da_peça>.mp4" \
+    --sidecars "<seg1_orig>.md" "<seg2_orig>.md" "<segN_orig>.md" \
+    --out-md "<projeto>/COMBINAÇÕES/<nome_da_peça>.md"
 ```
+O `.md` da combinação junta as seções em sequência (gancho + desenvolvimento + ...), **sem tempos** — a marcação por tempo nasce depois, na `invisible-legenda-arquivos`, casando este texto contra a transcrição do vídeo já editado. Se algum corte não tiver `.md`, ele é registrado em `sidecars_faltando` e a combinação segue.
 
 ### Fase 7 — Resumo
 Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e aponte 1–2 decisões representativas da matriz (de preferência uma ⚠️).
