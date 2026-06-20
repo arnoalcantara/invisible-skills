@@ -1,7 +1,11 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AbsoluteFill,
+  Easing,
   Sequence,
+  interpolate,
+  interpolateColors,
+  spring,
   staticFile,
   useCurrentFrame,
   useDelayRender,
@@ -20,11 +24,31 @@ import type { CSSProperties } from "react";
 // palavra falada. Trocar de visual = trocar de preset.
 // Fontes dedicadas (Google/local) reforçam ainda mais cada "cara" — aqui ficam
 // fontes de sistema para o template rodar sem download extra.
+//
+// CAMADA DE ANIMAÇÃO (campos opcionais — quando ausentes, o destaque é "seco",
+// o comportamento original de liga/desliga):
+//   - pop:            spring no scale da palavra ativa (overshoot estilo TikTok)
+//   - colorFadeFrames: nº de frames pra suavizar a troca de cor (0 = seco)
+//   - enter:          entrada da página (fade-in + slide de baixo)
 // ----------------------------------------------------------------------------
 
 type HighlightMode = "color" | "box" | "opacity" | "none";
 
 export type PresetName = "reels" | "hormozi" | "minimal" | "classic";
+
+// spring de entrada da palavra ativa (pop com overshoot)
+type PopAnim = {
+  damping: number; // menor = mais "molinha"/overshoot
+  stiffness?: number; // maior = mais rápido/seco
+  mass?: number; // maior = mais lento/pesado
+  outFrames?: number; // frames pra voltar ao normal quando a palavra passa
+};
+
+// entrada da página inteira
+type EnterAnim = {
+  fadeFrames?: number; // frames de fade-in (0 = sem fade)
+  slideY?: number; // px de slide de baixo pra cima na entrada
+};
 
 type Preset = {
   combineMs: number; // quanto tempo de palavras cabe por página
@@ -45,6 +69,10 @@ type Preset = {
   boxTextColor?: string;
   inactiveOpacity?: number;
   scaleActive: number;
+  // --- camada de animação (opcional) ---
+  pop?: PopAnim;
+  colorFadeFrames?: number;
+  enter?: EnterAnim;
 };
 
 export const PRESETS: Record<PresetName, Preset> = {
@@ -64,7 +92,11 @@ export const PRESETS: Record<PresetName, Preset> = {
     stroke: "3px #000",
     textShadow: "0 4px 14px rgba(0,0,0,0.55), 0 0 2px rgba(0,0,0,0.9)",
     highlightMode: "color",
-    scaleActive: 1.08,
+    scaleActive: 1.12,
+    // animação aprovada (validada ao vivo no studio)
+    pop: { damping: 9, stiffness: 130, mass: 0.7, outFrames: 5 },
+    colorFadeFrames: 3,
+    enter: { fadeFrames: 5, slideY: 24 },
   },
   // 2. Hormozi caixa — palavra falada ganha um retângulo amarelo, texto preto
   //    (EXPERIMENTAL — ainda em ajuste; não ofereça como pronto)
@@ -127,11 +159,71 @@ export const PRESETS: Record<PresetName, Preset> = {
   },
 };
 
-function tokenStyle(preset: Preset, isActive: boolean): CSSProperties {
+// "activeness" animado de um token: sobe ao acender (pop), assenta enquanto
+// ativo e volta a 0 quando a palavra passa. Retorna o progresso pro scale (com
+// overshoot do spring) e pro fade de cor (clampado 0..1).
+function computeTokenAnim(
+  preset: Preset,
+  token: { fromMs: number; toMs: number },
+  pageStartMs: number,
+  frame: number,
+  fps: number,
+): { scaleProg: number; colorProg: number } {
+  const startF = ((token.fromMs - pageStartMs) / 1000) * fps;
+  const endF = ((token.toMs - pageStartMs) / 1000) * fps;
+
+  // sem animação de pop: degrau (comportamento original)
+  if (!preset.pop) {
+    const isActive = frame >= startF && frame < endF;
+    return { scaleProg: isActive ? 1 : 0, colorProg: isActive ? 1 : 0 };
+  }
+
+  const outFrames = preset.pop.outFrames ?? 5;
+  // subida: spring (com overshoot) a partir do acender da palavra
+  const rise = spring({
+    frame: frame - startF,
+    fps,
+    config: {
+      damping: preset.pop.damping,
+      stiffness: preset.pop.stiffness ?? 100,
+      mass: preset.pop.mass ?? 1,
+    },
+  });
+  // descida: depois que a palavra passa, volta a 0
+  const release = interpolate(frame, [endF, endF + outFrames], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+  const scaleProg = frame < startF ? 0 : frame < endF ? rise : rise * release;
+
+  // cor: fade clampado (sem overshoot, pra não "estourar" a cor)
+  const fadeFrames = preset.colorFadeFrames ?? 0;
+  const colorRise = fadeFrames
+    ? interpolate(frame, [startF, startF + fadeFrames], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : frame >= startF
+      ? 1
+      : 0;
+  const colorProg =
+    frame < startF ? 0 : frame < endF ? colorRise : colorRise * release;
+
+  return { scaleProg, colorProg };
+}
+
+function tokenStyle(
+  preset: Preset,
+  scaleProg: number,
+  colorProg: number,
+): CSSProperties {
   const base: CSSProperties = { display: "inline-block" };
+  const scale = 1 + (preset.scaleActive - 1) * scaleProg;
+
   switch (preset.highlightMode) {
-    case "box":
-      if (isActive) {
+    case "box": {
+      const on = colorProg > 0.5;
+      if (on) {
         return {
           ...base,
           color: preset.boxTextColor,
@@ -139,16 +231,21 @@ function tokenStyle(preset: Preset, isActive: boolean): CSSProperties {
           padding: "0 0.14em",
           borderRadius: 14,
           WebkitTextStroke: "0",
-          transform: `scale(${preset.scaleActive})`,
+          transform: `scale(${scale})`,
         };
       }
       return { ...base, color: preset.baseColor };
+    }
     case "opacity":
       return {
         ...base,
         color: preset.baseColor,
-        opacity: isActive ? 1 : (preset.inactiveOpacity ?? 0.5),
-        transform: isActive ? `scale(${preset.scaleActive})` : "scale(1)",
+        opacity: interpolate(
+          colorProg,
+          [0, 1],
+          [preset.inactiveOpacity ?? 0.5, 1],
+        ),
+        transform: `scale(${scale})`,
       };
     case "none":
       return { ...base, color: preset.baseColor };
@@ -156,8 +253,12 @@ function tokenStyle(preset: Preset, isActive: boolean): CSSProperties {
     default:
       return {
         ...base,
-        color: isActive ? preset.activeColor : preset.baseColor,
-        transform: isActive ? `scale(${preset.scaleActive})` : "scale(1)",
+        color: interpolateColors(
+          colorProg,
+          [0, 1],
+          [preset.baseColor, preset.activeColor],
+        ),
+        transform: `scale(${scale})`,
       };
   }
 }
@@ -233,8 +334,22 @@ const CaptionPage: React.FC<{ page: TikTokPage; preset: Preset }> = ({
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
-  const currentTimeMs = (frame / fps) * 1000;
-  const absoluteTimeMs = page.startMs + currentTimeMs;
+  // entrada da página: fade-in + slide de baixo pra cima
+  const enterFade = preset.enter?.fadeFrames ?? 0;
+  const enterSlide = preset.enter?.slideY ?? 0;
+  const enterOpacity = enterFade
+    ? interpolate(frame, [0, enterFade], [0, 1], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+      })
+    : 1;
+  const enterTranslateY = enterSlide
+    ? interpolate(frame, [0, enterFade || 8], [enterSlide, 0], {
+        extrapolateLeft: "clamp",
+        extrapolateRight: "clamp",
+        easing: Easing.out(Easing.cubic),
+      })
+    : 0;
 
   return (
     <AbsoluteFill
@@ -262,15 +377,22 @@ const CaptionPage: React.FC<{ page: TikTokPage; preset: Preset }> = ({
           WebkitTextStroke: preset.stroke ?? undefined,
           paintOrder: "stroke fill",
           textShadow: preset.textShadow ?? undefined,
+          opacity: enterOpacity,
+          transform: `translateY(${enterTranslateY}px)`,
         }}
       >
         {page.tokens.map((token, i) => {
-          const isActive =
-            token.fromMs <= absoluteTimeMs && token.toMs > absoluteTimeMs;
+          const { scaleProg, colorProg } = computeTokenAnim(
+            preset,
+            token,
+            page.startMs,
+            frame,
+            fps,
+          );
           return (
             <Fragment key={token.fromMs}>
               {i > 0 ? " " : ""}
-              <span style={tokenStyle(preset, isActive)}>
+              <span style={tokenStyle(preset, scaleProg, colorProg)}>
                 {token.text.trim()}
               </span>
             </Fragment>

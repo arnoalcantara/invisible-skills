@@ -42,7 +42,7 @@ Se o `.json` não existir ao lado do vídeo, a skill avisa e pede para rodar a
 
 | Estilo | Marca | Quando |
 |---|---|---|
-| `reels` | palavra falada acende em **amarelo**, maiúsculas, contorno preto | padrão de Reels/TikTok, máxima atenção |
+| `reels` | palavra falada acende em **amarelo** com **pop animado** (spring + fade de cor + entrada deslizante), maiúsculas, contorno preto | padrão de Reels/TikTok, máxima atenção |
 | `minimal` | tudo branco, minúsculas; palavras ainda-não-ditas **esmaecidas** | sóbrio, elegante |
 | `classic` | legenda em **bloco** no rodapé, sem karaokê | legenda clássica de vídeo |
 | ~~`hormozi`~~ | caixa amarela na palavra | **EXPERIMENTAL — em ajuste, não oferecer** |
@@ -51,6 +51,13 @@ Todos os parâmetros de cada preset (ritmo, fonte, tamanho, cor, posição, modo
 destaque) vivem no topo de `remotion/src/Captions.tsx`, em `PRESETS`. A legenda **não
 vaza a margem**: o texto quebra em linha dentro de uma largura limitada (correção
 embutida — não reverter).
+
+Cada preset pode ligar uma **camada de animação** (campos opcionais; ausentes = destaque
+"seco" de liga/desliga): `pop` (spring no scale da palavra ativa, com overshoot estilo
+TikTok), `colorFadeFrames` (suaviza a troca de cor) e `enter` (entrada da página com
+fade-in + slide de baixo). O `reels` já vem com a animação aprovada ligada. A interpolação
+por frame (`spring`/`interpolate`/`interpolateColors`) é onde o Remotion ganha do `drawtext`
+do ffmpeg — animação só se julga em movimento (use `remotion studio`, não `still`).
 
 ## Fluxo de execução
 
