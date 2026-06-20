@@ -4,7 +4,7 @@ Orienta qualquer instância de Claude que trabalhe neste plugin. Leia antes de e
 
 ## O que é
 
-O sistema de vídeo da Invisible. Quatro skills, encadeáveis na mesma pasta de projeto:
+O sistema de vídeo da Invisible. Cinco skills, encadeáveis na mesma pasta de projeto:
 
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
 - **`invisible-video-combinador`** — cruza ganchos × desenvolvimentos por encaixe retórico
@@ -17,6 +17,10 @@ O sistema de vídeo da Invisible. Quatro skills, encadeáveis na mesma pasta de 
   com o mesmo nome, um `.srt` (legenda por frase) + um `.json` (transcrição com timestamp
   por palavra, fonte pra animação palavra-a-palavra no Remotion) via WhisperX. Lote,
   resumível, sem tocar no original.
+- **`invisible-legendas-aplicador`** — queima legenda animada (karaokê) no vídeo com Remotion,
+  consumindo o `.json` da `invisible-legenda-arquivos` (não transcreve). Estilos `reels`/`minimal`/
+  `classic`; saída em `LEGENDADOS/<nome>_LEGENDADO.mp4`, sem tocar no original. É a última etapa
+  do pipeline (reencode obrigatório — pixel novo sobre o vídeo).
 
 O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
@@ -95,9 +99,30 @@ Em `skills/invisible-legenda-arquivos/scripts/`:
   básico). Os dois saem da MESMA transcrição (SRT achata o tempo por palavra e não dá pra
   recuperar dele depois).
 
+Em `skills/invisible-legendas-aplicador/scripts/` (+ `remotion/`):
+
+- `bootstrap.py` — **NÃO é cópia** do desmembrador: aqui o ambiente é Remotion/Node, não
+  WhisperX. Detecta node/npm/ffmpeg, sincroniza os fontes do template `../remotion/` para um
+  projeto central único (`~/.invisible-video/legendas-remotion`) e roda `npm install` só na
+  1ª vez ou quando o `package.json` muda. Idempotente. Reporta `pronto`.
+- `convert_captions.mjs` — achata `segments[].words[]` do `.json` (saída da
+  `invisible-legenda-arquivos`) em `Caption[]` do `@remotion/captions`, uma Caption por
+  palavra; interpola timestamp de palavra sem start/end pra nenhuma "sumir".
+- `aplicar.py` — orquestra por vídeo: localiza o `.json` irmão (sem ele, para e avisa —
+  **não transcreve**), converte → encena `public/video.mp4` + `public/captions.json` no
+  central → `npx remotion render <estilo>` → `LEGENDADOS/<nome>_LEGENDADO.mp4`. Aceita arquivo
+  ou pasta (lote, ignora a própria `LEGENDADOS`).
+- `remotion/` — template do render (fontes só; `node_modules` vive no central, não no repo).
+  `src/Captions.tsx` guarda os `PRESETS` (ritmo, fonte, cor, posição, modo de destaque) e a
+  correção de quebra de linha que impede o texto de vazar a margem (**não reverter** — espaço
+  fora do `inline-block`). `Root.tsx` adapta duração/dimensão por vídeo via `parseMedia`. O
+  preset `hormozi` existe mas está EXPERIMENTAL (em ajuste — não oferecer como pronto).
+
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
-Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar em todas as cópias (cada
-skill tem a sua; a legendas tem só `bootstrap.py`, com lógica própria de WhisperX em `legendar.py`).
+Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar em todas as cópias — atenção:
+o `bootstrap.py` do `invisible-legendas-aplicador` é o ÚNICO diferente (Remotion, não WhisperX),
+não entra nessa replicação. As demais skills têm a sua `bootstrap.py` de WhisperX; a
+`invisible-legenda-arquivos` tem só `bootstrap.py`, com lógica própria de WhisperX em `legendar.py`.
 
 ## Convenções
 
