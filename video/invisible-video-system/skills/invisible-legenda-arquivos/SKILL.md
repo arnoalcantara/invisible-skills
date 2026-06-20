@@ -1,5 +1,5 @@
 ---
-name: invisible-legendas
+name: invisible-legenda-arquivos
 description: >
   Gera legendas a partir de vídeos que já existem. O usuário aponta um vídeo OU uma pasta de vídeos e a skill transcreve cada um com WhisperX (português, large-v3) e salva DOIS arquivos irmãos ao lado da origem, com o MESMO nome do vídeo: um `.srt` (legenda por frase, legível, pronto pra revisar ou subir num player) e um `.json` (transcrição completa com timestamp por palavra — `segments[].words[]` com start/end medido, a fonte pra animação palavra-a-palavra no Remotion). O vídeo nunca é tocado. Roda em lote numa pasta inteira e é resumível (pula o que já tem legenda). Use SEMPRE que o usuário pedir para "gerar legenda", "criar os srt", "legendar esses vídeos", "transcrever a pasta", "gerar srt e json", "tirar a legenda do vídeo", "fazer as legendas pra animar no Remotion", ou apontar uma pasta de vídeos pedindo a transcrição. Requer ffmpeg e WhisperX (faz bootstrap).
 ---

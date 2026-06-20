@@ -13,7 +13,7 @@ O sistema de vídeo da Invisible. Quatro skills, encadeáveis na mesma pasta de 
   da mesma fala (transcrição WhisperX, última take vence), remove silêncios internos sem
   comer palavra e, opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra
   concatenar).
-- **`invisible-legendas`** — aponta um vídeo ou uma pasta e gera, ao lado de cada vídeo e
+- **`invisible-legenda-arquivos`** — aponta um vídeo ou uma pasta e gera, ao lado de cada vídeo e
   com o mesmo nome, um `.srt` (legenda por frase) + um `.json` (transcrição com timestamp
   por palavra, fonte pra animação palavra-a-palavra no Remotion) via WhisperX. Lote,
   resumível, sem tocar no original.
@@ -80,7 +80,7 @@ Em `skills/invisible-video-otimizador/scripts/`:
   underscore único. O lote pula qualquer arquivo com `OTIMIZADO` no nome; o combinador lê o
   código mesmo assim (trata `OTIMIZADO` como ruído).
 
-Em `skills/invisible-legendas/scripts/`:
+Em `skills/invisible-legenda-arquivos/scripts/`:
 
 - `bootstrap.py` — **cópia** da do desmembrador (cada skill autocontida).
 - `legendar.py` — extrai áudio mono 16k com ffmpeg e roda WhisperX UMA vez por vídeo
