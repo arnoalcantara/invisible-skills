@@ -69,10 +69,12 @@ Em `skills/invisible-video-otimizador/scripts/`:
   reencode. Aceita arquivo ou pasta (lote); `--descartar` vale só pra arquivo único. Por
   padrão preserva specs; com `--normalizar` padroniza no mesmo passo (a normalização migrou
   do combinador pra cá — fundir tudo num só reencode evita gerações extras). O nome de saída
-  é limpo via `nome_saida_base()`: mantém o rótulo (token alfabético) + o código/numeração
-  (VAV19 ou número solto) e descarta ruído (BRUTA, RAW, VERTICAL...) → `TIPO_ID_OTIMIZADO`,
-  sufixo de underscore único (`_OTIMIZADO`). O lote pula qualquer arquivo com `OTIMIZADO` no
-  nome; o combinador lê o código mesmo assim (trata `OTIMIZADO` como ruído).
+  é limpo via `nome_saida_base()`: **preserva toda a identificação** (tipo, código, prefixo,
+  número, na ordem original) e descarta SÓ tokens de ruído de processo (BRUTA, VERTICAL,
+  HORIZONTAL, RAW, FINAL, OTIMIZADO) + `_OTIMIZADO`. Ex.: `DME_VAV23_VERTICAL_BRUTA_DESENVOLVIMENTO`
+  → `DME_VAV23_DESENVOLVIMENTO_OTIMIZADO` (o tipo nunca se perde). Separadores repetidos viram
+  underscore único. O lote pula qualquer arquivo com `OTIMIZADO` no nome; o combinador lê o
+  código mesmo assim (trata `OTIMIZADO` como ruído).
 
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
 Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar nas três cópias (agora as

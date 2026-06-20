@@ -75,36 +75,27 @@ MODOS_SILENCIO = {
 RE_START = re.compile(r"silence_start:\s*([\d.]+)")
 RE_END = re.compile(r"silence_end:\s*([\d.]+)")
 
-# nome de saída = TIPO_ID_OTIMIZADO. O código (VAV19) ou um número solto é o ID;
-# o primeiro token alfabético é o TIPO (rótulo do segmento). Ruído (BRUTA e cia.)
-# e qualquer token que não seja TIPO nem ID são descartados.
-RE_CODIGO = re.compile(r"^[A-Za-z]{2,5}\d{1,4}$")  # VAV19, DES34...
+# nome de saída: descarta SÓ os tokens de ruído de processamento (BRUTA, VERTICAL,
+# RAW...) e mantém TODO o resto na ordem original — tipo (GANCHO/DESENVOLVIMENTO),
+# código (VAV23), prefixo (DME), o que houver. Nada de identificação se perde; só
+# as palavras de processo somem. Separadores viram underscore único.
 RUIDO_NOME = {"BRUTA", "BRUTO", "BRUTAS", "BRUTOS",
               "OTIMIZADO", "OTIMIZADA", "RAW", "FINAL",
               "VERTICAL", "HORIZONTAL"}
 
 
 def nome_saida_base(nome):
-    """Deriva TIPO_ID do nome original, descartando ruído.
+    """Limpa o nome original mantendo toda a identificação.
 
-    Mantém o primeiro token-rótulo (alfabético, ex.: GANCHO/DES) e o primeiro
-    código/numeração (VAV19 ou número solto). Tudo que for ruído (BRUTA...) ou
-    não case com TIPO/ID é descartado — 'GANCHO_VAV19_BRUTA' vira 'GANCHO_VAV19'.
-    Fallbacks preservam a informação quando o nome foge do padrão (sem perder
-    tokens úteis). A capitalização do original é preservada.
+    Descarta apenas tokens de RUÍDO (BRUTA, VERTICAL, RAW, FINAL, OTIMIZADO...) e
+    preserva o resto na ordem em que aparece — tipo, código, prefixo, número.
+    'DME__VAV23__VERTICAL__BRUTA__DESENVOLVIMENTO' vira
+    'DME_VAV23_DESENVOLVIMENTO' (o tipo NUNCA se perde). Se sobrar nada (nome só
+    de ruído), devolve o nome original. Capitalização preservada.
     """
     tokens = [t for t in re.split(r"[_\-.\s]+", nome) if t]
     uteis = [t for t in tokens if t.upper() not in RUIDO_NOME]
-
-    tipo = next((t for t in uteis if t.isalpha()), None)
-    cod = next((t for t in uteis
-                if RE_CODIGO.match(t) or any(c.isdigit() for c in t)), None)
-
-    if tipo and cod and tipo != cod:
-        return f"{tipo}_{cod}"
-    if uteis:
-        return "_".join(uteis)
-    return nome
+    return "_".join(uteis) if uteis else nome
 
 
 def ffprobe_specs(video):

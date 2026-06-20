@@ -78,7 +78,7 @@ Dois eixos de modo independentes, cada um **conservador** (default, validado) ou
 e **modo de respiro** (margem nas bordas, assimétrica — conservador 0.10/0.25, justo
 0.05/0.18). Preserva ataque e cauda da fala; só silêncios
 internos; corte ao frame exato. Verifica o resultado com `silencedetect`. Salva em
-`OTIMIZADOS/` com nome limpo `<TIPO>_<ID>_OTIMIZADO.<ext>` (mantém rótulo + código, descarta `BRUTA` e ruído). O porquê de cada número (e o critério
+`OTIMIZADOS/` com nome limpo: preserva toda a identificação (tipo, código, prefixo) e descarta só ruído de processo (`BRUTA`, `VERTICAL`, `RAW`...) + `_OTIMIZADO`. `DME_VAV23_VERTICAL_BRUTA_DESENVOLVIMENTO` → `DME_VAV23_DESENVOLVIMENTO_OTIMIZADO`. O porquê de cada número (e o critério
 de seleção de takes) está em `skills/invisible-video-otimizador/referencia/METODO.md`.
 
 A seleção de takes é **opcional e por arquivo** (só roda quando há repetição; o

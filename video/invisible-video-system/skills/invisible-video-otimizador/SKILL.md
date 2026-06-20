@@ -126,11 +126,15 @@ Cada resultado traz `verificacao`, `normalizado` e `takes_descartadas`:
 Se um vídeo voltar com `aviso` de "nenhum silêncio interno detectado" e não houver takes a descartar, não há o que otimizar — informe e siga.
 
 ### Fase 5 — Resumo
-Liste cada vídeo: nome de saída (`nome_saida`, já limpo pra `TIPO_ID_OTIMIZADO`), os modos usados (`modo_silencio` + `silencio`, `modo_respiro` + `respiros`), takes descartadas (texto + tempo, se houve), silêncios cortados, segmentos mantidos, se foi normalizado (e pra qual alvo), e o caminho em `OTIMIZADOS/`.
+Liste cada vídeo: nome de saída (`nome_saida`, já limpo — identificação preservada + `_OTIMIZADO`), os modos usados (`modo_silencio` + `silencio`, `modo_respiro` + `respiros`), takes descartadas (texto + tempo, se houve), silêncios cortados, segmentos mantidos, se foi normalizado (e pra qual alvo), e o caminho em `OTIMIZADOS/`.
 
 ## Saída
 - Pasta `OTIMIZADOS/` ao lado da origem (ou `--out-dir`).
-- Arquivo: `<TIPO>_<ID>_OTIMIZADO.<ext>` — o nome é **limpo** a partir do original: mantém o rótulo (GANCHO, DES...) e o código/numeração (VAV19, 34...), e **descarta** `BRUTA` e qualquer outro token de ruído. `GANCHO_VAV19_BRUTA.mov` → `GANCHO_VAV19_OTIMIZADO.mov`. A `<ext>` segue o `--container` quando normaliza. O campo `nome_saida` no JSON mostra o nome final de cada vídeo.
+- Arquivo: nome **limpo** a partir do original + `_OTIMIZADO`. A regra é **preservar toda a identificação** (tipo, código, prefixo, número — na ordem original) e **descartar só os tokens de ruído de processamento**: `BRUTA`, `VERTICAL`, `HORIZONTAL`, `RAW`, `FINAL`, `OTIMIZADO`. Nada de tipo/código se perde. Exemplos:
+  - `GANCHO_VAV19_BRUTA.mov` → `GANCHO_VAV19_OTIMIZADO.mov`
+  - `DME__VAV23__VERTICAL__BRUTA__DESENVOLVIMENTO.mp4` → `DME_VAV23_DESENVOLVIMENTO_OTIMIZADO.mp4` (o `DESENVOLVIMENTO` **fica**)
+
+  Separadores repetidos viram underscore único. A `<ext>` segue o `--container` quando normaliza. O campo `nome_saida` no JSON mostra o nome final de cada vídeo.
 
 ## Encadeamento com o combinador (otimizar+normalizar ANTES de combinar)
 
@@ -150,7 +154,7 @@ Assim cada corte é reencodado **uma única vez** (silêncio + normalização ju
 
 > Use o **mesmo alvo** ao normalizar todas as pastas-segmento. Specs divergentes entre segmentos quebram o `concat -c copy` — a combinadora tem rede de segurança (re-normaliza se detectar divergência), mas isso custa um reencode extra que o alvo único evita.
 
-O nome limpo `TIPO_ID_OTIMIZADO` **não atrapalha** o combinador: ele extrai o código de origem (ex.: VAV19) do nome e trata `OTIMIZADO` como ruído, então os pares nativos seguem casando.
+O nome limpo **não atrapalha** o combinador: como a identificação é preservada (rótulo + código no nome) e `OTIMIZADO` é tratado como ruído, ele extrai o código de origem (ex.: VAV19) e os pares nativos seguem casando.
 
 ## Anti-padrões (não faça)
 - Trocar silêncio ou respiro por números soltos quando o usuário só pediu "mais justo/seco": use os presets `--modo-silencio`/`--modo-respiro`. Override fino (`--silence-*`, `--respiro-*`) só com valor pedido explicitamente.
