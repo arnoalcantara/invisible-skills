@@ -14,9 +14,9 @@ O sistema de vídeo da Invisible. Cinco skills, encadeáveis na mesma pasta de p
   comer palavra e, opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra
   concatenar).
 - **`invisible-legenda-arquivos`** — aponta um vídeo ou uma pasta e gera, ao lado de cada vídeo e
-  com o mesmo nome, um `.srt` (legenda por frase) + um `.json` (transcrição com timestamp
-  por palavra, fonte pra animação palavra-a-palavra no Remotion) via WhisperX. Lote,
-  resumível, sem tocar no original.
+  com o mesmo nome, um `.json` (transcrição com timestamp por palavra, fonte pra animação
+  palavra-a-palavra no Remotion) via WhisperX. Só o `.json` — é o que o pipeline consome.
+  Lote, resumível, sem tocar no original.
 - **`invisible-legendas-aplicador`** — queima legenda animada (karaokê) no vídeo com Remotion,
   consumindo o `.json` da `invisible-legenda-arquivos` (não transcreve). Estilos `reels`/`minimal`/
   `classic`; saída em `LEGENDADOS/<nome>_LEGENDADO.mp4`, sem tocar no original. É a última etapa
@@ -88,16 +88,14 @@ Em `skills/invisible-legenda-arquivos/scripts/`:
 
 - `bootstrap.py` — **cópia** da do desmembrador (cada skill autocontida).
 - `legendar.py` — extrai áudio mono 16k com ffmpeg e roda WhisperX UMA vez por vídeo
-  (`--output_format all`), depois move só os formatos pedidos (`--formatos srt,json`,
-  padrão ambos) pro lado do vídeo, renomeados pro nome da origem. Regra de saída FIXA:
-  `<pasta>/CORTE.mp4` → `<pasta>/CORTE.srt` + `<pasta>/CORTE.json` (mesmo nome, mesma pasta,
-  ao lado do original — sem pasta de saída separada). Aceita arquivo único ou pasta (lote,
-  vídeos diretos sem recursão); resumível (pula o que já tem os alvos, `--forcar` refaz).
-  Não recodifica nem toca no vídeo — só gera legenda. Imprime relatório JSON; progresso no
-  stderr. O `.json` traz `segments[].words[]` (start/end por palavra) — é o que o Remotion
-  consome pra legenda animada; o `.srt` é a versão por frase (revisão / player / bloco
-  básico). Os dois saem da MESMA transcrição (SRT achata o tempo por palavra e não dá pra
-  recuperar dele depois).
+  (`--output_format json`), depois move o `.json` pro lado do vídeo, renomeado pro nome da
+  origem. Regra de saída FIXA: `<pasta>/CORTE.mp4` → `<pasta>/CORTE.json` (mesmo nome, mesma
+  pasta, ao lado do original — sem pasta de saída separada). Aceita arquivo único ou pasta
+  (lote, vídeos diretos sem recursão); resumível (pula o que já tem o `.json`, `--forcar`
+  refaz). Não recodifica nem toca no vídeo — só transcreve. Imprime relatório JSON; progresso
+  no stderr. O `.json` traz `segments[].words[]` (start/end por palavra) — é o que o Remotion
+  consome pra legenda animada. **Só JSON:** o `.srt` foi descartado (v2.0.0) — o pipeline só
+  usa o timestamp por palavra, que só o JSON carrega; gerar SRT era peso morto. Sem `--formatos`.
 
 Em `skills/invisible-legendas-aplicador/scripts/` (+ `remotion/`):
 

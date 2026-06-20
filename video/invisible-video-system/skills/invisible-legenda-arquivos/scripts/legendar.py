@@ -1,32 +1,26 @@
 #!/usr/bin/env python3
-"""legendar.py — gera legenda (.srt) + transcrição com timestamp por palavra (.json)
-para um vídeo ou uma pasta inteira de vídeos, salvando AO LADO da origem com o
-MESMO nome do arquivo de vídeo.
+"""legendar.py — gera a transcrição com timestamp por palavra (.json) para um vídeo
+ou uma pasta inteira de vídeos, salvando AO LADO da origem com o MESMO nome do vídeo.
 
-Regra de nome e pasta (fixa): para `<pasta>/CORTE.mp4` saem `<pasta>/CORTE.srt`
-e `<pasta>/CORTE.json`. O vídeo nunca é tocado; só nascem os dois arquivos irmãos.
+Regra de nome e pasta (fixa): para `<pasta>/CORTE.mp4` sai `<pasta>/CORTE.json`.
+O vídeo nunca é tocado; só nasce o arquivo irmão.
 
-Por que dois arquivos:
-- `.srt` — legenda por FRASE. É o painel legível pra revisar/corrigir o texto e o
-  formato pronto pra subir num player (YouTube). No Remotion serve pra legenda
-  básica em bloco.
-- `.json` — transcrição COMPLETA com `segments[].words[]` (cada palavra com start/end
-  medido por wav2vec2, não interpolado). É a fonte pra animação palavra-a-palavra no
-  Remotion. O SRT achata isso e não dá pra recuperar — por isso geramos os dois.
+Por que JSON (e só JSON): traz `segments[].words[]` — cada palavra com start/end medido
+por wav2vec2, não interpolado. É a fonte pra animação palavra-a-palavra no Remotion,
+consumida pela invisible-legendas-aplicador. É o único formato que o pipeline precisa.
 
 Método (robusto, igual ao resto do sistema): extrai áudio mono 16k com ffmpeg e roda
 o WhisperX sobre o WAV — não sobre o vídeo. Isso evita o caminho de decode de vídeo do
 torchcodec (que cospe avisos de dylib) e é mais previsível entre máquinas. O WhisperX
-gera os formatos num diretório temporário; daqui movemos só os pedidos, renomeados pro
-nome da origem.
+gera o JSON num diretório temporário; daqui movemos pro lado do vídeo, com o nome da origem.
 
-Resumível: por padrão pula um vídeo cujos alvos já existem (`.srt` e/ou `.json`,
-conforme `--formatos`). `--forcar` re-transcreve e sobrescreve.
+Resumível: por padrão pula um vídeo cujo `.json` já existe. `--forcar` re-transcreve e
+sobrescreve.
 
 Uso:
     python3 legendar.py <arquivo_ou_pasta> \
         [--whisperx-bin <bin do bootstrap>] [--venv <~/.invisible-video/wxenv>] \
-        [--formatos srt,json] [--lang pt] [--model large-v3] [--forcar]
+        [--lang pt] [--model large-v3] [--forcar]
 
 Saída (stdout): JSON com um relatório por vídeo (gerado | pulado | erro) + resumo.
 """
@@ -38,7 +32,6 @@ import sys
 import tempfile
 
 EXTS_VIDEO = {".mp4", ".mov", ".mkv", ".m4v", ".webm", ".avi", ".mpg", ".mpeg", ".wmv", ".flv"}
-FORMATOS_VALIDOS = {"srt", "json"}
 
 
 def resolver_bin(whisperx_bin, venv):
@@ -76,23 +69,20 @@ def extrair_audio(video, wav):
     subprocess.run(cmd, check=True, capture_output=True)
 
 
-def alvos(video, formatos):
-    """Caminhos de saída irmãos do vídeo, por formato pedido."""
-    base = os.path.splitext(video)[0]
-    return {fmt: f"{base}.{fmt}" for fmt in formatos}
+def alvo_json(video):
+    """Caminho de saída irmão do vídeo: mesmo nome, extensão .json."""
+    return os.path.splitext(video)[0] + ".json"
 
 
-def ja_pronto(video, formatos):
-    """True se todos os alvos pedidos já existem e não estão vazios."""
-    for p in alvos(video, formatos).values():
-        if not (os.path.isfile(p) and os.path.getsize(p) > 0):
-            return False
-    return True
+def ja_pronto(video):
+    """True se o .json já existe e não está vazio."""
+    p = alvo_json(video)
+    return os.path.isfile(p) and os.path.getsize(p) > 0
 
 
-def legendar_um(video, wx_bin, formatos, lang, model):
-    """Gera os formatos pedidos para um vídeo. Retorna dict de relatório."""
-    destino = alvos(video, formatos)
+def legendar_um(video, wx_bin, lang, model):
+    """Gera o .json para um vídeo. Retorna dict de relatório."""
+    destino = alvo_json(video)
     with tempfile.TemporaryDirectory() as tmp:
         wav = os.path.join(tmp, "audio.wav")
         try:
@@ -101,15 +91,15 @@ def legendar_um(video, wx_bin, formatos, lang, model):
             return {"video": os.path.basename(video), "status": "erro",
                     "etapa": "extrair_audio", "stderr": (e.stderr or b"")[-800:].decode("utf-8", "ignore")}
 
-        # WhisperX gera todos os formatos de uma vez (transcrição+alinhamento só uma vez);
-        # nomeados pelo basename do WAV no diretório temporário. Movemos só os pedidos.
+        # WhisperX gera só o JSON (transcrição + alinhamento por palavra), nomeado pelo
+        # basename do WAV no diretório temporário. Movemos pro lado do vídeo.
         cmd = [
             wx_bin, wav,
             "--model", model,
             "--language", lang,
             "--device", "cpu",
             "--compute_type", "int8",
-            "--output_format", "all",
+            "--output_format", "json",
             "--output_dir", tmp,
         ]
         proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -118,18 +108,14 @@ def legendar_um(video, wx_bin, formatos, lang, model):
                     "etapa": "whisperx", "stderr": proc.stderr[-1500:]}
 
         wav_base = os.path.splitext(os.path.basename(wav))[0]
-        gerados = {}
-        for fmt, dst in destino.items():
-            origem = os.path.join(tmp, f"{wav_base}.{fmt}")
-            if not (os.path.isfile(origem) and os.path.getsize(origem) > 0):
-                return {"video": os.path.basename(video), "status": "erro",
-                        "etapa": f"saida_{fmt}", "detalhe": f"WhisperX não gerou {fmt}"}
-            # move com replace (sobrescreve em --forcar)
-            os.replace(origem, dst)
-            gerados[fmt] = dst
+        origem = os.path.join(tmp, f"{wav_base}.json")
+        if not (os.path.isfile(origem) and os.path.getsize(origem) > 0):
+            return {"video": os.path.basename(video), "status": "erro",
+                    "etapa": "saida_json", "detalhe": "WhisperX não gerou json"}
+        os.replace(origem, destino)  # sobrescreve em --forcar
 
     return {"video": os.path.basename(video), "status": "gerado",
-            "saidas": {fmt: os.path.basename(p) for fmt, p in gerados.items()}}
+            "saida": os.path.basename(destino)}
 
 
 def main():
@@ -137,20 +123,11 @@ def main():
     ap.add_argument("alvo", help="arquivo de vídeo OU pasta com vídeos")
     ap.add_argument("--whisperx-bin", help="caminho do binário whisperx (do bootstrap)")
     ap.add_argument("--venv", help="venv central com whisperx (fallback)")
-    ap.add_argument("--formatos", default="srt,json",
-                    help="formatos a gerar, separados por vírgula (srt,json). Padrão: ambos.")
     ap.add_argument("--lang", default="pt")
     ap.add_argument("--model", default="large-v3")
     ap.add_argument("--forcar", action="store_true",
-                    help="re-transcreve e sobrescreve mesmo se os alvos já existirem")
+                    help="re-transcreve e sobrescreve mesmo se o .json já existir")
     args = ap.parse_args()
-
-    formatos = [f.strip().lower() for f in args.formatos.split(",") if f.strip()]
-    invalidos = [f for f in formatos if f not in FORMATOS_VALIDOS]
-    if invalidos or not formatos:
-        print(json.dumps({"erro": f"formatos inválidos: {invalidos or 'vazio'}. "
-                                  f"Use srt e/ou json."}, ensure_ascii=False))
-        sys.exit(1)
 
     alvo = os.path.abspath(os.path.expanduser(args.alvo))
     videos = listar_videos(alvo)
@@ -163,12 +140,12 @@ def main():
     relatorios = []
     n_gerados = n_pulados = n_erros = 0
     for v in videos:
-        if not args.forcar and ja_pronto(v, formatos):
+        if not args.forcar and ja_pronto(v):
             relatorios.append({"video": os.path.basename(v), "status": "pulado",
-                               "motivo": "alvos já existem"})
+                               "motivo": "json já existe"})
             n_pulados += 1
             continue
-        rep = legendar_um(v, wx_bin, formatos, args.lang, args.model)
+        rep = legendar_um(v, wx_bin, args.lang, args.model)
         relatorios.append(rep)
         if rep["status"] == "gerado":
             n_gerados += 1
@@ -180,7 +157,6 @@ def main():
     saida = {
         "alvo": alvo,
         "modo": "arquivo" if os.path.isfile(alvo) else "pasta",
-        "formatos": formatos,
         "total": len(videos),
         "gerados": n_gerados,
         "pulados": n_pulados,

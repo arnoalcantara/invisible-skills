@@ -27,7 +27,7 @@
     {
       "name": "invisible-video-system",
       "source": "./video/invisible-video-system",
-      "description": "Sistema de vídeo da Invisible, cinco skills. Desmembrador: corta brutos por seção do roteiro (gancho, desenvolvimento, CTA...) via WhisperX. Combinador: concatena cortes de N segmentos de nome livre (em subpastas ou soltos na mesma pasta) numa cadeia ordenada — o usuário dirige o que varia e o que fica nativo — julgando o encaixe retórico. Otimizador: remove silêncios internos (≥0.3s) sem comer palavra e, opcionalmente, normaliza o formato no mesmo reencode. Legenda-arquivos: gera .srt (por frase) + .json (timestamp por palavra, pra animar no Remotion) ao lado de cada vídeo, em lote e sem tocar no original. Legendas-aplicador: queima legenda animada (karaokê) no vídeo com Remotion, consumindo esse .json — estilos reels/minimal/classic, saída em LEGENDADOS/<nome>_LEGENDADO.mp4."
+      "description": "Sistema de vídeo da Invisible, cinco skills. Desmembrador: corta brutos por seção do roteiro (gancho, desenvolvimento, CTA...) via WhisperX. Combinador: concatena cortes de N segmentos de nome livre (em subpastas ou soltos na mesma pasta) numa cadeia ordenada — o usuário dirige o que varia e o que fica nativo — julgando o encaixe retórico. Otimizador: remove silêncios internos (≥0.3s) sem comer palavra e, opcionalmente, normaliza o formato no mesmo reencode. Legenda-arquivos: gera .json (timestamp por palavra, pra animar no Remotion) ao lado de cada vídeo, em lote e sem tocar no original. Legendas-aplicador: queima legenda animada (karaokê) no vídeo com Remotion, consumindo esse .json — estilos reels/minimal/classic, saída em LEGENDADOS/<nome>_LEGENDADO.mp4."
     },
     {
       "name": "invisible-organizacao",
