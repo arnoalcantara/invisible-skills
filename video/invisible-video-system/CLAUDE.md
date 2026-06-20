@@ -4,7 +4,7 @@ Orienta qualquer instância de Claude que trabalhe neste plugin. Leia antes de e
 
 ## O que é
 
-O sistema de vídeo da Invisible. Três skills, encadeáveis na mesma pasta de projeto:
+O sistema de vídeo da Invisible. Quatro skills, encadeáveis na mesma pasta de projeto:
 
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
 - **`invisible-video-combinador`** — cruza ganchos × desenvolvimentos por encaixe retórico
@@ -13,6 +13,10 @@ O sistema de vídeo da Invisible. Três skills, encadeáveis na mesma pasta de p
   da mesma fala (transcrição WhisperX, última take vence), remove silêncios internos sem
   comer palavra e, opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra
   concatenar).
+- **`invisible-legendas`** — aponta um vídeo ou uma pasta e gera, ao lado de cada vídeo e
+  com o mesmo nome, um `.srt` (legenda por frase) + um `.json` (transcrição com timestamp
+  por palavra, fonte pra animação palavra-a-palavra no Remotion) via WhisperX. Lote,
+  resumível, sem tocar no original.
 
 O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
@@ -76,9 +80,24 @@ Em `skills/invisible-video-otimizador/scripts/`:
   underscore único. O lote pula qualquer arquivo com `OTIMIZADO` no nome; o combinador lê o
   código mesmo assim (trata `OTIMIZADO` como ruído).
 
+Em `skills/invisible-legendas/scripts/`:
+
+- `bootstrap.py` — **cópia** da do desmembrador (cada skill autocontida).
+- `legendar.py` — extrai áudio mono 16k com ffmpeg e roda WhisperX UMA vez por vídeo
+  (`--output_format all`), depois move só os formatos pedidos (`--formatos srt,json`,
+  padrão ambos) pro lado do vídeo, renomeados pro nome da origem. Regra de saída FIXA:
+  `<pasta>/CORTE.mp4` → `<pasta>/CORTE.srt` + `<pasta>/CORTE.json` (mesmo nome, mesma pasta,
+  ao lado do original — sem pasta de saída separada). Aceita arquivo único ou pasta (lote,
+  vídeos diretos sem recursão); resumível (pula o que já tem os alvos, `--forcar` refaz).
+  Não recodifica nem toca no vídeo — só gera legenda. Imprime relatório JSON; progresso no
+  stderr. O `.json` traz `segments[].words[]` (start/end por palavra) — é o que o Remotion
+  consome pra legenda animada; o `.srt` é a versão por frase (revisão / player / bloco
+  básico). Os dois saem da MESMA transcrição (SRT achata o tempo por palavra e não dá pra
+  recuperar dele depois).
+
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
-Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar nas três cópias (agora as
-três têm `transcrever.py`).
+Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar em todas as cópias (cada
+skill tem a sua; a legendas tem só `bootstrap.py`, com lógica própria de WhisperX em `legendar.py`).
 
 ## Convenções
 
