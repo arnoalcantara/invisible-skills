@@ -135,6 +135,7 @@ Liste cada vídeo: nome de saída (`nome_saida`, já limpo — identificação p
   - `DME__VAV23__VERTICAL__BRUTA__DESENVOLVIMENTO.mp4` → `DME_VAV23_DESENVOLVIMENTO_OTIMIZADO.mp4` (o `DESENVOLVIMENTO` **fica**)
 
   Separadores repetidos viram underscore único. A `<ext>` segue o `--container` quando normaliza. O campo `nome_saida` no JSON mostra o nome final de cada vídeo.
+- **Sidecar de roteiro:** se houver um `<video>.md` ao lado da entrada (vindo do desmembrador), ele é **propagado** para a saída casando o nome `_OTIMIZADO.md` — o otimizador **não transcreve** pra isso, só carrega o roteiro adiante. O JSON traz `sidecar_propagado: true/false`.
 
 ## Encadeamento com o combinador (otimizar+normalizar ANTES de combinar)
 

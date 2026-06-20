@@ -227,6 +227,7 @@ def main():
             "secao": s["nome"], "plural": s["plural"],
             "ss": round(ss, 3), "to": round(to, 3), "dur": round(to - ss, 3),
             "n_tomadas": n_tomadas, "conf": conf,
+            "texto": s.get("texto", ""),   # propaga texto do roteiro p/ sidecar .md
         })
 
     print(json.dumps({"duracao": dur, "cortes": cortes}, ensure_ascii=False, indent=2))

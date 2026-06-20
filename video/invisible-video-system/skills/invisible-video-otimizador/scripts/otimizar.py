@@ -292,6 +292,18 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
         return {"origem": video, "erro": "ffmpeg falhou",
                 "stderr": proc.stderr[-1500:]}
 
+    # sidecar de roteiro: se houver <video>.md ao lado da entrada, propaga p/ a
+    # saída casando o nome _OTIMIZADO. Não transcreve — só carrega adiante.
+    sidecar_propagado = False
+    md_entrada = os.path.splitext(video)[0] + ".md"
+    if os.path.isfile(md_entrada):
+        md_saida = os.path.splitext(saida)[0] + ".md"
+        with open(md_entrada, encoding="utf-8") as f:
+            conteudo_md = f.read()
+        with open(md_saida, "w", encoding="utf-8") as f:
+            f.write(conteudo_md)
+        sidecar_propagado = True
+
     # verificação: silencedetect no resultado. Não pode sobrar silêncio >dur_min.
     # Pausas ~0.35–0.49 são o respiro preservado (silencedetect mede do
     # cruzamento de limiar, não da última sílaba) — esperado.
@@ -304,6 +316,7 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
         "segmentos": len(segmentos),
         "takes_descartadas": len(descartar),
         "normalizado": bool(alvo),
+        "sidecar_propagado": sidecar_propagado,
         "verificacao": {
             "silencios_residuais": len(residuais),
             "ok": len(residuais) == 0,

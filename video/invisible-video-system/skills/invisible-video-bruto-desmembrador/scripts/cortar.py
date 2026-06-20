@@ -105,8 +105,16 @@ def main():
             gerados.append({"secao": c["secao"], "erro": "ffmpeg falhou",
                             "stderr": proc.stderr[-1500:]})
         else:
+            # sidecar de roteiro: <nome>.md com rótulo da seção + texto do roteiro.
+            # Camada semântica que flui pelo pipeline (otimizar→combinar→legendar).
+            md = None
+            texto = (c.get("texto") or "").strip()
+            if texto:
+                md = os.path.splitext(saida)[0] + ".md"
+                with open(md, "w", encoding="utf-8") as f:
+                    f.write(f"# {c['secao']}\n\n{texto}\n")
             gerados.append({"secao": c["secao"], "arquivo": saida,
-                            "ss": c["ss"], "to": c["to"]})
+                            "md": md, "ss": c["ss"], "to": c["to"]})
 
     print(json.dumps({"gerados": gerados, "specs": specs}, ensure_ascii=False, indent=2))
 

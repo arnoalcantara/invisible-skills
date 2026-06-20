@@ -71,6 +71,9 @@ O `.json` é o que o Remotion consome pra legenda animada palavra-a-palavra: cad
 
 > SRT e JSON **não se conversam**: corrigir o texto num não atualiza o outro. Se o usuário for revisar o texto à mão, o lugar é o SRT (legível); se confia na transcrição, vai direto ao JSON.
 
+## Marcação de seção (gancho/desenvolvimento) no JSON
+Se houver um sidecar de roteiro `<video>.md` ao lado do vídeo (gerado pelo desmembrador/combinador, com seções `# GANCHO`, `# DESENVOLVIMENTO`... + texto), a skill **marca cada palavra do JSON** com o campo `"secao"` e adiciona um bloco `"secoes": [{nome, start, end}]` no topo. Ela descobre QUANDO cada seção começa **casando o texto do MD contra a transcrição** (similaridade fuzzy, via `marcar_secoes.py`) — não usa tempos pré-gravados. Por isso é robusto a edição: se o vídeo combinado foi cortado depois de combinar, o tempo da seção é medido sobre o vídeo atual. Sem MD ao lado, o JSON sai normal (sem `secao`). É o que permite uma skill futura (ex.: geração de imagem por seção) saber o que é gancho, o texto dele e onde ele está no tempo.
+
 ## Anti-padrões (não faça)
 - Recodificar, cortar ou mover o vídeo — esta skill só gera legenda, não toca no original.
 - Salvar a legenda em pasta separada ou com nome diferente do vídeo — a regra é mesmo nome, mesma pasta.

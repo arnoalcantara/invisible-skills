@@ -37,6 +37,12 @@ import subprocess
 import sys
 import tempfile
 
+try:
+    from marcar_secoes import marcar_secoes_no_json
+except ImportError:  # módulo irmão; garante o dir do script no path
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from marcar_secoes import marcar_secoes_no_json
+
 EXTS_VIDEO = {".mp4", ".mov", ".mkv", ".m4v", ".webm", ".avi", ".mpg", ".mpeg", ".wmv", ".flv"}
 FORMATOS_VALIDOS = {"srt", "json"}
 
@@ -128,8 +134,27 @@ def legendar_um(video, wx_bin, formatos, lang, model):
             os.replace(origem, dst)
             gerados[fmt] = dst
 
-    return {"video": os.path.basename(video), "status": "gerado",
-            "saidas": {fmt: os.path.basename(p) for fmt, p in gerados.items()}}
+    # sidecar de roteiro: se há <video>.md ao lado e geramos JSON, marca cada
+    # palavra com a seção (gancho/desenvolvimento...) casando o texto contra a
+    # transcrição — tempo medido sobre o vídeo atual, robusto a edição.
+    secoes_rel = None
+    md_lado = os.path.splitext(video)[0] + ".md"
+    if "json" in gerados and os.path.isfile(md_lado):
+        try:
+            with open(gerados["json"], encoding="utf-8") as f:
+                data = json.load(f)
+            secoes_rel = marcar_secoes_no_json(data, md_lado)
+            if secoes_rel.get("marcado"):
+                with open(gerados["json"], "w", encoding="utf-8") as f:
+                    json.dump(data, f, ensure_ascii=False)
+        except (OSError, json.JSONDecodeError) as e:
+            secoes_rel = {"marcado": False, "erro": str(e)}
+
+    rep = {"video": os.path.basename(video), "status": "gerado",
+           "saidas": {fmt: os.path.basename(p) for fmt, p in gerados.items()}}
+    if secoes_rel is not None:
+        rep["secoes"] = secoes_rel
+    return rep
 
 
 def main():
