@@ -90,6 +90,29 @@ vira `concat -c copy`.
 
 Precisa de **ffmpeg** sempre; a seleção de takes precisa de **WhisperX** (faz bootstrap).
 
+### `invisible-trilha-aplicador`
+
+Aplica **trilha sonora de fundo** num vídeo (ou pasta), **preservando a fala original** —
+a trilha entra como segunda camada, bem abaixo da voz. Invocada como
+`/invisible-trilha-aplicador`.
+
+A chave é controlar o volume por **LUFS, não por "%"**: cada trilha vem masterizada num
+nível diferente (medido num acervo real, ~9 dB entre a mais alta e a mais baixa), então
+"8% de volume" é inconsistente entre trilhas. A skill normaliza **dois alvos absolutos**:
+a fala por ganho linear a **-14 LUFS** (padrão Reels) e a trilha a **-37 LUFS** (~23 dB
+abaixo da fala). Cada vídeo e cada trilha são medidos e recebem o ganho próprio que os leva
+ao destino — o lote inteiro fica consistente.
+
+Mix com `amix normalize=0` (não divide a fala), trilha com fade in/out de 1.5s e
+`-stream_loop` (cobre vídeos mais longos que a trilha). Em lote, distribui as trilhas pelos
+vídeos o mais igualmente possível (round-robin). Vídeo copiado sem recompressão (`-c:v
+copy`); só o áudio é remixado (AAC 192k). Saída em `99_FINALIZADOS/<nome>_FINALIZADO.mp4`,
+sem tocar no original. O nível da trilha é **um número** (`--alvo-trilha`): sobe pra -34
+(mais presente), desce pra -40 (mais discreta).
+
+Precisa só de **ffmpeg** (faz bootstrap). Método e calibração em
+`skills/invisible-trilha-aplicador/referencia/METODO.md`.
+
 ## Estrutura
 
 ```
@@ -108,6 +131,10 @@ video/invisible-video-system/
   skills/invisible-video-otimizador/
     SKILL.md
     scripts/   (bootstrap, transcrever, selecionar_takes, otimizar)
+    referencia/METODO.md
+  skills/invisible-trilha-aplicador/
+    SKILL.md
+    scripts/   (bootstrap, aplicar)
     referencia/METODO.md
 ```
 
