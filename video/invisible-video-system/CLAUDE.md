@@ -4,7 +4,7 @@ Orienta qualquer instância de Claude que trabalhe neste plugin. Leia antes de e
 
 ## O que é
 
-O sistema de vídeo da Invisible. Cinco skills, encadeáveis na mesma pasta de projeto:
+O sistema de vídeo da Invisible. Sete skills, encadeáveis na mesma pasta de projeto:
 
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
 - **`invisible-video-combinador`** — cruza ganchos × desenvolvimentos por encaixe retórico
@@ -20,7 +20,16 @@ O sistema de vídeo da Invisible. Cinco skills, encadeáveis na mesma pasta de p
 - **`invisible-legendas-aplicador`** — queima legenda animada (karaokê) no vídeo com Remotion,
   consumindo o `.json` da `invisible-legenda-arquivos` (não transcreve). Estilos `reels`/`minimal`/
   `classic`; saída em `LEGENDADOS/<nome>_LEGENDADO.mp4`, sem tocar no original. É a última etapa
-  do pipeline (reencode obrigatório — pixel novo sobre o vídeo).
+  do pipeline de legenda (reencode obrigatório — pixel novo sobre o vídeo).
+- **`invisible-video-var-gancho-escrito`** — gera uma variação de gancho escrito: troca a
+  imagem do gancho por uma animação de tipografia sobre fundo preto (palavras sincronizadas
+  com a fala, por frase, com ênfase), mantendo o áudio; segue com o desenvolvimento. O número
+  da variação é do usuário (a skill pergunta qual `VAR<n>` e estampa no nome). Opera sobre o
+  `_LEGENDADO.mp4` (não re-legenda) ou a combinação crua; saída `LEGENDADOS/<comb>_LEGENDADO_VAR<n>.mp4`.
+- **`invisible-trilha-aplicador`** — põe trilha de fundo preservando a fala, com loudness por
+  LUFS (não por %): fala a -14 LUFS (ganho linear), trilha a -37 LUFS (~23 dB abaixo); `amix
+  normalize=0`, fade in/out e loop; em lote distribui as trilhas. Vídeo sem recompressão; saída
+  `99_FINALIZADOS/<nome>_FINALIZADO.mp4`. Tipicamente a última etapa da esteira.
 
 O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
@@ -124,6 +133,31 @@ Em `skills/invisible-legendas-aplicador/scripts/` (+ `remotion/`):
   correção de quebra de linha que impede o texto de vazar a margem (**não reverter** — espaço
   fora do `inline-block`). `Root.tsx` adapta duração/dimensão por vídeo via `parseMedia`. O
   preset `hormozi` existe mas está EXPERIMENTAL (em ajuste — não oferecer como pronto).
+
+Em `skills/invisible-video-var-gancho-escrito/scripts/` (+ `remotion/`):
+
+- `bootstrap.py` — Remotion/Node (como o do aplicador, projeto central próprio
+  `~/.invisible-video/gancho-escrito-remotion`). Sincroniza os fontes; `npm install` só na 1ª vez.
+- `preparar.py` — do `.json` da combinação (com `secoes`/`secao`) gera `public/hook.json`
+  (frases do gancho + `emphasis` + `boundaryMs`) e `captions.json` (só desenvolvimento); copia
+  o vídeo base p/ `public/video.mp4`. O número `VAR<n>` NÃO entra aqui — só no nome da saída.
+- `aplicar.py` — orquestra: detecta o modo por vídeo (legendado vs crua), resolve o `.json`,
+  puxa a ênfase por gancho (`--enfase-map`), render em lanes paralelas. **`--var <n>`** estampa
+  a variação no nome (`_LEGENDADO_VAR<n>.mp4`, default `1`); o número é do usuário, não da skill.
+- `convert_captions.mjs` — cópia da do aplicador (modo crua legenda o desenvolvimento).
+- `remotion/src/` — `HookText.tsx` é a animação do gancho (fonte/tamanho/cor/entrada — onde
+  estilos futuros entram); `Composition.tsx`/`Root.tsx` montam a composição `gancho-escrito`
+  (id interno mantido no rename — não confundir com o nome da skill).
+
+Em `skills/invisible-trilha-aplicador/scripts/`:
+
+- `bootstrap.py` — **NÃO é WhisperX nem Remotion:** só ffmpeg/ffprobe (loudness, mix, reencode
+  de áudio). Sem Node, sem venv. Detecta/instala via brew. Reporta `pronto`.
+- `aplicar.py` — ffmpeg puro: mede LUFS de fala e trilha (ebur128), calcula o ganho de cada
+  uma p/ os alvos (`--alvo-fala -14`, `--alvo-trilha -37`), mixa com `amix normalize=0`, trilha
+  com fade in/out e `-stream_loop -1`, `-c:v copy`. Em lote distribui as trilhas em rodízio;
+  trilhas medidas uma vez (cache). Saída `99_FINALIZADOS/<nome>_FINALIZADO.mp4`. O método (por
+  que LUFS, calibração do -37) está em `referencia/METODO.md`.
 
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
 Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar em todas as cópias — atenção:
