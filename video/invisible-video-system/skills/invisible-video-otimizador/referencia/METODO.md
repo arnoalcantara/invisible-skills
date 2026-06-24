@@ -25,18 +25,18 @@ Os intervalos de descarte são **subtraídos dos segmentos a manter** antes de m
 - **Por arquivo.** Cada vídeo tem seus próprios intervalos; não roda em lote (`--descartar` vale só pra arquivo único).
 - **Ganchos com repetição legítima.** Se a fala genuinamente repete uma frase (ênfase retórica), os parâmetros `--gap`/`--sim` podem agrupar errado. O relatório existe pra pegar isso a olho.
 
-## 1. Detecção de silêncio (modos conservador -35dB/0.3s e justo -33dB/0.15s)
+## 1. Detecção de silêncio (modos justo -33dB/0.15s e conservador -35dB/0.3s)
 
 `silencedetect=noise=<X>dB:d=<T>` — silêncio = trecho **≥ T** abaixo de **X dB**. O `d` é a duração **mínima** pra contar como silêncio: pausa de T+ entra pro corte; pausa menor fica intacta. Os dois números viram um **preset escolhido na hora** (`--modo-silencio`), independente do modo de respiro:
 
-- **`conservador`** (default): **-35dB / 0.3s**. O critério validado.
-- **`justo`**: **-33dB / 0.15s**. Limiar mais alto = mais coisa cai como silêncio; duração menor = corta pausas mais curtas. Mais agressivo, com risco de raspar fala fraca (vale o aviso ao usuário).
+- **`justo`** (default): **-33dB / 0.15s**. Limiar mais alto = mais coisa cai como silêncio; duração menor = corta pausas mais curtas. Ritmo mais seco — virou o padrão pedido. Risco de raspar fala fraca existe, mas é o trade-off aceito.
+- **`conservador`**: **-35dB / 0.3s**. O critério originalmente validado em sessão real; preserva mais cauda/ataque. Use quando não mutilar palavra importar mais que ritmo.
 
 ### Por que -35dB e não -30 (no conservador)
-A -30dB, a palavra final dita baixo caía como silêncio e era cortada. O professor naturalmente faz um **decrescendo** no fim da frase — a última sílaba sai fraca. A -30 esse final fraco é confundido com silêncio. **-35dB trata fala fraca como fala**, preservando o fim da frase. Mais permissivo que isso (ex.: -40) começa a deixar passar pausa real como se fosse fala. O modo `justo` aceita -33 (um passo na direção do agressivo) porque troca esse risco por ritmo mais seco — escolha do usuário, não default.
+A -30dB, a palavra final dita baixo caía como silêncio e era cortada. O professor naturalmente faz um **decrescendo** no fim da frase — a última sílaba sai fraca. A -30 esse final fraco é confundido com silêncio. **-35dB trata fala fraca como fala**, preservando o fim da frase. Mais permissivo que isso (ex.: -40) começa a deixar passar pausa real como se fosse fala. O default agora é o `justo` (-33), um passo na direção do agressivo: troca um pouco desse risco por ritmo mais seco. Quem precisa preservar o decrescendo ao máximo cai no `conservador` (-35).
 
 ### Por que 0.3s de duração mínima (no conservador)
-Começou em 0.5s. Apertado para **0.3s** (jun/2026): 0.5s deixava passar pausas mortas curtas que arrastavam o ritmo; 0.3s isola mais pausa morta sem ainda comer a respiração natural da fala (que fica abaixo de 0.3s). Abaixo de 0.3s o corte começa a ficar afobado e robótico — por isso 0.15s é o modo `justo`, não o default.
+Começou em 0.5s. Apertado para **0.3s** (jun/2026): 0.5s deixava passar pausas mortas curtas que arrastavam o ritmo; 0.3s isola mais pausa morta sem ainda comer a respiração natural da fala (que fica abaixo de 0.3s). 0.15s (o `justo`, hoje default) corta mais perto e pode soar afobado em fala muito pausada — quando isso incomodar, o `conservador` volta pra 0.3s.
 
 ## 2. Respiro assimétrico (modos conservador 0.10/0.25 e justo 0.05/0.18)
 
@@ -74,7 +74,7 @@ Pausas residuais ~0.3–0.49s são **esperadas, não erro**: são o respiro pres
 
 ## 6. Parâmetros (defaults, ajustáveis por argumento)
 - seleção de takes: **off** por padrão (só roda quando há repetição a resolver); `--gap 0.6`, `--sim 0.75`, `--min-palavras 4`.
-- `modo_silencio = conservador` (-35dB / 0.3s) | `justo` (-33dB / 0.15s); `--silence-noise`/`--silence-min` sobrepõem cada um
+- `modo_silencio = justo` (-33dB / 0.15s, default) | `conservador` (-35dB / 0.3s); `--silence-noise`/`--silence-min` sobrepõem cada um
 - `modo_respiro = conservador` (0.10s / 0.25s) | `justo` (0.05s / 0.18s); `--respiro-entrada`/`--respiro-saida` sobrepõem ponta a ponta
 - os dois eixos são **independentes** (qualquer combinação)
 - `crf = 20`, `preset = medium`

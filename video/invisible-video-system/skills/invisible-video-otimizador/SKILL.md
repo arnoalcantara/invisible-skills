@@ -1,7 +1,7 @@
 ---
 name: invisible-video-otimizador
 description: >
-  Pega um vídeo gravado e o deixa pronto: primeiro escolhe a melhor TAKE quando há várias tentativas da mesma fala (transcreve, agrupa as repetições e fica com a última), depois remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. Dois eixos de modo independentes, cada um conservador (default, validado) ou justo: modo de silêncio (o que conta como silêncio — conservador -35dB/0.3s, justo -33dB/0.15s) e modo de respiro (margem nas bordas — conservador 0.10/0.25, justo 0.05/0.18, sempre assimétrico). Só silêncios internos, começo e fim intactos; corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg; a seleção de takes requer WhisperX e o quadrado requer OpenCV (faz bootstrap).
+  Pega um vídeo gravado e o deixa pronto: primeiro escolhe a melhor TAKE quando há várias tentativas da mesma fala (transcreve, agrupa as repetições e fica com a última), depois remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. Dois eixos de modo independentes: modo de silêncio (o que conta como silêncio — default justo -33dB/0.15s, ou conservador -35dB/0.3s) e modo de respiro (margem nas bordas — default conservador 0.10/0.25, ou justo 0.05/0.18, sempre assimétrico). Só silêncios internos, começo e fim intactos; corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg; a seleção de takes requer WhisperX e o quadrado requer OpenCV (faz bootstrap).
 ---
 
 # Otimizador de Vídeo (takes + silêncios + normalização)
@@ -16,11 +16,11 @@ O original **nunca é tocado** — tudo sai na pasta-irmã `02_OTIMIZADOS/`. O c
 
 ## Critério de corte — dois eixos de modo (conservador/justo)
 
-São **dois presets independentes**, cada um com modo `conservador` (default, validado) e `justo` (mais agressivo). **Não se acoplam** — o usuário pode pôr um em justo e o outro em conservador.
+São **dois presets independentes**, cada um com modo `conservador` e `justo`. **O default de cada eixo é diferente:** silêncio vem `justo` (ritmo mais seco é o padrão pedido); respiro vem `conservador` (não mutilar palavra). **Não se acoplam** — o usuário pode pôr um em justo e o outro em conservador.
 
 **1. Modo de silêncio** (`--modo-silencio`) — o que conta como silêncio cortável:
-- **`conservador` (default):** silêncio = trecho **≥ 0.3s abaixo de -35dB**. O `d` do `silencedetect` é a duração mínima; pausa de 0.3s+ é cortada, menor fica intacta. **-35dB e não -30:** a -30 a palavra final dita baixo (decrescendo natural no fim da frase) caía como silêncio. -35 trata fala fraca como fala.
-- **`justo`:** **-33dB / 0.15s**. Limiar mais alto pega mais coisa como silêncio; duração menor corta pausas mais curtas. Ritmo mais seco, com algum risco de raspar fala fraca.
+- **`justo` (default):** **-33dB / 0.15s**. Limiar mais alto pega mais coisa como silêncio; duração menor corta pausas mais curtas. Ritmo mais seco — é o padrão.
+- **`conservador`:** silêncio = trecho **≥ 0.3s abaixo de -35dB**. O `d` do `silencedetect` é a duração mínima; pausa de 0.3s+ é cortada, menor fica intacta. **-35dB e não -30:** a -30 a palavra final dita baixo (decrescendo natural no fim da frase) caía como silêncio. -35 trata fala fraca como fala. Use quando preservar cauda/ataque importar mais que ritmo.
 
 **2. Modo de respiro** (`--modo-respiro`) — a margem deixada nas bordas da fala (assimétrica: saída > entrada, porque o fim da palavra decai suave e o início tem ataque alto):
 - **`conservador` (default, validado):** 0.10s entrada / 0.25s saída. Preserva ataque e cauda com folga.
@@ -79,9 +79,9 @@ Pergunte ao usuário se quer **normalizar** o formato no mesmo passo (recomendad
 A normalização usa `scale+pad+setsar=1` (encaixa preservando proporção, barras se preciso) — cobre entrada que não seja 9:16 sem distorcer.
 
 ### Fase 2.5 — Escolher os modos (silêncio e respiro)
-Dois presets **independentes**, cada um conservador (default) ou justo. Pergunte (ou deduza do pedido); na dúvida, deixe os dois em `conservador`.
+Dois presets **independentes**, com defaults diferentes: silêncio vem `justo`, respiro vem `conservador`. Pergunte (ou deduza do pedido); na dúvida, deixe os defaults (silêncio justo + respiro conservador).
 
-- **Modo de silêncio** (`--modo-silencio`): `conservador` (-35dB / 0.3s) ou `justo` (-33dB / 0.15s — pega mais silêncio e pausas mais curtas).
+- **Modo de silêncio** (`--modo-silencio`): `justo` (-33dB / 0.15s — default, pega mais silêncio e pausas mais curtas) ou `conservador` (-35dB / 0.3s — preserva mais cauda/ataque).
 - **Modo de respiro** (`--modo-respiro`): `conservador` (0.10/0.25) ou `justo` (0.05/0.18 — bordas mais rentes).
 
 Pode misturar (ex.: silêncio justo + respiro conservador). Quando o usuário pedir genericamente "corte mais seco/apertado/justo", o natural é pôr **os dois** em justo — confirme se ele quer um ou ambos. Override fino só se pedir número específico: `--silence-noise`/`--silence-min` e `--respiro-entrada`/`--respiro-saida` sobrepõem o preset correspondente.
@@ -114,7 +114,7 @@ Tudo junto (takes + normalização 4K MOV H.264):
 python3 scripts/otimizar.py "<video>" --descartar "0.0-1.7,3.0-5.05" --normalizar \
   --largura 2160 --altura 3840 --container mov --vcodec libx264
 ```
-Defaults já embutidos: `--modo-silencio conservador` (-35dB / 0.3s), `--modo-respiro conservador` (0.10/0.25), `--crf 20`, `--preset medium`. Silêncio e respiro vêm dos respectivos `--modo-*`; só passe os overrides finos (`--silence-noise`/`--silence-min`, `--respiro-entrada`/`--respiro-saida`) se o usuário pedir um número específico — e avise que está saindo dos presets.
+Defaults já embutidos: `--modo-silencio justo` (-33dB / 0.15s), `--modo-respiro conservador` (0.10/0.25), `--crf 20`, `--preset medium`. Silêncio e respiro vêm dos respectivos `--modo-*`; só passe os overrides finos (`--silence-noise`/`--silence-min`, `--respiro-entrada`/`--respiro-saida`) se o usuário pedir um número específico — e avise que está saindo dos presets.
 
 `--descartar` vale **só para arquivo único**; em lote o script o ignora e avisa. O descarte de take, o corte de silêncio e a normalização acontecem no **mesmo reencode** — sem geração extra.
 
