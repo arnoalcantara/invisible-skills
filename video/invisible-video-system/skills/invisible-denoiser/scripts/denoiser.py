@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """denoiser.py — reduz ruído do áudio com afftdn, IN-PLACE.
 
-Não gera arquivo novo: processa e salva com o sufixo `_DENOISER` no fim do nome,
-**substituindo o original**. O vídeo é copiado sem recompressão (`-c:v copy`); só
-o áudio é reprocessado. Aceita um arquivo único OU uma pasta inteira (lote).
+Não gera arquivo novo nem muda o nome: processa e **substitui o original no mesmo
+nome**. O vídeo é copiado sem recompressão (`-c:v copy`); só o áudio é reprocessado.
+Aceita um arquivo único OU uma pasta inteira (lote).
+
+Como o nome não muda, NÃO há marca de "já tratado": rodar de novo aplica o denoiser
+outra vez sobre o já-limpo (em fonte limpa o efeito de uma 2ª passada é pequeno, mas
+não é à toa). Rode uma vez por arquivo; é o chamador que controla a ordem.
 
 Níveis (nr = redução de ruído em dB do afftdn):
     leve = 6, medio = 12, forte = 21 (padrão, validado de ouvido no Lote 01).
@@ -32,7 +36,7 @@ NIVEIS = {"leve": 6, "medio": 12, "forte": 21}
 
 
 def coletar(caminho):
-    """Um arquivo → [arquivo]. Uma pasta → mídia da pasta, pulando já-tratados."""
+    """Um arquivo → [arquivo]. Uma pasta → toda a mídia da pasta."""
     if os.path.isfile(caminho):
         return [os.path.abspath(caminho)]
     alvos = []
@@ -40,8 +44,7 @@ def coletar(caminho):
         p = os.path.join(caminho, entry)
         ext = os.path.splitext(entry)[1].lower()
         if (os.path.isfile(p) and not entry.startswith(".")
-                and (ext in VIDEO_EXT or ext in AUDIO_EXT)
-                and "_DENOISER" not in entry.upper()):
+                and (ext in VIDEO_EXT or ext in AUDIO_EXT)):
             alvos.append(os.path.abspath(p))
     return alvos
 
@@ -55,7 +58,6 @@ def denoise_um(arquivo, nr, bitrate):
     raiz, ext = os.path.splitext(arquivo)
     ext_l = ext.lower()
     tmp = f"{raiz}.denoiser_tmp{ext}"
-    saida = f"{raiz}_DENOISER{ext}"
     af = f"afftdn=nr={nr}"
     if ext_l in VIDEO_EXT:
         cmd = ["ffmpeg", "-y", "-i", arquivo, "-af", af,
@@ -67,10 +69,8 @@ def denoise_um(arquivo, nr, bitrate):
         if os.path.exists(tmp):
             os.remove(tmp)
         raise RuntimeError(proc.stderr[-1200:])
-    os.replace(tmp, saida)          # temp → <nome>_DENOISER.ext
-    if os.path.abspath(saida) != os.path.abspath(arquivo):
-        os.remove(arquivo)          # some com o original: nenhum arquivo a mais
-    return saida
+    os.replace(tmp, arquivo)        # temp → mesmo nome: o original vira a versão limpa
+    return arquivo
 
 
 def main():
@@ -90,8 +90,7 @@ def main():
     nr = args.nr if args.nr is not None else NIVEIS[args.nivel]
     alvos = coletar(args.entrada)
     if not alvos:
-        print(json.dumps({"erro": "nenhuma mídia encontrada (ou tudo já _DENOISER)"},
-                         ensure_ascii=False))
+        print(json.dumps({"erro": "nenhuma mídia encontrada"}, ensure_ascii=False))
         sys.exit(1)
 
     if not args.forcar:

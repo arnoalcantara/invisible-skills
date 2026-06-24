@@ -42,10 +42,11 @@ uma etapa por vez, reconciliando o progresso com as pastas):
   distribui as trilhas. Lê de `04_COMBINADOS` e grava na pasta-**irmã**
   `99_FINALIZADOS/<nome>_FINALIZADO.mp4`. Última etapa da esteira.
 - **`invisible-denoiser`** — reduz o ruído de fundo do áudio com `afftdn` (níveis `leve`/`medio`/
-  `forte` = nr 6/12/21, padrão forte), sem mexer em timbre nem dinâmica. Trabalha **in-place**:
-  salva `_DENOISER` no fim do nome e substitui o original, com o vídeo copiado sem recompressão.
-  Independente — roda em qualquer ponto da esteira. Recusa rodar nas `BRUTAS/` sem `--forcar`.
-  (EQ e compressão ficaram de fora: testados e reprovados em gravação limpa.)
+  `forte` = nr 6/12/21, padrão forte), sem mexer em timbre nem dinâmica. Trabalha **in-place e
+  mantém o nome**: substitui o original no mesmo nome (sem sufixo, sem marca), com o vídeo copiado
+  sem recompressão. Só avisa no fim que rodou. Independente — roda em qualquer ponto da esteira.
+  Recusa rodar nas `BRUTAS/` sem `--forcar`. (EQ e compressão ficaram de fora: testados e
+  reprovados em gravação limpa.)
 - **`invisible-video-acelerador`** — acelera um vídeo (ou pasta) por um fator fixo à escolha
   (`1.2x` padrão, `1.5x`, `2x`): vídeo (`setpts`) e áudio (`atempo`) pelo mesmo fator, com o
   **tom da voz preservado** (sem chipmunk). Reencoda em H.264 mantendo resolução e fps da fonte.
@@ -237,10 +238,10 @@ Em `skills/invisible-denoiser/scripts/`:
 
 - `bootstrap.py` — **só ffmpeg/ffprobe** (igual ao da trilha; `afftdn` é embutido). Sem Node,
   sem WhisperX, sem modelo.
-- `denoiser.py` — ffmpeg puro: `afftdn=nr=<6|12|21>` no áudio, `-c:v copy` no vídeo. **In-place**
-  (temp → `<nome>_DENOISER.ext`, remove o original). Arquivo único ou pasta (pula `_DENOISER`).
-  Recusa alvo em `BRUTAS/` sem `--forcar`. Sem EQ/compressão (reprovados). Método em
-  `referencia/METODO.md`.
+- `denoiser.py` — ffmpeg puro: `afftdn=nr=<6|12|21>` no áudio, `-c:v copy` no vídeo. **In-place,
+  mesmo nome** (temp → `os.replace` sobre o próprio arquivo; sem sufixo, original substituído).
+  Arquivo único ou pasta (processa toda a mídia — sem marca no nome, não pula nada). Recusa alvo
+  em `BRUTAS/` sem `--forcar`. Sem EQ/compressão (reprovados). Método em `referencia/METODO.md`.
 
 Em `skills/invisible-video-acelerador/scripts/`:
 
