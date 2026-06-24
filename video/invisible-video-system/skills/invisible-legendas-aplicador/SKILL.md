@@ -9,7 +9,9 @@ description: >
   peças prontas, sem re-legendar. NÃO transcreve: consome o `.json` de timestamp por
   palavra que a invisible-legenda-arquivos gera por BASE (sem formato/VAR) — a skill acha
   o `.json` removendo o token de formato/VAR do nome do clipe. Estilos prontos: `reels` (palavra acende em amarelo, padrão de Reels/TikTok),
-  `minimal` (branco, futuro esmaecido) e `classic` (legenda em bloco no rodapé). O
+  `minimal` (branco, futuro esmaecido), `classic` (legenda em bloco no rodapé) e
+  `capsula` (bloco estático por frase numa cápsula branca de cantos arredondados,
+  texto preto — estilo legenda de repost/viral; opt-in via `--estilo capsula`). O
   default de estilo é POR FORMATO: vídeo vertical → reels; vídeo quadrado → classic
   (o bloco clássico no rodapé, padrão do feed). A composição se adapta à dimensão do
   vídeo (1080×1920 ou 1080×1080) e a posição da legenda escala com a altura, mantendo
@@ -57,9 +59,10 @@ inventa timestamp.
 | `reels` | palavra falada acende em **amarelo** com **pop animado** (spring + fade de cor + entrada deslizante), maiúsculas, contorno preto | padrão de Reels/TikTok, máxima atenção |
 | `minimal` | tudo branco, minúsculas; palavras ainda-não-ditas **esmaecidas** | sóbrio, elegante |
 | `classic` | legenda em **bloco** no rodapé, sem karaokê | legenda clássica de vídeo; **default do quadrado (feed)** |
+| `capsula` | **bloco estático por frase** numa **cápsula branca** de cantos arredondados que abraça o texto (uma cápsula por linha), texto preto sans-serif bold, sem karaokê | estilo legenda de **repost/viral**; **opt-in** via `--estilo capsula` |
 | ~~`hormozi`~~ | caixa amarela na palavra | **EXPERIMENTAL — em ajuste, não oferecer** |
 
-**Default por formato.** Sem `--estilo`, a skill escolhe pela dimensão do vídeo: **vertical → `reels`**, **quadrado (1:1) → `classic`**. `--estilo` força um preset pra todos. A largura é sempre 1080 (vertical e quadrado), então tipografia e margem lateral são iguais; só a posição vertical (`bottomOffset`) escala com a altura real (px do preset são em 1920) — a legenda fica na mesma posição relativa nos dois formatos.
+**Default por formato.** Sem `--estilo`, a skill escolhe pela dimensão do vídeo: **vertical → `reels`**, **quadrado (1:1) → `classic`**. `--estilo` força um preset pra todos. O `capsula` **não é default de nenhum formato** — só entra quando pedido explicitamente (`--estilo capsula`). A largura é sempre 1080 (vertical e quadrado), então tipografia e margem lateral são iguais; só a posição vertical (`bottomOffset`) escala com a altura real (px do preset são em 1920) — a legenda fica na mesma posição relativa nos dois formatos.
 
 Todos os parâmetros de cada preset (ritmo, fonte, tamanho, cor, posição, modo de
 destaque) vivem no topo de `remotion/src/Captions.tsx`, em `PRESETS`. A legenda **não
