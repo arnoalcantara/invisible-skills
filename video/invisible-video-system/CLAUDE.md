@@ -4,7 +4,7 @@ Orienta qualquer instância de Claude que trabalhe neste plugin. Leia antes de e
 
 ## O que é
 
-O sistema de vídeo da Invisible. Oito skills, encadeadas numa **linha de produção por pastas
+O sistema de vídeo da Invisible. Nove skills, encadeadas numa **linha de produção por pastas
 de etapa** (ver "Linha de produção" abaixo):
 
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
@@ -41,6 +41,11 @@ de etapa** (ver "Linha de produção" abaixo):
   salva `_DENOISER` no fim do nome e substitui o original, com o vídeo copiado sem recompressão.
   Independente — roda em qualquer ponto da esteira. Recusa rodar nas `BRUTAS/` sem `--forcar`.
   (EQ e compressão ficaram de fora: testados e reprovados em gravação limpa.)
+- **`invisible-video-acelerador`** — acelera um vídeo (ou pasta) por um fator fixo à escolha
+  (`1.2x` padrão, `1.5x`, `2x`): vídeo (`setpts`) e áudio (`atempo`) pelo mesmo fator, com o
+  **tom da voz preservado** (sem chipmunk). Reencoda em H.264 mantendo resolução e fps da fonte.
+  Grava ao lado com `_ACELERADO_<FATOR>` no fim (`12X`/`15X`/`2X`); original intacto. Independente
+  — roda em qualquer ponto da esteira; em lote pula o que já tem `_ACELERADO`.
 
 O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
@@ -231,6 +236,15 @@ Em `skills/invisible-denoiser/scripts/`:
   (temp → `<nome>_DENOISER.ext`, remove o original). Arquivo único ou pasta (pula `_DENOISER`).
   Recusa alvo em `BRUTAS/` sem `--forcar`. Sem EQ/compressão (reprovados). Método em
   `referencia/METODO.md`.
+
+Em `skills/invisible-video-acelerador/scripts/`:
+
+- `bootstrap.py` — **só ffmpeg/ffprobe** (`setpts`/`atempo` são embutidos). Sem Node, sem
+  WhisperX, sem modelo.
+- `acelerar.py` — ffmpeg: `setpts=PTS/<fator>` no vídeo + `atempo=<fator>` no áudio (preserva o
+  tom; os fatores 1.2/1.5/2.0 cabem no range `[0.5,2.0]` do atempo), reencode H.264 forçando o
+  `-r` do fps da fonte. Grava ao lado com `_ACELERADO_<FATOR>` (12X/15X/2X); arquivo único ou
+  pasta (pula `_ACELERADO`). Um arquivo por execução. Método em `referencia/METODO.md`.
 
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
 Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar em todas as cópias — atenção:
