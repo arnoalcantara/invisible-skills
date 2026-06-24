@@ -116,16 +116,18 @@ Liste o que saiu em `03_PREPARADOS/`: cada `nome_saida`, o estilo usado e quanto
 qualquer vídeo pulado por falta do `.json` (e o que fazer: rodar a transcrição antes).
 
 ## Conferir um estilo sem renderizar o vídeo todo (rápido)
-Para validar altura/cor/quebra de um preset, renderize **um frame** (não o vídeo inteiro):
+Para validar altura/cor/quebra de um preset, gere uma **prova de um frame** com `--still`. A prova `.png` sai **na pasta de trabalho** (ao lado da saída, `<id>_..._LEGENDADO_<FMT>_PROVA.png`) — acessível ao usuário, nunca enterrada no projeto central do Remotion:
 ```bash
-cd ~/.invisible-video/legendas-remotion
-npx remotion still <estilo> out/check.png --frame=440   # com public/ já encenado
+python3 scripts/aplicar.py "<video>" --estilo classic --still 240
 ```
-Foi assim que afinamos a posição da `classic` sem re-renderizar.
+O JSON de saída traz o caminho da prova em `resultados[].saida` (`tipo: "prova"`). Foi assim que afinamos a posição da `classic` sem re-renderizar o vídeo todo.
 
-Pra testar a **altura da legenda** num still sem editar o preset, passe o override `bottomOffsetPx` (px na altura real do vídeo) via `--props`:
+> **Sempre que gerar prova, mostre o caminho ao usuário** e peça para abrir — toda prova das skills de vídeo vai pra pasta de trabalho de propósito.
+
+Pra calibrar a **altura da legenda** sem editar o preset (override fino `bottomOffsetPx`, px na altura real), aí sim use o `remotion still` à mão, mas **mande o PNG pra um caminho ABSOLUTO na pasta de trabalho**, não pra `out/`:
 ```bash
-npx remotion still classic out/h140.png --frame=240 \
+cd ~/.invisible-video/legendas-remotion   # com public/ já encenado por um run anterior
+npx remotion still classic "/caminho/da/pasta/de/trabalho/h140.png" --frame=240 \
   --props='{"videoSrc":"video.mp4","captionsSrc":"captions.json","preset":"classic","bottomOffsetPx":140}'
 ```
 Quando achar a altura boa, crave no preset: `bottomOffset` (vertical) ou `bottomOffsetSquare` (quadrado) em `Captions.tsx`.

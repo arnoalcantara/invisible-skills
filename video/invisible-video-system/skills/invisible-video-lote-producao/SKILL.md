@@ -82,7 +82,8 @@ python3 "<skills_dir>/invisible-legendas-aplicador/scripts/aplicar.py" "<lote>/0
 ```
 - Default `auto`: a skill escolhe por formato (vertical→`reels`, quadrado→`classic`).
   Se o plano fixou um estilo, passe `--estilo`.
-- Pula os `_VAR`. Inspeção opcional: `remotion still` de um frame antes do lote.
+- Pula os `_VAR`. Inspeção opcional: `aplicar.py … --still <frame>` gera uma prova
+  `.png` na pasta de trabalho (não no projeto central) — mostre ao usuário antes do lote.
 
 ### Etapa 3.2 — Variações de gancho `[02_OTIMIZADOS → 03_PREPARADOS]` (só se o plano pediu VAR)
 1. **Infira a ênfase** de cada gancho distinto (palavras-chave: substantivos/verbos
