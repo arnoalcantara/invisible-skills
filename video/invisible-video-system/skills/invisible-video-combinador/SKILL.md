@@ -97,9 +97,14 @@ python3 scripts/normalizar.py "<corte>" --out "<tmp>/<corte>.mp4" \
     --largura 1080 --altura 1920 --fps 30 --vcodec libx265 --crf 20 \
     --sample-rate 48000 --canais 2
 ```
-2. Concatene **na ordem da cadeia** (combinar.py aceita N partes). Passe também os **sidecars `.md` dos cortes ORIGINAIS** (os otimizados, com o `.md` ao lado — **não** as versões normalizadas temporárias), na MESMA ordem, para gerar o roteiro da combinação:
+2. **Nivele a loudness da cadeia** (remove o degrau de volume na emenda). Passe os cortes da cadeia **na ordem**, já no formato comum (saídas do passo 1, ou os otimizados que já batiam o alvo). O `nivelar.py` mede o LUFS de cada um, casa todos com o **mais baixo** por atenuação pura (nunca sobe → nunca clipa, dinâmica intacta) e devolve as versões `_niv`:
 ```bash
-python3 scripts/combinar.py "<seg1_norm>" "<seg2_norm>" "<segN_norm>" \
+python3 scripts/nivelar.py "<seg1_norm>" "<seg2_norm>" "<segN_norm>" --out-dir "<tmp>"
+```
+A loudness final (−14 LUFS) **não** é tratada aqui — fica para a `invisible-trilha-aplicador`. Este passo só iguala os trechos entre si. Use os caminhos `_niv` (campo `cortes[].saida` do JSON) na concatenação.
+3. Concatene **na ordem da cadeia** (combinar.py aceita N partes) — usando as versões **niveladas**. Passe também os **sidecars `.md` dos cortes ORIGINAIS** (os otimizados, com o `.md` ao lado — **não** as versões normalizadas/niveladas temporárias), na MESMA ordem, para gerar o roteiro da combinação:
+```bash
+python3 scripts/combinar.py "<seg1_niv>" "<seg2_niv>" "<segN_niv>" \
     --out "<projeto>/COMBINAÇÕES/<nome_da_peça>.mp4" \
     --sidecars "<seg1_orig>.md" "<seg2_orig>.md" "<segN_orig>.md" \
     --out-md "<projeto>/COMBINAÇÕES/<nome_da_peça>.md"
@@ -129,6 +134,8 @@ Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e apont
 - Gerar antes da aprovação da matriz.
 - Transcrever segmentos fixos nativos à toa (não se julgam).
 - Rebaixar resolução quando o usuário pediu "nativa".
+- **Pular o nivelamento** quando a cadeia mistura cortes de origens diferentes — é o que tira o degrau de volume na emenda. (Cadeia de um corte só não precisa.)
+- **Nivelar pra cima.** O nivelamento é sempre por atenuação ao piso da cadeia; subir trecho baixo clipa/esmaga. A loudness final é da trilha-aplicador.
 
 ## Referência
 O método de julgamento (par-a-par, promessa × abertura), o modelo de segmentos N-lados e as razões técnicas (normalizar antes de concatenar, specs do alvo) estão em `referencia/METODO.md`.
