@@ -1,18 +1,22 @@
 ---
 name: invisible-legendas-aplicador
 description: >
-  Queima legenda animada num vídeo vertical usando Remotion. O usuário aponta um
-  vídeo OU uma pasta (tipicamente a COMBINAÇÕES) e a skill renderiza a legenda no
-  estilo escolhido, gravando o resultado em LEGENDADOS/<nome>_LEGENDADO.mp4. NÃO
-  transcreve: consome o `.json` de timestamp por palavra que a invisible-legenda-arquivos
-  já gera ao lado de cada vídeo (mesmo nome). Estilos prontos: `reels` (palavra
-  acende em amarelo, padrão de Reels/TikTok), `minimal` (branco, futuro esmaecido)
-  e `classic` (legenda em bloco no rodapé). A legenda nunca vaza a margem (quebra
-  de linha resolvida) e o vídeo original nunca é tocado. Use SEMPRE que o usuário
-  pedir para "aplicar legenda", "legendar com remotion", "queimar legenda no vídeo",
-  "burn das legendas", "colocar legenda animada", "legenda karaokê", "legendar as
-  combinações", ou apontar vídeos pedindo a legenda embutida. Requer Node.js, npm
-  e ffmpeg (faz bootstrap). Hormozi existe mas está em ajuste — não ofereça como pronto.
+  Queima legenda animada num vídeo (vertical 9:16 ou quadrado 1:1) usando Remotion.
+  O usuário aponta um vídeo OU uma pasta (tipicamente a COMBINAÇÕES) e a skill
+  renderiza a legenda no estilo escolhido, gravando o resultado em
+  LEGENDADOS/<nome>_LEGENDADO.mp4. NÃO transcreve: consome o `.json` de timestamp
+  por palavra que a invisible-legenda-arquivos já gera ao lado de cada vídeo (mesmo
+  nome). Estilos prontos: `reels` (palavra acende em amarelo, padrão de Reels/TikTok),
+  `minimal` (branco, futuro esmaecido) e `classic` (legenda em bloco no rodapé). O
+  default de estilo é POR FORMATO: vídeo vertical → reels; vídeo quadrado → classic
+  (o bloco clássico no rodapé, padrão do feed). A composição se adapta à dimensão do
+  vídeo (1080×1920 ou 1080×1080) e a posição da legenda escala com a altura, mantendo
+  a mesma posição relativa. A legenda nunca vaza a margem (quebra de linha resolvida)
+  e o vídeo original nunca é tocado. Use SEMPRE que o usuário pedir para "aplicar
+  legenda", "legendar com remotion", "queimar legenda no vídeo", "burn das legendas",
+  "colocar legenda animada", "legenda karaokê", "legendar as combinações", "legendar
+  o quadrado", ou apontar vídeos pedindo a legenda embutida. Requer Node.js, npm e
+  ffmpeg (faz bootstrap). Hormozi existe mas está em ajuste — não ofereça como pronto.
 ---
 
 # Aplicador de Legendas (Remotion)
@@ -44,8 +48,10 @@ Se o `.json` não existir ao lado do vídeo, a skill avisa e pede para rodar a
 |---|---|---|
 | `reels` | palavra falada acende em **amarelo** com **pop animado** (spring + fade de cor + entrada deslizante), maiúsculas, contorno preto | padrão de Reels/TikTok, máxima atenção |
 | `minimal` | tudo branco, minúsculas; palavras ainda-não-ditas **esmaecidas** | sóbrio, elegante |
-| `classic` | legenda em **bloco** no rodapé, sem karaokê | legenda clássica de vídeo |
+| `classic` | legenda em **bloco** no rodapé, sem karaokê | legenda clássica de vídeo; **default do quadrado (feed)** |
 | ~~`hormozi`~~ | caixa amarela na palavra | **EXPERIMENTAL — em ajuste, não oferecer** |
+
+**Default por formato.** Sem `--estilo`, a skill escolhe pela dimensão do vídeo: **vertical → `reels`**, **quadrado (1:1) → `classic`**. `--estilo` força um preset pra todos. A largura é sempre 1080 (vertical e quadrado), então tipografia e margem lateral são iguais; só a posição vertical (`bottomOffset`) escala com a altura real (px do preset são em 1920) — a legenda fica na mesma posição relativa nos dois formatos.
 
 Todos os parâmetros de cada preset (ritmo, fonte, tamanho, cor, posição, modo de
 destaque) vivem no topo de `remotion/src/Captions.tsx`, em `PRESETS`. A legenda **não
@@ -104,6 +110,15 @@ cd ~/.invisible-video/legendas-remotion
 npx remotion still <estilo> out/check.png --frame=440   # com public/ já encenado
 ```
 Foi assim que afinamos a posição da `classic` sem re-renderizar.
+
+Pra testar a **altura da legenda** num still sem editar o preset, passe o override `bottomOffsetPx` (px na altura real do vídeo) via `--props`:
+```bash
+npx remotion still classic out/h140.png --frame=240 \
+  --props='{"videoSrc":"video.mp4","captionsSrc":"captions.json","preset":"classic","bottomOffsetPx":140}'
+```
+Quando achar a altura boa, crave no preset: `bottomOffset` (vertical) ou `bottomOffsetSquare` (quadrado) em `Captions.tsx`.
+
+> **Editou um `.tsx`? Rode `bootstrap.py` ANTES de renderizar.** O render usa o projeto central (`~/.invisible-video/legendas-remotion`); o bootstrap sincroniza os fontes da skill pra lá. Sem isso, o render (still ou vídeo) usa o código antigo e parece que a edição "não fez nada".
 
 ## Pontos de confirmação
 1. `.json` presente ao lado de cada vídeo. 2. Estilo escolhido. 3. Pasta de saída. 4. Resumo.

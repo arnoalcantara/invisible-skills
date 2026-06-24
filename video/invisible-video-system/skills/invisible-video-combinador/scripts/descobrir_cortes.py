@@ -37,9 +37,13 @@ Saída (stdout): JSON
       "projeto": "...", "modo": "subpastas|mesma_pasta",
       "segmentos": [
         {"nome": "GANCHO", "dir": "...", "padrao_conhecido": "gancho",
-         "cortes": [{"codigo": "VAV19", "arquivo": "..."}]},
+         "cortes": [{"codigo": "VAV19", "arquivo": "<vertical>",
+                     "arquivo_quadrado": "<1:1 ou null>"}]},
         ...
       ],
+    O `_QUADRADO` NÃO vira corte separado: é pareado como variante de formato do
+    corte de mesmo código (campo "arquivo_quadrado"). Assim a matriz retórica é
+    julgada UMA vez (no vertical/áudio) e o quadrado segue o mesmo esquema.
       "subpastas_ignoradas": [...],
       "sem_rotulo": [...]   # (modo B) arquivos cujo rótulo não foi reconhecido
     }
@@ -74,7 +78,43 @@ RE_CODIGO = re.compile(r"[A-Z]{2,5}\d{1,4}", re.IGNORECASE)
 # falha entre "_" e dígito porque "_" conta como caractere de palavra.
 RE_NUM = re.compile(r"(?<!\d)(\d{1,4})(?!\d)")
 # sufixos de processamento que não são rótulo de segmento.
-RUIDO = {"OTIMIZADO", "VERTICAL", "HORIZONTAL", "FINAL", "RAW"}
+RUIDO = {"OTIMIZADO", "VERTICAL", "HORIZONTAL", "FINAL", "RAW", "QUADRADO"}
+
+
+def eh_quadrado(base):
+    """True se o corte é a variante QUADRADA (1:1) — token _QUADRADO no nome."""
+    return any(t.upper() == "QUADRADO" for t in tokens(base))
+
+
+def parear_formatos(crus):
+    """Junta vertical + quadrado do MESMO corte numa entrada só.
+
+    `crus` é uma lista de dicts {codigo, arquivo, quadrado(bool)} na ordem de
+    descoberta. O quadrado NÃO é um corte retórico novo — é a variante de formato
+    do corte com o mesmo código. Casa por código: cada corte vira
+    {codigo, arquivo (vertical), arquivo_quadrado (1:1 ou None)}.
+
+    Quadrado órfão (sem vertical de mesmo código) não se perde: entra como corte
+    próprio (arquivo = o quadrado), pra não sumir silenciosamente.
+    """
+    verticais, quadrados, ordem = {}, {}, []
+    for c in crus:
+        cod = c["codigo"]
+        if c["quadrado"]:
+            quadrados.setdefault(cod, c["arquivo"])
+        else:
+            if cod not in verticais:
+                ordem.append(cod)
+            verticais[cod] = c["arquivo"]
+    cortes = []
+    for cod in ordem:
+        cortes.append({"codigo": cod, "arquivo": verticais[cod],
+                       "arquivo_quadrado": quadrados.get(cod)})
+    for cod, arq in quadrados.items():       # órfãos (raro): preserva
+        if cod not in verticais:
+            cortes.append({"codigo": cod, "arquivo": arq,
+                           "arquivo_quadrado": None, "orfao_quadrado": True})
+    return cortes
 
 
 def extrair_codigo(base):
@@ -111,9 +151,9 @@ def detectar_rotulo(base, rotulos_validos):
 
 
 def listar_cortes_subpasta(pasta):
-    cortes = []
+    crus = []
     if not pasta or not os.path.isdir(pasta):
-        return cortes
+        return []
     for entry in sorted(os.listdir(pasta)):
         caminho = os.path.join(pasta, entry)
         if not os.path.isfile(caminho) or entry.startswith("."):
@@ -121,8 +161,9 @@ def listar_cortes_subpasta(pasta):
         base, ext = os.path.splitext(entry)
         if ext.lower() not in VIDEO_EXT:
             continue
-        cortes.append({"codigo": extrair_codigo(base), "arquivo": caminho})
-    return cortes
+        crus.append({"codigo": extrair_codigo(base), "arquivo": caminho,
+                     "quadrado": eh_quadrado(base)})
+    return parear_formatos(crus)
 
 
 def montar_segmento_subpasta(caminho_pasta):
@@ -144,7 +185,7 @@ def agrupar_mesma_pasta(pasta, rotulos_extra):
         validos[r.upper()] = r.lower()
         ordem_extra.append(r.lower())
 
-    grupos = {}          # singular -> {"exibicao":..., "cortes":[...]}
+    grupos = {}          # singular -> {"exibicao":..., "crus":[...]}
     sem_rotulo = []
     for entry in sorted(os.listdir(pasta)):
         caminho = os.path.join(pasta, entry)
@@ -157,8 +198,9 @@ def agrupar_mesma_pasta(pasta, rotulos_extra):
         if singular is None:
             sem_rotulo.append(caminho)
             continue
-        g = grupos.setdefault(singular, {"exibicao": exib, "cortes": []})
-        g["cortes"].append({"codigo": extrair_codigo(base), "arquivo": caminho})
+        g = grupos.setdefault(singular, {"exibicao": exib, "crus": []})
+        g["crus"].append({"codigo": extrair_codigo(base), "arquivo": caminho,
+                          "quadrado": eh_quadrado(base)})
 
     segmentos = []
     for singular, g in grupos.items():
@@ -167,7 +209,7 @@ def agrupar_mesma_pasta(pasta, rotulos_extra):
             "dir": os.path.abspath(pasta),   # todos na mesma pasta
             "padrao_conhecido": singular if singular in PADROES_CONHECIDOS.values()
                                 else None,
-            "cortes": g["cortes"],
+            "cortes": parear_formatos(g["crus"]),   # vertical + quadrado pareados
         })
 
     # ordena: ordem retórica conhecida primeiro, depois ordem dos --rotulos, depois alfabético

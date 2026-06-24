@@ -1,7 +1,7 @@
 ---
 name: invisible-video-combinador
 description: >
-  Combina cortes de SEGMENTOS de roteiro (saídas da invisible-video-bruto-desmembrador) para gerar peças novas — anúncios, VSLs — concatenando um corte de cada segmento numa cadeia ordenada. Os segmentos são pastas de nomes LIVRES (padrão Invisible: GANCHOS, DESENVOLVIMENTOS, CTAS; mas pode ser LEAD, HISTORIA, OFERTA, FECHAMENTO ou o que o projeto tiver), e podem ser DOIS OU MAIS. O usuário dirige o esquema: quais segmentos entram, em que ordem, quais VARIAM (cruzam) e quais ficam FIXOS (a peça nativa de cada origem). A skill transcreve os cortes (com cache), julga o encaixe retórico de cada transição que vai variar, monta a matriz justificada (✅/⚠️/❌), pede aprovação, normaliza para um alvo comum e concatena. Use quando o usuário pedir "combina os cortes", "cruza gancho × desenvolvimento", "monta os anúncios", "varia o gancho mantendo a oferta nativa", "gera as combinações de VAV", "monta as VSLs combinando as seções". Saída padrão Full HD vertical MP4 em COMBINAÇÕES/. Requer ffmpeg e WhisperX (faz bootstrap).
+  Combina cortes de SEGMENTOS de roteiro (saídas da invisible-video-bruto-desmembrador) para gerar peças novas — anúncios, VSLs — concatenando um corte de cada segmento numa cadeia ordenada. Os segmentos são pastas de nomes LIVRES (padrão Invisible: GANCHOS, DESENVOLVIMENTOS, CTAS; mas pode ser LEAD, HISTORIA, OFERTA, FECHAMENTO ou o que o projeto tiver), e podem ser DOIS OU MAIS. O usuário dirige o esquema: quais segmentos entram, em que ordem, quais VARIAM (cruzam) e quais ficam FIXOS (a peça nativa de cada origem). A skill transcreve os cortes (com cache), julga o encaixe retórico de cada transição que vai variar, monta a matriz justificada (✅/⚠️/❌), pede aprovação, normaliza para um alvo comum e concatena. Quando os cortes otimizados têm a variante QUADRADA (1:1, sufixo _QUADRADO, gerada pelo otimizador), a skill emite cada combinação aprovada nos DOIS formatos — vertical e quadrado — em paralelo, julgando o encaixe retórico UMA vez só (é sobre o áudio, idêntico nos dois), nunca cruzando formatos no concat. Use quando o usuário pedir "combina os cortes", "cruza gancho × desenvolvimento", "monta os anúncios", "varia o gancho mantendo a oferta nativa", "gera as combinações de VAV", "monta as VSLs combinando as seções", "combina também no quadrado". Saída padrão Full HD vertical MP4 (+ 1080×1080 quando há quadrado) em COMBINAÇÕES/. Requer ffmpeg e WhisperX (faz bootstrap).
 ---
 
 # Combinador de Vídeo (cadeia de segmentos)
@@ -20,6 +20,15 @@ Um segmento é uma pasta de cortes. O padrão Invisible é `GANCHOS/`, `DESENVOL
 - **Eixo que varia × segmento fixo:**
   - **Varia** — todos os cortes daquele segmento entram no cruzamento.
   - **Fixo (nativo)** — o corte daquele segmento é o que tem o **mesmo código** da peça base; não cruza, acompanha. Ex.: "varia gancho × desenvolvimento, mas a OFERTA é a nativa de cada vídeo".
+
+## Formato quadrado (1:1) em paralelo
+
+Se o otimizador gerou a variante quadrada de cada corte (`_QUADRADO`, 1:1), o `descobrir_cortes.py` a expõe pareada como `arquivo_quadrado` de cada corte — **não** como corte novo. Regras:
+
+- **Julgue UMA vez.** O encaixe retórico é sobre o áudio, que é idêntico no vertical e no quadrado. A matriz vale para os dois. Nunca refaça a análise pro quadrado.
+- **Emita os dois.** Para cada cadeia aprovada, monte a combinação vertical (com os `arquivo`) **e** a quadrada (com os `arquivo_quadrado`), quando todos os cortes da cadeia têm a variante quadrada.
+- **Nunca cruze formato.** Vertical concatena com vertical (1080×1920), quadrado com quadrado (1080×1080). Misturar quebra o `concat -c copy` — e não faz sentido.
+- **Quadrado faltando** em algum corte da cadeia → gere só o vertical e **avise** quais cortes não têm `_QUADRADO` (rode o otimizador neles pra completar).
 
 ## Princípio crítico de julgamento (não esquecer)
 
@@ -106,6 +115,13 @@ python3 scripts/combinar.py "<seg1_norm>" "<seg2_norm>" "<segN_norm>" \
 ```
 O `.md` da combinação junta as seções em sequência (gancho + desenvolvimento + ...), **sem tempos** — a marcação por tempo nasce depois, na `invisible-legenda-arquivos`, casando este texto contra a transcrição do vídeo já editado. Se algum corte não tiver `.md`, ele é registrado em `sidecars_faltando` e a combinação segue.
 
+3. **Versão quadrada (mesma cadeia, formato 1:1).** Se todos os cortes da cadeia têm `arquivo_quadrado`, repita a concatenação com as variantes quadradas — os quadrados do otimizador já são 1080×1080 com specs idênticas, então normalmente é `concat -c copy` direto (se desconfiar, normalize com `--largura 1080 --altura 1080`). **NÃO passe `--sidecars` aqui e NÃO gere um `_QUADRADO.md`:** o roteiro é o mesmo da vertical (mesmo áudio) → **um `.md` só por combinação**, o da vertical. Nome do vídeo: o mesmo da vertical + sufixo `_QUADRADO` no fim.
+```bash
+python3 scripts/combinar.py "<seg1_quad>" "<seg2_quad>" "<segN_quad>" \
+    --out "<projeto>/COMBINAÇÕES/<nome_da_peça>_QUADRADO.mp4"
+```
+Se faltar a variante quadrada de algum corte da cadeia, pule só o quadrado dessa cadeia e avise quais cortes precisam passar pelo otimizador.
+
 ### Fase 7 — Resumo
 Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e aponte 1–2 decisões representativas da matriz (de preferência uma ⚠️).
 
@@ -118,6 +134,7 @@ Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e apont
   - duas peças: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57.mp4`
   - três: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57__OFERTA_VAV19.mp4`
   - nomes livres: `LEAD_VSL03__HISTORIA_VSL07__OFERTA_VSL03.mp4`
+  - **quadrado:** o mesmo nome da vertical + `_QUADRADO` no fim — `GANCHO_VAV19__DESENVOLVIMENTO_VAV57_QUADRADO.mp4`. O `.md` é só o da vertical (não há `_QUADRADO.md`).
 
 ## Anti-padrões (não faça)
 - Travar em GANCHOS/DESENVOLVIMENTOS — os segmentos são de nome livre e podem ser 2 ou mais.
@@ -128,6 +145,10 @@ Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e apont
 - Concatenar specs mistas (quebra o `-c copy`) — mas também não re-normalizar cortes que já chegaram no alvo da otimizadora: cheque specs antes e pule quem já bate.
 - Gerar antes da aprovação da matriz.
 - Transcrever segmentos fixos nativos à toa (não se julgam).
+- Tratar o `_QUADRADO` como corte retórico novo — é variante de formato (`arquivo_quadrado`), não opção de cruzamento. Não duplica a matriz.
+- Re-julgar o encaixe pro quadrado — é o mesmo áudio; julga uma vez, vale pros dois.
+- Cruzar formato no concat (vertical com quadrado) — pareie vertical-com-vertical, quadrado-com-quadrado.
+- Gerar `_QUADRADO.md` — o roteiro é o mesmo; um `.md` só (o da vertical).
 - Rebaixar resolução quando o usuário pediu "nativa".
 
 ## Referência

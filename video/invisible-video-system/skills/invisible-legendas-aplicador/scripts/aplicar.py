@@ -28,6 +28,30 @@ EXTS_VIDEO = {".mp4", ".mov", ".mkv", ".webm", ".m4v"}
 ESTILOS = ["reels", "minimal", "classic", "hormozi"]
 
 
+def dims_video(video):
+    """(largura, altura) do vídeo via ffprobe, ou (None, None)."""
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height", "-of", "csv=p=0", video],
+        capture_output=True, text=True).stdout.strip()
+    try:
+        w, h = (int(float(x)) for x in out.split(","))
+        return w, h
+    except (ValueError, IndexError):
+        return None, None
+
+
+def estilo_default(video):
+    """Default por formato: QUADRADO (1:1) → classic; vertical/outros → reels.
+
+    No feed quadrado o estilo clássico (bloco no rodapé) é o que o Arno cravou
+    como padrão; no vertical (Reels/Stories) o padrão segue sendo o reels."""
+    w, h = dims_video(video)
+    if w and h and w == h:
+        return "classic"
+    return "reels"
+
+
 def coletar_videos(alvos):
     """Expande os alvos em arquivos de vídeo. Pasta → vídeos diretos (sem
     recursão, ignorando a própria LEGENDADOS)."""
@@ -51,7 +75,9 @@ def coletar_videos(alvos):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("alvos", nargs="+", help="vídeo(s) ou pasta")
-    ap.add_argument("--estilo", default="reels", choices=ESTILOS)
+    ap.add_argument("--estilo", default=None, choices=ESTILOS,
+                    help="força um estilo pra todos. Sem isto, o default é por "
+                         "formato: quadrado→classic, vertical→reels.")
     ap.add_argument("--projeto-dir", default=PROJETO_CENTRAL_PADRAO)
     ap.add_argument("--out-dir", default=None, help="default: <pasta>/LEGENDADOS")
     ap.add_argument(
@@ -119,10 +145,13 @@ def main():
         import shutil
         shutil.copyfile(video, os.path.join(public, "video.mp4"))
 
+        # estilo: explícito (--estilo) sobrepõe; senão default por formato do vídeo.
+        estilo = args.estilo or estilo_default(video)
+
         # 3) renderizar o preset (id da composição == nome do estilo)
-        print(f"\n=== legendando ({args.estilo}): {os.path.basename(video)} ===", flush=True)
+        print(f"\n=== legendando ({estilo}): {os.path.basename(video)} ===", flush=True)
         r = subprocess.run(
-            ["npx", "remotion", "render", args.estilo, out_path],
+            ["npx", "remotion", "render", estilo, out_path],
             cwd=projeto_dir,
         )
         if r.returncode != 0:
@@ -132,14 +161,16 @@ def main():
         resultados.append({
             "video": video,
             "ok": True,
-            "estilo": args.estilo,
+            "estilo": estilo,
+            "estilo_origem": "explícito" if args.estilo else "default-por-formato",
             "saida": out_path,
             "nome_saida": os.path.basename(out_path),
         })
 
     ok = sum(1 for r in resultados if r.get("ok"))
     print(json.dumps(
-        {"estilo": args.estilo, "total": len(resultados), "ok": ok, "resultados": resultados},
+        {"estilo": args.estilo or "default-por-formato (quadrado→classic, vertical→reels)",
+         "total": len(resultados), "ok": ok, "resultados": resultados},
         ensure_ascii=False, indent=2,
     ))
     return 0 if ok == len(resultados) else 1

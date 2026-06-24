@@ -98,3 +98,16 @@ Diferente da combinadora (que faz `concat -c copy`), aqui há **reencode** obrig
 legenda é pixel novo sobre o vídeo. Saída padrão do Remotion é H.264 + AAC. É a única etapa
 do pipeline que necessariamente regenera o vídeo — por isso fica por último, depois de
 otimizar e combinar.
+
+## Formato quadrado (1:1) e default de estilo por formato
+
+A composição já se adapta à dimensão do vídeo (`parseMedia` no `calculateMetadata` lê width/height reais), então um vídeo 1080×1080 renderiza numa composição 1080×1080 sem distorção — nada a fazer ali.
+
+O único ajuste de layout é a **posição vertical** — a **largura é sempre 1080** (vertical e quadrado), então tipografia (`fontSize`), margem lateral (`paddingX`) e quebra de linha não mudam entre formatos. O `CaptionPage` resolve a posição por prioridade:
+1. **override por prop** `bottomOffsetPx` (px na altura real) — ganha de tudo; serve pra afinar num still sem editar o preset (`npx remotion still classic out.png --frame=N --props='{...,"bottomOffsetPx":140}'`). É exposto em `LegendaProps`.
+2. **`bottomOffsetSquare` do preset**, quando o vídeo é quadrado (1:1, `width == height`) — px na altura 1080. O `classic` usa **140** (cravado de ouvido pelo Arno pro feed: o quadrado não tem UI de Reels embaixo, então a legenda desce). Validado em still, 22/06/2026.
+3. **proporcional**: senão, `bottomOffset * altura / 1920` — mantém a mesma posição relativa do vertical em qualquer altura.
+
+> **Cuidado (pegadinha real):** o render usa o projeto Remotion **central** (`~/.invisible-video/legendas-remotion`), não os fontes da skill. Depois de editar qualquer `.tsx`, rode `bootstrap.py` (sincroniza o template pro central) **antes** de renderizar — senão o render usa o código antigo. Custou um ciclo de teste descobrir isso.
+
+**Default de estilo por formato** (em `aplicar.py`, `estilo_default`): sem `--estilo`, vídeo **vertical → reels**; vídeo **quadrado → classic**. O quadrado vai pro feed do Instagram, e ali o Arno cravou o bloco clássico no rodapé como padrão (decisão de 22/06/2026). `--estilo` explícito sobrepõe pra todos os vídeos do lote. A detecção é por ffprobe (largura == altura → quadrado).

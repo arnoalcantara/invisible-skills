@@ -79,3 +79,20 @@ Pausas residuais ~0.3–0.49s são **esperadas, não erro**: são o respiro pres
 - os dois eixos são **independentes** (qualquer combinação)
 - `crf = 20`, `preset = medium`
 - normalização: **off** por padrão; `--normalizar` liga, com alvo FHD vertical default.
+
+## 7. Versão quadrada (1:1) — `quadrado.py`
+
+O quadrado nasce aqui, no otimizado, e não na combinação. Motivo: o reenquadramento vertical→quadrado é uma decisão **por bruta** (onde fica o rosto dentro do 1:1). Resolvida uma vez no corte otimizado, propaga idêntica a todas as combinações que usarem aquele corte. Se ficasse pro combinador, cada par gancho+desenvolvimento exigiria reenquadrar de novo.
+
+**Geometria:** lado do quadrado = **largura** do vídeo (largura cheia, descarta só altura). Folga vertical = `H − W`; a âncora `y ∈ [0, H−W]` é o que se decide. `crop=W:W:0:y`. Áudio `-c:a copy` (idêntico ao vertical). Re-encode só do vídeo (codec da origem, CRF/preset do otimizador).
+
+**Como `y` é decidido — detecção de rosto ancorada nos OLHOS:**
+- Detector **YuNet** (`cv2.FaceDetectorYN`, modelo `face_detection_yunet_2023mar.onnx` ~230KB versionado em `referencia/modelos/`, sem torch). Devolve caixa + 5 pontos faciais.
+- Usa os **olhos** (média do y dos dois), não o centro da caixa. **Por quê:** o Haar (testado e descartado) centra a caixa no rosto inteiro, e barba branca grande puxa o centro pra baixo (pro queixo) — o crop sobe a cabeça e **corta a coroa**. Os olhos são estáveis, imunes à barba. Validado em material real do Lote 01 (VAV19/23/35/57): com Haar, VAV19 e VAV23 cortavam a cabeça; com YuNet+olhos, os quatro saíram bem enquadrados sem ajuste manual.
+- Amostra ~8 frames (câmera estática → olhos quase não andam), mediana do y dos olhos, e os põe a **30% da altura do quadrado** (terço superior, respiro pra coroa): `y = clamp(olhos_y − 0.30·W, 0, H−W)`. O 0.30 foi cravado de ouvido pelo Arno (preferiu os olhos mais altos) sobre o material do Lote 01 — testadas as alturas 0.38/0.34/0.30 em folha de contato.
+- Plausibilidade: olhos fora de `[0.15, 0.75]·H` são descartados. Sem rosto plausível → fallback âncora alta `y = 0.15·(H−W)` (segura: na grade de teste, âncora alta nunca cortou).
+- `--ancora <fração>` sobrepõe a detecção (nudge manual de um corte). `--target-frac` muda onde os olhos caem (default 0.30).
+
+**Folha de contato:** `--contato` gera `_CONTATO_QUADRADO.png` (grade de miniaturas + nome) pra aprovação em bloco. O auto acerta a maioria; o humano cutuca os outliers. Detecção é boa, mas não infalível (mão na frente do rosto, cabeça muito virada).
+
+**Dependência:** `opencv-python-headless` na venv central (o bootstrap instala). O `quadrado.py` roda com o python da venv (campo `python_cv2` do bootstrap), não o do sistema.

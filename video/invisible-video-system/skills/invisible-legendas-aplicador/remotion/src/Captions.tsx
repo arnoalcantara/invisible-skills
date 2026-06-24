@@ -58,7 +58,9 @@ type Preset = {
   uppercase: boolean;
   letterSpacing: number;
   lineHeight: number;
-  bottomOffset: number; // distância do rodapé (px) em 1920 de altura
+  bottomOffset: number; // distância do rodapé (px) em 1920 de altura (vertical)
+  bottomOffsetSquare?: number; // idem no QUADRADO (px na altura 1080); quando
+  // ausente, o quadrado usa o bottomOffset escalado pela altura (proporcional)
   paddingX: number;
   baseColor: string;
   activeColor: string;
@@ -140,6 +142,8 @@ export const PRESETS: Record<PresetName, Preset> = {
   },
   // 4. Clássico legenda — bloco de frase, branco com sombra, sem karaokê.
   //    bottomOffset 380: terço inferior, longe da zona de UI do Instagram.
+  //    bottomOffsetSquare 140: no feed quadrado o Arno cravou a legenda mais
+  //    baixa (não há UI de Reels embaixo). Validado em still (22/06/2026).
   classic: {
     combineMs: 2200,
     fontFamily: "Helvetica, Arial, sans-serif",
@@ -149,6 +153,7 @@ export const PRESETS: Record<PresetName, Preset> = {
     letterSpacing: 0,
     lineHeight: 1.3,
     bottomOffset: 380,
+    bottomOffsetSquare: 140,
     paddingX: 120,
     baseColor: "#FFFFFF",
     activeColor: "#FFFFFF",
@@ -263,10 +268,11 @@ function tokenStyle(
   }
 }
 
-export const Captions: React.FC<{ src: string; preset: PresetName }> = ({
-  src,
-  preset: presetName,
-}) => {
+export const Captions: React.FC<{
+  src: string;
+  preset: PresetName;
+  bottomOffsetPx?: number;
+}> = ({ src, preset: presetName, bottomOffsetPx }) => {
   const preset = PRESETS[presetName];
   const [captions, setCaptions] = useState<Caption[] | null>(null);
   const { delayRender, continueRender, cancelRender } = useDelayRender();
@@ -319,7 +325,11 @@ export const Captions: React.FC<{ src: string; preset: PresetName }> = ({
             from={Math.round(startFrame)}
             durationInFrames={Math.round(durationInFrames)}
           >
-            <CaptionPage page={page} preset={preset} />
+            <CaptionPage
+              page={page}
+              preset={preset}
+              bottomOffsetPx={bottomOffsetPx}
+            />
           </Sequence>
         );
       })}
@@ -327,12 +337,28 @@ export const Captions: React.FC<{ src: string; preset: PresetName }> = ({
   );
 };
 
-const CaptionPage: React.FC<{ page: TikTokPage; preset: Preset }> = ({
-  page,
-  preset,
-}) => {
+const CaptionPage: React.FC<{
+  page: TikTokPage;
+  preset: Preset;
+  bottomOffsetPx?: number;
+}> = ({ page, preset, bottomOffsetPx: bottomOffsetOverride }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, width, height } = useVideoConfig();
+
+  // Posição vertical da legenda. Prioridade:
+  //   1) override por prop (bottomOffsetPx) — afina no still, ganha de tudo;
+  //   2) QUADRADO (1:1) com bottomOffsetSquare definido — px na altura 1080
+  //      (ex.: classic 140, cravado pelo Arno pro feed);
+  //   3) senão, bottomOffset do preset (px em 1920) escalado pela altura real,
+  //      mantendo a mesma posição relativa em qualquer formato.
+  // A largura é sempre 1080 (vertical e quadrado), então tipografia e margem
+  // lateral não mudam — só a posição vertical.
+  const isSquare = width === height;
+  const bottomOffsetPx =
+    bottomOffsetOverride ??
+    (isSquare && preset.bottomOffsetSquare != null
+      ? preset.bottomOffsetSquare
+      : (preset.bottomOffset * height) / 1920);
 
   // entrada da página: fade-in + slide de baixo pra cima
   const enterFade = preset.enter?.fadeFrames ?? 0;
@@ -356,7 +382,7 @@ const CaptionPage: React.FC<{ page: TikTokPage; preset: Preset }> = ({
       style={{
         justifyContent: "flex-end",
         alignItems: "center",
-        paddingBottom: preset.bottomOffset,
+        paddingBottom: bottomOffsetPx,
         paddingLeft: preset.paddingX,
         paddingRight: preset.paddingX,
       }}

@@ -1,7 +1,7 @@
 ---
 name: invisible-video-otimizador
 description: >
-  Pega um vídeo gravado e o deixa pronto: primeiro escolhe a melhor TAKE quando há várias tentativas da mesma fala (transcreve, agrupa as repetições e fica com a última), depois remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. Dois eixos de modo independentes, cada um conservador (default, validado) ou justo: modo de silêncio (o que conta como silêncio — conservador -35dB/0.3s, justo -33dB/0.15s) e modo de respiro (margem nas bordas — conservador 0.10/0.25, justo 0.05/0.18, sempre assimétrico). Só silêncios internos, começo e fim intactos; corte ao frame exato. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos". Saída em OTIMIZADOS/. Requer ffmpeg; a seleção de takes requer WhisperX (faz bootstrap).
+  Pega um vídeo gravado e o deixa pronto: primeiro escolhe a melhor TAKE quando há várias tentativas da mesma fala (transcreve, agrupa as repetições e fica com a última), depois remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. Dois eixos de modo independentes, cada um conservador (default, validado) ou justo: modo de silêncio (o que conta como silêncio — conservador -35dB/0.3s, justo -33dB/0.15s) e modo de respiro (margem nas bordas — conservador 0.10/0.25, justo 0.05/0.18, sempre assimétrico). Só silêncios internos, começo e fim intactos; corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". Saída em OTIMIZADOS/. Requer ffmpeg; a seleção de takes requer WhisperX e o quadrado requer OpenCV (faz bootstrap).
 ---
 
 # Otimizador de Vídeo (takes + silêncios + normalização)
@@ -33,7 +33,7 @@ São **dois presets independentes**, cada um com modo `conservador` (default, va
 ## Fluxo de execução
 
 ### Fase 0 — Bootstrap
-`python3 scripts/bootstrap.py --check-only`. O **ffmpeg** é sempre necessário (corte de silêncio/normalização). O **WhisperX** só é necessário se você for selecionar takes — confira `whisperx: true` no JSON apenas nesse caso. Se o usuário só quer enxugar silêncio/normalizar, ignore o estado do whisperx. Se faltar dependência, rode sem `--check-only` (instala) ou `brew install ffmpeg`. Se o JSON avisar que o modelo de transcrição não está em cache, avise o usuário do download (~1.5GB) **antes** de transcrever.
+`python3 scripts/bootstrap.py --check-only`. O **ffmpeg** é sempre necessário (corte de silêncio/normalização). O **WhisperX** só é necessário se você for selecionar takes — confira `whisperx: true` no JSON apenas nesse caso. O **OpenCV** (`opencv: true`, com `python_cv2` apontando o python da venv) é necessário pra gerar o quadrado — o bootstrap instala o `opencv-python-headless` na venv central. Se o usuário só quer enxugar silêncio/normalizar, ignore whisperx e opencv. Se faltar dependência, rode sem `--check-only` (instala) ou `brew install ffmpeg`. Se o JSON avisar que o modelo de transcrição não está em cache, avise o usuário do download (~1.5GB) **antes** de transcrever. (O modelo do YuNet, ~230KB, já vem versionado em `referencia/modelos/` — sem download.)
 
 ### Fase 1 — Seleção de takes (só quando há repetições)
 Pergunte (ou deduza do pedido) se o vídeo tem **várias tentativas da mesma fala**. Vale **só para arquivo único** — em lote, cada vídeo teria seus próprios intervalos, então a seleção de takes não roda em pasta.
@@ -118,6 +118,30 @@ Defaults já embutidos: `--modo-silencio conservador` (-35dB / 0.3s), `--modo-re
 
 `--descartar` vale **só para arquivo único**; em lote o script o ignora e avisa. O descarte de take, o corte de silêncio e a normalização acontecem no **mesmo reencode** — sem geração extra.
 
+### Fase 3.7 — Versão quadrada (1:1) para o feed
+Depois de gerar os `_OTIMIZADO` (verticais), produza a versão **quadrada** de cada um, na **mesma pasta** `OTIMIZADOS/`. O quadrado caminha em paralelo ao vertical por toda a esteira (combinador, legendas, gancho-escrito, trilha) e sai junto no fim.
+
+Rode com o **python da venv** (o que tem o OpenCV — campo `python_cv2` do bootstrap), apontando a pasta `OTIMIZADOS/`:
+```bash
+<python_cv2> scripts/quadrado.py "<.../OTIMIZADOS>" --contato
+```
+
+O que ele faz, por arquivo:
+- Recorta um quadrado de **largura cheia** (lado = largura do vídeo; descarta só altura). O 1080×1920 vira 1080×1080.
+- **Onde cortar é decidido por detecção de rosto (YuNet) ancorada nos OLHOS:** amostra ~8 frames, pega a mediana do y dos olhos e os põe a ~30% da altura do quadrado (respiro pra coroa da cabeça). Ancorar nos olhos (não no centro da caixa) é o que evita a barba puxar o crop pra baixo e cortar a cabeça.
+- Sem rosto plausível → fallback de âncora alta segura (15% da folga).
+- Áudio **idêntico** ao vertical (`-c:a copy`); só o vídeo é recortado/reencodado.
+- **Não** gera `.md` pro quadrado: o roteiro é o mesmo da vertical (mesmo áudio) → um `.md` só por corte, o do vertical.
+
+**Aprovação (folha de contato):** `--contato` gera `_CONTATO_QUADRADO.png` na pasta — uma grade com a miniatura de cada quadrado e o nome. Mostre ao usuário: o auto acerta a maioria; ele aprova em bloco e aponta os que ficaram tortos (o detector erra de vez em quando — mão na frente do rosto, cabeça muito virada).
+
+**Nudge de um corte específico:** quando o usuário disser que um quadrado ficou alto/baixo demais, refaça **só aquele** com âncora manual (fração da folga, 0=topo, 0.5=centro, 1=base):
+```bash
+<python_cv2> scripts/quadrado.py "<.../OTIMIZADOS/DME_VAV19_GANCHO_OTIMIZADO.mp4>" --ancora 0.45
+```
+
+Pule esta fase só se o usuário disser explicitamente que **não** quer o quadrado (o padrão é sempre gerar os dois).
+
 ### Fase 4 — Ler a verificação
 Cada resultado traz `verificacao`, `normalizado` e `takes_descartadas`:
 - `silencios_residuais == 0` → ritmo limpo.
@@ -136,6 +160,7 @@ Liste cada vídeo: nome de saída (`nome_saida`, já limpo — identificação p
 
   Separadores repetidos viram underscore único. A `<ext>` segue o `--container` quando normaliza. O campo `nome_saida` no JSON mostra o nome final de cada vídeo.
 - **Sidecar de roteiro:** se houver um `<video>.md` ao lado da entrada (vindo do desmembrador), ele é **propagado** para a saída casando o nome `_OTIMIZADO.md` — o otimizador **não transcreve** pra isso, só carrega o roteiro adiante. O JSON traz `sidecar_propagado: true/false`.
+- **Versão quadrada:** ao lado de cada `_OTIMIZADO.<ext>`, sai um `_OTIMIZADO_QUADRADO.<ext>` (1:1, largura cheia) e — com `--contato` — um `_CONTATO_QUADRADO.png` pra aprovação. A tag `_QUADRADO` entra logo após `_OTIMIZADO` e é carregada pelos sufixos seguintes da esteira (`..._OTIMIZADO_QUADRADO_LEGENDADO.mp4`). O quadrado **não** ganha `.md` próprio — o roteiro é o mesmo do vertical, um `.md` só por corte.
 
 ## Encadeamento com o combinador (otimizar+normalizar ANTES de combinar)
 
