@@ -106,10 +106,16 @@ vídeo → pasta-pai → `--json-dir` → busca recursiva em `--buscar-em`. Se n
    A inferência é sua; **não** peça aprovação dela ao usuário.
 4. **Prova + aprovação (SEMPRE).** Antes do lote, gere uma prova do **primeiro** gancho e
    peça aprovação do usuário (este passo sempre precisa de OK):
-   - prepare os dados: `python3 scripts/preparar.py <base>.json --video <clipe.mp4> --alvo <alvo> --enfase "<palavras>"`
-   - still da 1ª frase: na pasta central, `npx remotion still gancho-escrito out/prova.png --frame=<N>`
-     (escolha um frame onde a 1ª frase já apareceu inteira) — mostre o PNG;
-   - se aprovado, renderize o VAR completo desse primeiro (`aplicar.py … --alvo <alvo> --var <n>`)
+   - prova com `--still`: renderiza só o primeiro gancho como `.png` **na pasta de
+     trabalho** (escolha um frame onde a 1ª frase já apareceu inteira):
+     ```bash
+     python3 scripts/aplicar.py "<clipe ou pasta>" \
+         --alvo <alvo> --var <n> --enfase-map enfase.json --still <N>
+     ```
+     O caminho da prova vem no JSON (`resultados[].saida`, `tipo: "prova"`) — **mostre
+     o PNG ao usuário e peça pra abrir** (a prova vai pra pasta de trabalho de propósito,
+     nunca pro projeto central do Remotion);
+   - se aprovado, renderize o VAR completo desse primeiro (mesmo comando **sem** `--still`)
      e mostre o vídeo.
    Ajuste o que o usuário pedir e só então prossiga.
 5. **Aplique a todos (em lanes paralelas).** Passe o alvo e a variação escolhidos:

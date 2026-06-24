@@ -18,10 +18,16 @@ Por padrão out-dir = pasta-irmã 03_PREPARADOS.
 Uso:
     python3 aplicar.py <video_ou_pasta> [<video2> ...] \
         --estilo reels|minimal|classic \
-        [--projeto-dir <central>] [--out-dir <dir>] [--captions <json>]
+        [--projeto-dir <central>] [--out-dir <dir>] [--captions <json>] \
+        [--still <frame>]
 
 Os estilos prontos são reels, minimal e classic. `hormozi` existe mas está em
 ajuste (experimental).
+
+--still <frame>: em vez do vídeo, renderiza UMA prova .png do frame indicado, pra
+conferir o estilo antes de queimar o lote. A prova sai NA PASTA DE TRABALHO (ao lado
+da saída, `<nome>_PROVA.png`), nunca no projeto central do Remotion — o usuário tem
+que conseguir abrir o arquivo. Render still é rápido; bom pra inspeção visual.
 """
 import argparse
 import json
@@ -108,6 +114,14 @@ def main():
         default=None,
         help="json explícito (só faz sentido com 1 vídeo); default: <nome>.json irmão",
     )
+    ap.add_argument(
+        "--still",
+        type=int,
+        default=None,
+        metavar="FRAME",
+        help="renderiza só uma prova .png deste frame (na pasta de trabalho), "
+             "em vez do vídeo. Pra conferir o estilo antes do lote.",
+    )
     args = ap.parse_args()
 
     projeto_dir = os.path.expanduser(args.projeto_dir)
@@ -164,7 +178,12 @@ def main():
             nome_saida = f"{stem[:m.start()]}_LEGENDADO{m.group(0)}"
         else:
             nome_saida = f"{stem}_LEGENDADO"
-        out_path = os.path.join(out_dir, f"{nome_saida}.mp4")
+        # a prova (.png) sai na MESMA pasta de trabalho que o vídeo sairia — nunca
+        # no projeto central do Remotion (que o usuário não acha). Caminho ABSOLUTO.
+        if args.still is not None:
+            out_path = os.path.join(out_dir, f"{nome_saida}_PROVA.png")
+        else:
+            out_path = os.path.join(out_dir, f"{nome_saida}.mp4")
 
         # 1) converter json -> public/captions.json
         c = subprocess.run(
@@ -181,12 +200,16 @@ def main():
         # estilo: explícito (--estilo) sobrepõe; senão default por formato do vídeo.
         estilo = args.estilo or estilo_default(video)
 
-        # 3) renderizar o preset (id da composição == nome do estilo)
-        print(f"\n=== legendando ({estilo}): {os.path.basename(video)} ===", flush=True)
-        r = subprocess.run(
-            ["npx", "remotion", "render", estilo, out_path],
-            cwd=projeto_dir,
-        )
+        # 3) renderizar: still (prova .png) ou vídeo. O id da composição == estilo.
+        #    O out_path é ABSOLUTO (pasta de trabalho), então o cwd=projeto_dir do
+        #    Remotion não joga o arquivo no central — a prova fica acessível.
+        if args.still is not None:
+            print(f"\n=== prova ({estilo}, frame {args.still}): {os.path.basename(video)} ===", flush=True)
+            cmd = ["npx", "remotion", "still", estilo, out_path, f"--frame={args.still}"]
+        else:
+            print(f"\n=== legendando ({estilo}): {os.path.basename(video)} ===", flush=True)
+            cmd = ["npx", "remotion", "render", estilo, out_path]
+        r = subprocess.run(cmd, cwd=projeto_dir)
         if r.returncode != 0:
             resultados.append({"video": video, "ok": False, "erro": "render Remotion falhou"})
             continue
@@ -196,6 +219,7 @@ def main():
             "ok": True,
             "estilo": estilo,
             "estilo_origem": "explícito" if args.estilo else "default-por-formato",
+            "tipo": "prova" if args.still is not None else "video",
             "saida": out_path,
             "nome_saida": os.path.basename(out_path),
         })

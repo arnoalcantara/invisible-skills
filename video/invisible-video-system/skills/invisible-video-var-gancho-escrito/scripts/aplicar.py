@@ -34,7 +34,13 @@ Uso:
         --enfase-map enfase.json   # {"VAV19": "estudar,lembrar,...", ...}
         [--enfase "p1,p2"]         # fallback global, se um gancho não está no mapa
         [--modo auto|legendado|crua] [--lanes N] [--out-dir <dir>]
-        [--json-dir <dir>] [--buscar-em <raiz>] [--projeto-dir <central>]
+        [--json-dir <dir>] [--buscar-em <raiz>] [--projeto-dir <central>] \
+        [--still <frame>]
+
+--still <frame>: gera só uma prova .png do PRIMEIRO gancho (frame indicado), pra
+aprovação antes do lote. A prova sai NA PASTA DE TRABALHO (ao lado da saída,
+`<id>_VAR<n>_PROVA<fmt>.png`), nunca no projeto central do Remotion — o usuário
+precisa abrir o arquivo. Render still é rápido; processa um só, sem lanes.
 """
 import argparse
 import json
@@ -175,9 +181,13 @@ def processar_um(video, args, enfase_map, lane, preparar_py):
     os.makedirs(out_dir, exist_ok=True)
 
     # nome: _VAR<n> ANTES do token de formato (formato sempre o último token).
+    # a prova (.png) sai na MESMA pasta de trabalho — nunca no projeto central.
     fmt = formato_de(stem_comb)
     miolo = stem_comb[: -len(fmt)] if fmt else stem_comb
-    out_path = os.path.join(out_dir, f"{miolo}_VAR{args.var}{fmt}.mp4")
+    if args.still is not None:
+        out_path = os.path.join(out_dir, f"{miolo}_VAR{args.var}_PROVA{fmt}.png")
+    else:
+        out_path = os.path.join(out_dir, f"{miolo}_VAR{args.var}{fmt}.mp4")
 
     public = os.path.join(lane, "public")
     cmd_prep = [sys.executable, preparar_py, json_path, "--video", video,
@@ -188,14 +198,19 @@ def processar_um(video, args, enfase_map, lane, preparar_py):
 
     props = json.dumps({"videoJaLegendado": legendado})
     rotulo = "segmento" if segmento else ("legendado" if legendado else "crua")
-    print(f"\n=== VAR{args.var} [{os.path.basename(lane)}] ({rotulo}): {stem_comb} (gancho {gancho}) ===", flush=True)
-    r = subprocess.run(
-        ["npx", "remotion", "render", "gancho-escrito", out_path, "--props=" + props],
-        cwd=lane,
-    )
+    # still (prova .png) ou vídeo. out_path ABSOLUTO → o cwd=lane não joga no central.
+    if args.still is not None:
+        print(f"\n=== prova VAR{args.var} (frame {args.still}, {rotulo}): {stem_comb} (gancho {gancho}) ===", flush=True)
+        cmd = ["npx", "remotion", "still", "gancho-escrito", out_path,
+               f"--frame={args.still}", "--props=" + props]
+    else:
+        print(f"\n=== VAR{args.var} [{os.path.basename(lane)}] ({rotulo}): {stem_comb} (gancho {gancho}) ===", flush=True)
+        cmd = ["npx", "remotion", "render", "gancho-escrito", out_path, "--props=" + props]
+    r = subprocess.run(cmd, cwd=lane)
     if r.returncode != 0:
         return {"video": video, "ok": False, "etapa": "render"}
     return {"video": video, "ok": True, "alvo": args.alvo,
+            "tipo": "prova" if args.still is not None else "video",
             "modo": rotulo, "gancho": gancho, "saida": out_path}
 
 
@@ -215,6 +230,9 @@ def main():
     ap.add_argument("--json-dir", default=None)
     ap.add_argument("--buscar-em", default=None, help="raiz p/ busca recursiva do .json")
     ap.add_argument("--projeto-dir", default=PROJETO_CENTRAL_PADRAO)
+    ap.add_argument("--still", type=int, default=None, metavar="FRAME",
+                    help="só uma prova .png deste frame do primeiro gancho (na pasta "
+                         "de trabalho), pra aprovar antes do lote.")
     args = ap.parse_args()
 
     projeto_dir = os.path.expanduser(args.projeto_dir)
@@ -232,6 +250,11 @@ def main():
         return 1
 
     preparar_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "preparar.py")
+
+    # prova: renderiza só o PRIMEIRO gancho, uma lane só (uma prova basta pro OK).
+    if args.still is not None:
+        videos = videos[:1]
+
     n_lanes = max(1, min(args.lanes, len(videos)))
 
     # filas round-robin

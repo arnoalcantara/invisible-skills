@@ -198,7 +198,10 @@ Em `skills/invisible-legendas-aplicador/scripts/` (+ `remotion/`):
   `_LEGENDADO` ANTES do token de formato; formato sempre o último). Lê os **segmentos otimizados**
   de `02_OTIMIZADOS` (não as combinações); pula clipes `_VAR<n>` no lote (vêm prontos da
   var-gancho). Detecta o formato pela dimensão real (ffprobe): default por formato
-  (quadrado→`classic`, vertical→`reels`); no quadrado usa `bottomOffsetSquare`.
+  (quadrado→`classic`, vertical→`reels`); no quadrado usa `bottomOffsetSquare`. **`--still <frame>`**:
+  em vez do vídeo, grava uma prova `.png` (`<nome>_PROVA.png`) com `remotion still` num caminho
+  ABSOLUTO na pasta de trabalho/`--out-dir` — nunca no projeto central. (Toda prova das skills de
+  vídeo vai pra pasta de trabalho, acessível ao usuário.)
 - `remotion/` — template do render (fontes só; `node_modules` vive no central, não no repo).
   `src/Captions.tsx` guarda os `PRESETS` (ritmo, fonte, cor, posição, modo de destaque) e a
   correção de quebra de linha que impede o texto de vazar a margem (**não reverter** — espaço
@@ -217,7 +220,9 @@ Em `skills/invisible-video-var-gancho-escrito/scripts/` (+ `remotion/`):
   de formato/VAR), puxa a ênfase por gancho (`--enfase-map`), render em lanes paralelas. Saída em
   `03_PREPARADOS` com `_VAR<n>` inserido ANTES do token de formato (formato sempre o último);
   `--var <n>` (default `1`) é do usuário. No alvo segmento trata como "já legendado" (sem karaokê).
-  Remotion respeita a dimensão real (vertical/quadrado) via `calculateMetadata`.
+  Remotion respeita a dimensão real (vertical/quadrado) via `calculateMetadata`. **`--still <frame>`**:
+  prova `.png` só do primeiro gancho (`<id>_VAR<n>_PROVA<fmt>.png`), uma lane só, gravada na pasta
+  de trabalho/`--out-dir` — nunca no projeto central; é a prova do portão de aprovação.
 - `convert_captions.mjs` — cópia da do aplicador (modo crua legenda o desenvolvimento).
 - `remotion/src/` — `HookText.tsx` é a animação do gancho (fonte/tamanho/cor/entrada — onde
   estilos futuros entram); `Composition.tsx`/`Root.tsx` montam a composição `gancho-escrito`
