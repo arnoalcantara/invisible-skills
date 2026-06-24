@@ -14,7 +14,8 @@ O sistema de vídeo da Invisible. Oito skills, encadeáveis na mesma pasta de pr
 - **`invisible-video-otimizador`** — escolhe a melhor take quando há várias tentativas
   da mesma fala (transcrição WhisperX, última take vence), remove silêncios internos sem
   comer palavra e, opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra
-  concatenar).
+  concatenar). Sob demanda, gera também a variante quadrada (1:1, `_QUADRADO`) recortando
+  a largura cheia com âncora vertical por detecção de rosto (YuNet).
 - **`invisible-legenda-arquivos`** — aponta um vídeo ou uma pasta e gera, ao lado de cada vídeo e
   com o mesmo nome, um `.json` (transcrição com timestamp por palavra, fonte pra animação
   palavra-a-palavra no Remotion) via WhisperX. Só o `.json` — é o que o pipeline consome.
@@ -70,6 +71,9 @@ Em `skills/invisible-video-combinador/scripts/`:
 
 - `bootstrap.py`, `transcrever.py` — **cópias** das do desmembrador (cada skill autocontida).
 - `descobrir_cortes.py` — acha `GANCHOS/` e `DESENVOLVIMENTOS/`, extrai o código (VAVxx).
+  Pareia a variante quadrada (`_QUADRADO`) com a vertical de mesmo código numa entrada só
+  (`arquivo` + `arquivo_quadrado`); `QUADRADO` entra no set de ruído. Quadrado órfão (sem a
+  vertical de mesmo código) vira corte próprio (`orfao_quadrado`), não some.
 - `normalizar.py` — normaliza um corte para o alvo (`scale+pad+setsar=1` + fps + aformat).
   **Rede de segurança:** o ideal é os cortes já chegarem normalizados da otimizadora;
   este script só entra quando algum corte ainda tem specs divergentes do alvo.
@@ -105,6 +109,13 @@ Em `skills/invisible-video-otimizador/scripts/`:
   → `DME_VAV23_DESENVOLVIMENTO_OTIMIZADO` (o tipo nunca se perde). Separadores repetidos viram
   underscore único. O lote pula qualquer arquivo com `OTIMIZADO` no nome; o combinador lê o
   código mesmo assim (trata `OTIMIZADO` como ruído).
+- `quadrado.py` — gera a variante quadrada (1:1) de cada `_OTIMIZADO`: recorta um quadrado de
+  largura cheia (`crop=W:W:0:y`, descarta só altura) e salva `_QUADRADO` ao lado. A âncora
+  vertical `y` é decidida por detecção de rosto YuNet (modelo `.onnx` versionado em
+  `referencia/modelos/`, olhos a ~30% da altura, mediana de alguns frames), com fallback de
+  âncora alta quando não detecta rosto; `--ancora` faz nudge manual e `--contato` gera folha
+  de contato pra conferência. Áudio `-c:a copy`, vídeo reencodado no codec da origem. O
+  `bootstrap.py` instala `opencv-python-headless` na venv central pra isso.
 
 Em `skills/invisible-legenda-arquivos/scripts/`:
 
@@ -138,7 +149,10 @@ Em `skills/invisible-legendas-aplicador/scripts/` (+ `remotion/`):
 - `aplicar.py` — orquestra por vídeo: localiza o `.json` irmão (sem ele, para e avisa —
   **não transcreve**), converte → encena `public/video.mp4` + `public/captions.json` no
   central → `npx remotion render <estilo>` → `LEGENDADOS/<nome>_LEGENDADO.mp4`. Aceita arquivo
-  ou pasta (lote, ignora a própria `LEGENDADOS`).
+  ou pasta (lote, ignora a própria `LEGENDADOS`). Detecta o formato pela dimensão real do
+  vídeo (ffprobe): `--estilo` é opcional e o default sai por formato (quadrado→`classic`,
+  vertical→`reels`); no quadrado a posição vertical da legenda usa o `bottomOffsetSquare` do
+  preset (Remotion lê width/height reais via `calculateMetadata`).
 - `remotion/` — template do render (fontes só; `node_modules` vive no central, não no repo).
   `src/Captions.tsx` guarda os `PRESETS` (ritmo, fonte, cor, posição, modo de destaque) e a
   correção de quebra de linha que impede o texto de vazar a margem (**não reverter** — espaço
