@@ -60,9 +60,12 @@ python3 "<skills_dir>/invisible-denoiser/scripts/denoiser.py" "<lote>/02_OTIMIZA
 ```
 - O otimizador gera vertical + quadrado + `.md` em `02_OTIMIZADOS` (portão: folha de
   contato do quadrado, se houver dúvida de enquadramento — siga o SKILL.md dele).
-- O denoiser **sobrescreve in-place** (`_DENOISER`, `-c:v copy`) — roda **depois** do
-  otimizador e **antes** da transcrição, pra não transcrever áudio sujo. Ele recusa
-  rodar em `BRUTAS`; aqui roda em `02_OTIMIZADOS`, então segue normal.
+- O denoiser **sobrescreve in-place mantendo o mesmo nome** (`-c:v copy`) — roda
+  **depois** do otimizador e **antes** da transcrição, pra não transcrever áudio sujo.
+  Como não muda o nome, os `_OTIMIZADO_VERTICAL`/`_QUADRADO` ficam intactos e a
+  transcrição (etapa 2) acha o `.json` por base normalmente. Ele recusa rodar em
+  `BRUTAS`; aqui roda em `02_OTIMIZADOS`, então segue normal. Sem marca no nome, o
+  executor não deve re-rodar o denoiser na mesma pasta (reaplicaria o filtro).
 
 ### Etapa 2 — Transcrever `[02_OTIMIZADOS → .json]`
 ```bash

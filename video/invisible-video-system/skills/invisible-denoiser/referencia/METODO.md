@@ -17,7 +17,7 @@ A hipótese inicial era uma cadeia de "voz de podcast": highpass → denoise →
 
 ## Decisões de comportamento (Arno)
 
-- **In-place, sem arquivo novo.** Processa e salva com `_DENOISER` no fim do nome, substituindo o original (temp + rename, original removido).
+- **In-place, mesmo nome.** Processa num temp e substitui o original no mesmo nome (`os.replace(tmp, arquivo)`). Sem sufixo, sem marca: o limpo ocupa o lugar do antigo, o nome de quem vem da esteira fica intacto. Consequência aceita: sem marca, não há idempotência por nome — rodar de novo reaplica o filtro (decisão do Arno: a skill faz o serviço e só avisa no fim, não muda o nome).
 - **Independente.** Roda em qualquer ponto da esteira, não numa posição fixa.
 - `-c:v copy`: vídeo intocado, só o áudio é reprocessado.
 - Recusa rodar nas `BRUTAS/` sem `--forcar` (fonte de verdade).

@@ -39,9 +39,12 @@ então re-rodar uma etapa parcial é seguro.
 | 6 Trilha | `99_FINALIZADOS` tem `*_FINALIZADO*` |
 
 Limitação consciente: o gate da etapa 1 não distingue "otimizado mas ainda não
-denoised". Como o denoiser é in-place e resumível (pula `_DENOISER`), o executor
-sempre roda os dois passos na etapa 1; re-rodar o denoiser num lote já limpo é
-inócuo. Se um dia isso incomodar, dá pra refinar checando um marcador de denoise.
+denoised". O denoiser é in-place e mantém o nome (não há marca `_DENOISER` para
+pular), então re-rodar a etapa 1 num lote já limpo **reaplica** o filtro sobre o
+já-tratado — em fonte limpa o efeito da 2ª passada é pequeno, mas não é nulo. Por
+isso o executor roda os dois passos da etapa 1 **uma vez** e não volta a ela depois
+de marcada. Se um dia precisar de retomada fina no meio da etapa 1, dá pra checar um
+marcador de denoise (sidecar), não o nome.
 
 ## A ordem e suas dependências
 
