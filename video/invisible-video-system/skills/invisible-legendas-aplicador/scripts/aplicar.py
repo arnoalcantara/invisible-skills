@@ -32,7 +32,7 @@ import sys
 
 PROJETO_CENTRAL_PADRAO = os.path.expanduser("~/.invisible-video/legendas-remotion")
 EXTS_VIDEO = {".mp4", ".mov", ".mkv", ".webm", ".m4v"}
-ESTILOS = ["reels", "minimal", "classic", "hormozi"]
+ESTILOS = ["reels", "minimal", "classic", "hormozi", "capsula"]
 
 # o .json (da invisible-legenda-arquivos) é nomeado pela BASE, sem formato nem VAR.
 # pra achá-lo a partir do clipe (que tem _VERTICAL/_QUADRADO no fim), removemos

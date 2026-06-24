@@ -34,7 +34,7 @@ import type { CSSProperties } from "react";
 
 type HighlightMode = "color" | "box" | "opacity" | "none";
 
-export type PresetName = "reels" | "hormozi" | "minimal" | "classic";
+export type PresetName = "reels" | "hormozi" | "minimal" | "classic" | "capsula";
 
 // spring de entrada da palavra ativa (pop com overshoot)
 type PopAnim = {
@@ -71,6 +71,15 @@ type Preset = {
   boxTextColor?: string;
   inactiveOpacity?: number;
   scaleActive: number;
+  // --- cápsula de fundo por linha (opcional) ---
+  // Quando capsuleBg está presente, cada LINHA do bloco ganha um retângulo de
+  // fundo arredondado que abraça o texto (largura variável por linha, igual ao
+  // print de legenda de viral). Usa box-decoration-break: clone — cada quebra de
+  // linha repete o fundo+padding+raio. Ausente = sem fundo (comportamento atual).
+  capsuleBg?: string; // cor do fundo da cápsula (ex.: "#FFFFFF")
+  capsuleRadius?: number; // raio dos cantos (px)
+  capsulePadX?: number; // respiro horizontal interno (px)
+  capsulePadY?: number; // respiro vertical interno (px)
   // --- camada de animação (opcional) ---
   pop?: PopAnim;
   colorFadeFrames?: number;
@@ -161,6 +170,35 @@ export const PRESETS: Record<PresetName, Preset> = {
     textShadow: "0 2px 4px rgba(0,0,0,0.95), 0 0 6px rgba(0,0,0,0.7)",
     highlightMode: "none",
     scaleActive: 1.0,
+  },
+  // 5. Cápsula — bloco estático por frase numa cápsula branca de cantos
+  //    arredondados que abraça o texto (uma cápsula por linha), texto preto
+  //    sans-serif bold. Sem karaokê, sem destaque de palavra, sem sombra: o
+  //    contraste vem da cápsula. Inspirado em legenda de repost/viral.
+  //    Posição no terço inferior, espelhando o classic (vertical + quadrado).
+  //    Valores iniciais a calibrar no still — fonte/raio/padding são chute
+  //    educado a partir do print, não verdade final.
+  capsula: {
+    combineMs: 2000,
+    fontFamily: "Helvetica, Arial, sans-serif",
+    fontSize: 58,
+    fontWeight: 700,
+    uppercase: false,
+    letterSpacing: 0,
+    lineHeight: 1.5,
+    bottomOffset: 380,
+    bottomOffsetSquare: 140,
+    paddingX: 110,
+    baseColor: "#000000",
+    activeColor: "#000000",
+    stroke: null,
+    textShadow: null,
+    highlightMode: "none",
+    scaleActive: 1.0,
+    capsuleBg: "#FFFFFF",
+    capsuleRadius: 14,
+    capsulePadX: 22,
+    capsulePadY: 10,
   },
 };
 
@@ -377,6 +415,26 @@ const CaptionPage: React.FC<{
       })
     : 0;
 
+  const hasCapsule = preset.capsuleBg != null;
+
+  const tokens = page.tokens.map((token, i) => {
+    const { scaleProg, colorProg } = computeTokenAnim(
+      preset,
+      token,
+      page.startMs,
+      frame,
+      fps,
+    );
+    return (
+      <Fragment key={token.fromMs}>
+        {i > 0 ? " " : ""}
+        <span style={tokenStyle(preset, scaleProg, colorProg)}>
+          {token.text.trim()}
+        </span>
+      </Fragment>
+    );
+  });
+
   return (
     <AbsoluteFill
       style={{
@@ -407,23 +465,24 @@ const CaptionPage: React.FC<{
           transform: `translateY(${enterTranslateY}px)`,
         }}
       >
-        {page.tokens.map((token, i) => {
-          const { scaleProg, colorProg } = computeTokenAnim(
-            preset,
-            token,
-            page.startMs,
-            frame,
-            fps,
-          );
-          return (
-            <Fragment key={token.fromMs}>
-              {i > 0 ? " " : ""}
-              <span style={tokenStyle(preset, scaleProg, colorProg)}>
-                {token.text.trim()}
-              </span>
-            </Fragment>
-          );
-        })}
+        {hasCapsule ? (
+          // cápsula por LINHA: box-decoration-break clone repete o fundo+padding
+          // +raio a cada quebra de linha, então cada linha ganha sua própria
+          // cápsula que abraça o texto (não uma barra de ponta a ponta).
+          <span
+            style={{
+              backgroundColor: preset.capsuleBg,
+              borderRadius: preset.capsuleRadius ?? 14,
+              padding: `${preset.capsulePadY ?? 10}px ${preset.capsulePadX ?? 22}px`,
+              boxDecorationBreak: "clone",
+              WebkitBoxDecorationBreak: "clone",
+            }}
+          >
+            {tokens}
+          </span>
+        ) : (
+          tokens
+        )}
       </div>
     </AbsoluteFill>
   );

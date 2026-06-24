@@ -4,8 +4,12 @@ Orienta qualquer instância de Claude que trabalhe neste plugin. Leia antes de e
 
 ## O que é
 
-O sistema de vídeo da Invisible. Nove skills, encadeadas numa **linha de produção por pastas
-de etapa** (ver "Linha de produção" abaixo):
+O sistema de vídeo da Invisible. Onze skills, encadeadas numa **linha de produção por pastas
+de etapa** (ver "Linha de produção" abaixo). Nove fazem o trabalho da esteira (abaixo); duas
+orquestram um lote inteiro por cima dela — `invisible-video-lote-plano` (conversa as
+preferências, cria a pasta do lote vazia e grava o `PLAN_LOTE.md`) e
+`invisible-video-lote-producao` (maestro que lê o plano e invoca as skills da esteira na ordem,
+uma etapa por vez, reconciliando o progresso com as pastas):
 
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
 - **`invisible-video-otimizador`** — escolhe a melhor take quando há várias tentativas
@@ -20,8 +24,9 @@ de etapa** (ver "Linha de produção" abaixo):
   segmento). Lote, resumível, sem tocar no original.
 - **`invisible-legendas-aplicador`** — queima legenda animada (karaokê) nos **segmentos
   otimizados** com Remotion, consumindo o `.json` da base (acha pelo strip de formato/VAR).
-  Estilos `reels`/`minimal`/`classic`, default por formato. Insere `_LEGENDADO` antes do token
-  de formato e grava em `03_PREPARADOS`.
+  Estilos `reels`/`minimal`/`classic` e `capsula` (cápsula branca arredondada por frase, texto
+  preto — estilo repost/viral, opt-in via `--estilo capsula`), default por formato. Insere
+  `_LEGENDADO` antes do token de formato e grava em `03_PREPARADOS`.
 - **`invisible-video-var-gancho-escrito`** — variação de gancho escrito: tipografia animada
   sobre fundo preto sincronizada com a fala, com ênfase. Dois alvos: `--alvo combinacao` (gancho
   dentro de uma combinação) ou `--alvo segmento` (clipe de gancho isolado já otimizado, cobre o

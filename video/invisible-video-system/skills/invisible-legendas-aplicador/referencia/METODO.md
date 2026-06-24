@@ -99,6 +99,33 @@ legenda é pixel novo sobre o vídeo. Saída padrão do Remotion é H.264 + AAC.
 do pipeline que necessariamente regenera o vídeo — por isso fica por último, depois de
 otimizar e combinar.
 
+## Estilo `capsula` (decisões de design)
+
+Estilo de legenda de **repost/viral**: bloco estático por frase numa **cápsula branca**
+de cantos arredondados, texto preto sans-serif bold. Decisões:
+
+- **Cápsula por LINHA, abraçando o texto** (largura variável), não uma barra de ponta a
+  ponta nem um único retângulo cobrindo o bloco inteiro. Reproduz a referência real (o
+  print onde cada linha tem sua própria cápsula). Implementado com `box-decoration-break:
+  clone` num elemento inline com `background`+`padding`+`borderRadius` — o navegador repete
+  o fundo a cada quebra de linha. Quando `capsuleBg` está ausente num preset, nada disso
+  roda (os outros quatro presets ficam intactos).
+- **Branco-com-preto como default.** O par de cor não virou flag ainda (não foi pedido);
+  o campo `capsuleBg` e `baseColor` no preset deixam o gancho pronto pra inverter (cápsula
+  preta, texto branco) quando precisar — basta trocar dois valores no preset.
+- **Estático, sem karaokê** (`highlightMode: "none"`, sem `pop`/`colorFadeFrames`): a frase
+  aparece inteira e fica parada até trocar. `combineMs` alto (~2000ms) agrupa a frase numa
+  página só, como no `classic`.
+- **Sem sombra/contorno** (`textShadow`/`stroke` nulos): o contraste vem da cápsula, não de
+  efeito sobre o vídeo. É o que diferencia do `classic`, que pinta texto direto sobre a
+  imagem com sombra.
+- **Opt-in, não default de formato.** Não muda o comportamento atual da esteira (vertical→
+  reels, quadrado→classic); só entra via `--estilo capsula`.
+- **Posição espelha o `classic`** (terço inferior, `bottomOffset`/`bottomOffsetSquare`),
+  cobrindo vertical e quadrado.
+- Fonte/raio/padding/tamanho iniciais são chute educado a partir do print — **calibrados no
+  still** antes do primeiro render completo.
+
 ## Formato quadrado (1:1) e default de estilo por formato
 
 A composição já se adapta à dimensão do vídeo (`parseMedia` no `calculateMetadata` lê width/height reais), então um vídeo 1080×1080 renderiza numa composição 1080×1080 sem distorção — nada a fazer ali.
