@@ -63,10 +63,10 @@ MODOS_RESPIRO = {
     "justo": {"entrada": 0.05, "saida": 0.18},
 }
 # 2) Silêncio = o que conta como silêncio cortável (limiar de nível + duração mín).
+#    justo (DEFAULT): -33dB / 0.15s — limiar mais alto pega mais coisa como silêncio
+#    e a duração menor corta pausas mais curtas. Ritmo mais seco, é o padrão.
 #    conservador: -35dB / 0.3s — fala fraca (decrescendo final) ainda é tratada
-#    como fala; só pausa de 0.3s+ é cortada.
-#    justo: -33dB / 0.15s — limiar mais alto pega mais coisa como silêncio e a
-#    duração menor corta pausas mais curtas. Mais agressivo.
+#    como fala; só pausa de 0.3s+ é cortada. Preserva mais cauda/ataque.
 MODOS_SILENCIO = {
     "conservador": {"noise": "-35dB", "min": 0.3},
     "justo": {"noise": "-33dB", "min": 0.15},
@@ -349,9 +349,9 @@ def main():
     ap.add_argument("entrada", help="arquivo de vídeo OU pasta (lote)")
     ap.add_argument("--out-dir", help="pasta de saída (padrão: OTIMIZADOS/ ao lado)")
     ap.add_argument("--modo-silencio", choices=list(MODOS_SILENCIO),
-                    default="conservador",
-                    help="o que conta como silêncio: conservador (-35dB/0.3s, "
-                         "validado) ou justo (-33dB/0.15s, mais agressivo)")
+                    default="justo",
+                    help="o que conta como silêncio: justo (-33dB/0.15s, default) "
+                         "ou conservador (-35dB/0.3s, preserva mais cauda/ataque)")
     # se passados, sobrepõem o preset do --modo-silencio.
     ap.add_argument("--silence-noise", default=None)
     ap.add_argument("--silence-min", type=float, default=None)
