@@ -105,3 +105,12 @@ evita SAR herdado que distorceria.
 - Pasta `COMBINAÇÕES/` na raiz do projeto.
 - Rótulos dos segmentos (singular, MAIÚSCULO) + código, na ordem da cadeia, unidos por
   `__`: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57__OFERTA_VAV19.mp4`.
+
+## 7. Formato quadrado (1:1) em paralelo
+
+O otimizador entrega, ao lado de cada corte vertical, a variante `_QUADRADO` (1080×1080). O `descobrir_cortes.py` casa as duas por código e expõe o quadrado como `arquivo_quadrado` do corte — **não** como corte novo. Por quê e como:
+
+- **Julga uma vez.** O encaixe retórico (promessa × abertura) é sobre o **áudio**, e o áudio é idêntico no vertical e no quadrado. Logo a matriz aprovada vale para os dois formatos — duplicar o julgamento seria desperdício e fonte de divergência boba.
+- **Emite os dois.** Cada cadeia aprovada vira duas peças: a vertical (com os `arquivo`) e a quadrada (com os `arquivo_quadrado`), quando todos os cortes da cadeia têm a variante.
+- **Não cruza formato.** Vertical concatena com vertical, quadrado com quadrado — specs idênticas dentro de cada track, `concat -c copy` direto (os quadrados saem do otimizador já normalizados em 1080×1080). Misturar quebra o `-c copy`.
+- **Um `.md` só.** O roteiro é o mesmo nos dois formatos (mesmo áudio). A combinação quadrada **não** gera `_QUADRADO.md`; o `.md` da combinação vertical é a única fonte de roteiro. (Mesma razão pela qual o otimizador não propaga `.md` pro corte quadrado.)

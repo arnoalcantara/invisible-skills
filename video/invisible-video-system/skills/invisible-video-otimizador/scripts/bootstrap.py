@@ -48,6 +48,19 @@ def whisperx_no_venv(venv):
     return os.path.exists(os.path.join(venv, "bin", "whisperx"))
 
 
+def venv_python(venv):
+    return os.path.join(venv, "bin", "python")
+
+
+def cv2_no_venv(venv):
+    """cv2 (opencv) importa no python da venv central? (pro crop quadrado)."""
+    py = venv_python(venv)
+    if not os.path.exists(py):
+        return False
+    r = subprocess.run([py, "-c", "import cv2"], capture_output=True, text=True)
+    return r.returncode == 0
+
+
 def resolver_whisperx(venv):
     """Acha o whisperx a usar, sem instalar nada.
 
@@ -113,13 +126,16 @@ def main():
         "whisperx_bin": wx_bin,
         "whisperx_origem": origem,          # sistema | venv | ausente
         "venv_central": venv,
+        "opencv": cv2_no_venv(venv),        # pro crop quadrado (quadrado.py)
+        "python_cv2": venv_python(venv),    # python a usar pra rodar quadrado.py
         "modelo": modelo,
         # modelo_pronto = não vai baixar nada na 1ª transcrição.
         "modelo_pronto": modelo["asr"] and modelo["alinhamento_pt"],
         "acoes": [],
         "instrucoes": [],
     }
-    estado["pronto"] = estado["ffmpeg"] and estado["ffprobe"] and estado["whisperx"]
+    estado["pronto"] = (estado["ffmpeg"] and estado["ffprobe"]
+                        and estado["whisperx"])
 
     # Aviso de download do modelo só quando faltar de fato.
     if not modelo["asr"]:
@@ -179,7 +195,34 @@ def main():
                 f"uv venv --python {args.python} {venv} && "
                 f"uv pip install --python {venv}/bin/python whisperx")
 
-    estado["pronto"] = estado["ffmpeg"] and estado["ffprobe"] and estado["whisperx"]
+    # OpenCV (crop quadrado): instala na venv central se faltar. Leve (~50MB);
+    # os Haar cascades vêm no pacote, sem download de modelo. Se o whisperx veio
+    # do sistema e a venv nem existe, cria a venv só pra isso.
+    if not estado["opencv"]:
+        if estado["uv"]:
+            if not os.path.exists(venv_python(venv)):
+                os.makedirs(os.path.dirname(venv), exist_ok=True)
+                r0 = subprocess.run(["uv", "venv", "--python", args.python, venv],
+                                    capture_output=True, text=True)
+                estado["acoes"].append(f"uv venv --python {args.python} {venv} (p/ opencv)")
+                if r0.returncode != 0:
+                    estado["instrucoes"].append("Falha ao criar venv p/ opencv: "
+                                                + r0.stderr[-600:])
+            rcv = subprocess.run(
+                ["uv", "pip", "install", "--python", venv_python(venv),
+                 "opencv-python-headless", "numpy"],
+                capture_output=True, text=True)
+            estado["acoes"].append("uv pip install opencv-python-headless numpy (venv central)")
+            if rcv.returncode != 0:
+                estado["instrucoes"].append("Falha ao instalar opencv: " + rcv.stderr[-800:])
+            estado["opencv"] = cv2_no_venv(venv)
+        else:
+            estado["instrucoes"].append(
+                f"Sem uv, não dá pra instalar opencv. Manual: "
+                f"uv pip install --python {venv}/bin/python opencv-python-headless numpy")
+
+    estado["pronto"] = (estado["ffmpeg"] and estado["ffprobe"]
+                        and estado["whisperx"])
     print(json.dumps(estado, ensure_ascii=False, indent=2))
 
 
