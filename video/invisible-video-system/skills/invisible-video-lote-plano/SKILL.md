@@ -23,6 +23,18 @@ preenchido — o documento que a `invisible-video-lote-producao` vai ler e execu
 O `PLAN_LOTE.md` é o **contrato** entre as duas: você escreve, ela lê e marca os
 checkboxes. A fonte da verdade do progresso são as **pastas**; o checkbox é resumo.
 
+## Antes da conversa — sondar a raiz (trilhas disponíveis)
+
+Rode o bootstrap **com `--raiz`** logo de cara: ele lista as pastas de trilha pra
+você oferecer no passo 4 (sem isso você teria que adivinhar o que existe).
+
+```bash
+python3 scripts/bootstrap.py --raiz "<raiz do laboratório>"
+```
+
+Leia `trilhas` na saída: `existe`, `audios_na_raiz`, e `subpastas[]` (cada uma com
+`nome`, `rel` — caminho relativo à raiz do lab — e `audios`). Use isso no passo 4.
+
 ## A conversa (capture, não processe)
 
 Conduza de forma direta, oferecendo o default em cada ponto. **A pasta vai nascer
@@ -44,11 +56,17 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
      customizados, anote a descrição que o usuário der.
    Se não houver variação, a etapa 3.2 nasce já marcada como pulada.
 
-4. **Pasta de trilha.** Default `00_Recursos/Trilhas` (biblioteca compartilhada).
-   Pergunte se este lote usa uma pasta específica de trilha. Anote o caminho
-   (relativo à raiz do lab ou absoluto). Níveis de loudness são os defaults da
-   trilha-aplicador (fala −14, trilha −37 LUFS) — só pergunte se o usuário quiser
-   trilha mais presente/discreta.
+4. **Pasta de trilha.** **Liste o que existe** (do `trilhas` do bootstrap) e deixe a
+   **raiz `00_Recursos/Trilhas` como default**. Apresente assim:
+   - a raiz como opção padrão (com `audios_na_raiz`, se houver áudios soltos lá);
+   - cada subpasta de `subpastas[]` numerada, com `nome` e `audios`
+     (ex.: `1) Calmas — 8 faixas`, `2) Épicas — 5 faixas`).
+   O usuário escolhe pelo número/nome; grave o `rel` correspondente em `trilha_pasta`
+   (a raiz é `00_Recursos/Trilhas`; uma subpasta é `00_Recursos/Trilhas/<nome>`). Se
+   ele apontar uma pasta de fora da biblioteca, aceite o caminho (relativo ao lab ou
+   absoluto). Se o bootstrap disse que a raiz **não existe**, pergunte o caminho.
+   Níveis de loudness são os defaults da trilha-aplicador (fala −14, trilha −37 LUFS)
+   — só pergunte se o usuário quiser trilha mais presente/discreta.
 
 5. **Aceleração.** Pergunte se os vídeos serão acelerados. Default da skill de
    aceleração é **1.2x**; ofereça 1.5x ou 2x. Se sim, a aceleração roda **antes da
@@ -57,8 +75,9 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
    final, consumindo só os `_ACELERADO_`. Acelera **tudo** (vertical + quadrado). Se
    não, a etapa 5 nasce pulada e a trilha lê as combinações normais.
 
-6. **Modo de otimização** (opcional, só se o usuário tiver preferência): silêncio e
-   respiro, cada um `conservador` (default, validado) ou `justo`.
+6. **Modo de otimização** (opcional, só se o usuário tiver preferência): silêncio
+   (default `justo` −33dB/0.15s, ou `conservador` −35dB/0.3s) e respiro (default
+   `conservador` 0.10/0.25, ou `justo` 0.05/0.18).
 
 Resuma as escolhas em uma frase e confirme antes de criar.
 
