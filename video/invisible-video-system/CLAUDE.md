@@ -4,11 +4,13 @@ Orienta qualquer instância de Claude que trabalhe neste plugin. Leia antes de e
 
 ## O que é
 
-O sistema de vídeo da Invisible. Sete skills, encadeáveis na mesma pasta de projeto:
+O sistema de vídeo da Invisible. Oito skills, encadeáveis na mesma pasta de projeto:
 
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
 - **`invisible-video-combinador`** — cruza ganchos × desenvolvimentos por encaixe retórico
-  e gera anúncios combinados (consome as saídas do desmembrador).
+  e gera anúncios combinados (consome as saídas do desmembrador). Antes de concatenar, nivela
+  a loudness dos cortes da cadeia por atenuação ao mais baixo (nunca sobe, pra não clipar),
+  eliminando o degrau de volume na emenda — a loudness final fica pra trilha-aplicador.
 - **`invisible-video-otimizador`** — escolhe a melhor take quando há várias tentativas
   da mesma fala (transcrição WhisperX, última take vence), remove silêncios internos sem
   comer palavra e, opcionalmente, normaliza o formato no mesmo reencode (corte pronto pra
@@ -30,6 +32,11 @@ O sistema de vídeo da Invisible. Sete skills, encadeáveis na mesma pasta de pr
   LUFS (não por %): fala a -14 LUFS (ganho linear), trilha a -37 LUFS (~23 dB abaixo); `amix
   normalize=0`, fade in/out e loop; em lote distribui as trilhas. Vídeo sem recompressão; saída
   `99_FINALIZADOS/<nome>_FINALIZADO.mp4`. Tipicamente a última etapa da esteira.
+- **`invisible-denoiser`** — reduz o ruído de fundo do áudio com `afftdn` (níveis `leve`/`medio`/
+  `forte` = nr 6/12/21, padrão forte), sem mexer em timbre nem dinâmica. Trabalha **in-place**:
+  salva `_DENOISER` no fim do nome e substitui o original, com o vídeo copiado sem recompressão.
+  Independente — roda em qualquer ponto da esteira. Recusa rodar nas `BRUTAS/` sem `--forcar`.
+  (EQ e compressão ficaram de fora: testados e reprovados em gravação limpa.)
 
 O nome do plugin é genérico de propósito — é onde futuras skills de vídeo entram.
 
@@ -66,7 +73,11 @@ Em `skills/invisible-video-combinador/scripts/`:
 - `normalizar.py` — normaliza um corte para o alvo (`scale+pad+setsar=1` + fps + aformat).
   **Rede de segurança:** o ideal é os cortes já chegarem normalizados da otimizadora;
   este script só entra quando algum corte ainda tem specs divergentes do alvo.
-- `combinar.py` — concat `-c copy` de gancho+desenvolvimento já normalizados.
+- `nivelar.py` — entre normalizar e combinar: mede o LUFS de cada corte da cadeia
+  (`loudnorm print_format=json`), casa todos com o **mais baixo** por `volume` negativo
+  (atenuação pura, nunca sobe → nunca clipa, dinâmica intacta) e devolve as versões `_niv`.
+  Tira o degrau de volume na emenda. A loudness final (−14) é da trilha-aplicador.
+- `combinar.py` — concat `-c copy` de gancho+desenvolvimento já normalizados e nivelados.
 - `sidecar_corte.py` — junta os `.md` (sidecar de roteiro) das partes no `.md` da combinação,
   pra a cadeia montada carregar o rótulo+texto de cada seção adiante no pipeline.
 
@@ -159,11 +170,21 @@ Em `skills/invisible-trilha-aplicador/scripts/`:
   trilhas medidas uma vez (cache). Saída `99_FINALIZADOS/<nome>_FINALIZADO.mp4`. O método (por
   que LUFS, calibração do -37) está em `referencia/METODO.md`.
 
+Em `skills/invisible-denoiser/scripts/`:
+
+- `bootstrap.py` — **só ffmpeg/ffprobe** (igual ao da trilha; `afftdn` é embutido). Sem Node,
+  sem WhisperX, sem modelo.
+- `denoiser.py` — ffmpeg puro: `afftdn=nr=<6|12|21>` no áudio, `-c:v copy` no vídeo. **In-place**
+  (temp → `<nome>_DENOISER.ext`, remove o original). Arquivo único ou pasta (pula `_DENOISER`).
+  Recusa alvo em `BRUTAS/` sem `--forcar`. Sem EQ/compressão (reprovados). Método em
+  `referencia/METODO.md`.
+
 **Por que cópias e não scripts compartilhados:** decisão de manter cada skill autocontida.
 Ao corrigir um bug em `bootstrap.py`/`transcrever.py`, replicar em todas as cópias — atenção:
 o `bootstrap.py` do `invisible-legendas-aplicador` é o ÚNICO diferente (Remotion, não WhisperX),
 não entra nessa replicação. As demais skills têm a sua `bootstrap.py` de WhisperX; a
 `invisible-legenda-arquivos` tem só `bootstrap.py`, com lógica própria de WhisperX em `legendar.py`.
+O `bootstrap.py` do `invisible-denoiser` também é só ffmpeg (como o da trilha), não WhisperX.
 
 ## Convenções
 
