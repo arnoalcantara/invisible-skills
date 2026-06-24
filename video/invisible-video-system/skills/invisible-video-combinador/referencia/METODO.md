@@ -102,15 +102,17 @@ evita SAR herdado que distorceria.
   cadeia, sem rebaixar); H.264/x264.
 
 ## 6. Nomenclatura
-- Pasta `COMBINAÇÕES/` na raiz do projeto.
-- Rótulos dos segmentos (singular, MAIÚSCULO) + código, na ordem da cadeia, unidos por
-  `__`: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57__OFERTA_VAV19.mp4`.
+- Pasta `04_COMBINADOS/` (pasta-irmã, etapa da linha). A matriz vai em `04_COMBINADOS/MATRIZ.md`.
+- Rótulos dos segmentos (singular, MAIÚSCULO) + código (+ `_VAR<n>` no segmento que varia),
+  na ordem da cadeia, unidos por `__`, com o **token de formato sempre no fim**:
+  `GANCHO_VAV19_VAR1__DESENV_VAV57_VERTICAL.mp4`.
 
-## 7. Formato quadrado (1:1) em paralelo
+## 7. Variantes por formato e VAR (expansão cartesiana)
 
-O otimizador entrega, ao lado de cada corte vertical, a variante `_QUADRADO` (1080×1080). O `descobrir_cortes.py` casa as duas por código e expõe o quadrado como `arquivo_quadrado` do corte — **não** como corte novo. Por quê e como:
+O `descobrir_cortes.py` agrupa, por segmento+código, todas as variantes do mesmo corte: por formato (`VERTICAL`/`QUADRADO`), o clipe `base` e o dicionário de `vars` (`{1: …, 2: …}`). Nem formato nem VAR é um corte retórico novo — são variantes do mesmo corte (mesmo áudio/texto). Por quê e como:
 
-- **Julga uma vez.** O encaixe retórico (promessa × abertura) é sobre o **áudio**, e o áudio é idêntico no vertical e no quadrado. Logo a matriz aprovada vale para os dois formatos — duplicar o julgamento seria desperdício e fonte de divergência boba.
-- **Emite os dois.** Cada cadeia aprovada vira duas peças: a vertical (com os `arquivo`) e a quadrada (com os `arquivo_quadrado`), quando todos os cortes da cadeia têm a variante.
-- **Não cruza formato.** Vertical concatena com vertical, quadrado com quadrado — specs idênticas dentro de cada track, `concat -c copy` direto (os quadrados saem do otimizador já normalizados em 1080×1080). Misturar quebra o `-c copy`.
-- **Um `.md` só.** O roteiro é o mesmo nos dois formatos (mesmo áudio). A combinação quadrada **não** gera `_QUADRADO.md`; o `.md` da combinação vertical é a única fonte de roteiro. (Mesma razão pela qual o otimizador não propaga `.md` pro corte quadrado.)
+- **Julga uma vez.** O encaixe retórico (promessa × abertura) é sobre o **áudio**, idêntico entre formatos e VARs. A matriz é julgada só sobre o `VERTICAL` `base` (não-VAR) e vale pra todos.
+- **Salva a matriz antes.** Antes de gerar qualquer vídeo, a `MATRIZ.md` é escrita em `04_COMBINADOS` com o esquema, as células ✅/⚠️/❌ justificadas e a contagem de peças já expandida. Aprovação trava o gate.
+- **Expande na hora de combinar.** Para cada par aprovado, para cada formato presente em **todos** os segmentos da cadeia, o produto cartesiano das variantes por segmento (`{base} ∪ {VARs}`) vira as peças concretas. Ex.: GANCHO base+VAR1 × DESENV base → 2 peças por formato.
+- **Não cruza formato.** Vertical com vertical, quadrado com quadrado — `concat -c copy` direto (os quadrados saem do otimizador em 1080×1080). Formato ausente em algum segmento da cadeia → pula esse formato e avisa.
+- **Um `.md` só.** O roteiro é o mesmo entre formatos/VARs (mesmo áudio). Só a peça vertical base gera `.md`; nenhum `.md` por formato nem por VAR.

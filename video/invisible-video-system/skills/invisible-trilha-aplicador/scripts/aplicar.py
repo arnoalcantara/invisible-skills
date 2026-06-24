@@ -14,7 +14,8 @@ Método (validado em sessão real):
 Em lote, as trilhas da pasta são distribuídas pelos vídeos o mais igualmente possível
 (round-robin sobre a lista ordenada de trilhas).
 
-Saída: <out-dir>/<nome>_FINALIZADO.mp4   (default out-dir = <pasta>/99_FINALIZADOS)
+Saída: <out-dir>/<nome>_FINALIZADO.mp4   (default out-dir = pasta-irmã 99_FINALIZADOS;
+lê tipicamente de 04_COMBINADOS)
 O original nunca é tocado.
 """
 import argparse
@@ -112,7 +113,7 @@ def main():
     ap.add_argument("--trilha", help="usar UMA trilha fixa (nome do arquivo) em vez de distribuir")
     ap.add_argument("--alvo-fala", type=float, default=-14.0)
     ap.add_argument("--alvo-trilha", type=float, default=-37.0)
-    ap.add_argument("--out-dir", help="default <pasta>/99_FINALIZADOS")
+    ap.add_argument("--out-dir", help="default: pasta-irmã 99_FINALIZADOS")
     args = ap.parse_args()
 
     videos = listar_videos(args.alvo)
@@ -127,7 +128,11 @@ def main():
         print("Nenhuma trilha encontrada.", file=sys.stderr)
         return 1
 
-    base = args.alvo if os.path.isdir(args.alvo) else os.path.dirname(args.alvo)
+    # 99_FINALIZADOS é pasta-IRMÃ da entrada (última etapa da linha de produção),
+    # não subpasta dela. A entrada é tipicamente 04_COMBINADOS → finalizados vai
+    # como irmã, ao lado de 02_OTIMIZADOS/03_PREPARADOS/04_COMBINADOS.
+    entrada = args.alvo if os.path.isdir(args.alvo) else os.path.dirname(args.alvo)
+    base = os.path.dirname(os.path.abspath(entrada.rstrip("/")))
     out_dir = args.out_dir or os.path.join(base, OUT_DIR_NAME)
     os.makedirs(out_dir, exist_ok=True)
 

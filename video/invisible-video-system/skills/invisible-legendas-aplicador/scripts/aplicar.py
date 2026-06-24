@@ -2,12 +2,18 @@
 """aplicar.py — queima legenda animada num vídeo (ou pasta) com Remotion.
 
 Consome o vídeo + o `.json` de timestamp por palavra (a saída da skill
-invisible-legenda-arquivos, salva ao lado do vídeo com o mesmo nome) e renderiza
-a legenda no estilo escolhido. NÃO transcreve — se o `.json` não existir, avisa
-para rodar a invisible-legenda-arquivos antes.
+invisible-legenda-arquivos, salva na pasta do segmento nomeada pela BASE — sem
+formato nem VAR) e renderiza a legenda no estilo escolhido. NÃO transcreve — se o
+`.json` não existir, avisa para rodar a invisible-legenda-arquivos antes.
 
-Saída: <out-dir>/<nome>_LEGENDADO.mp4
-Por padrão out-dir = <pasta-do-vídeo>/LEGENDADOS (ex.: dentro de COMBINAÇÕES).
+Lugar na linha de produção: lê os segmentos otimizados de 02_OTIMIZADOS (vertical
+e quadrado, não-VAR) e grava na pasta-irmã 03_PREPARADOS. As variações de gancho
+(_VAR<n>) vêm prontas da var-gancho-escrito e são puladas no lote de pasta.
+
+Saída: <out-dir>/<id>_OTIMIZADO_LEGENDADO_VERTICAL.mp4 — o token _LEGENDADO entra
+ANTES do token de formato, porque o contrato da linha é: formato SEMPRE o último
+token. Ex.: GANCHO_VAV19_OTIMIZADO_VERTICAL.mp4 → GANCHO_VAV19_OTIMIZADO_LEGENDADO_VERTICAL.mp4.
+Por padrão out-dir = pasta-irmã 03_PREPARADOS.
 
 Uso:
     python3 aplicar.py <video_ou_pasta> [<video2> ...] \
@@ -20,12 +26,23 @@ ajuste (experimental).
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
 PROJETO_CENTRAL_PADRAO = os.path.expanduser("~/.invisible-video/legendas-remotion")
 EXTS_VIDEO = {".mp4", ".mov", ".mkv", ".webm", ".m4v"}
 ESTILOS = ["reels", "minimal", "classic", "hormozi"]
+
+# o .json (da invisible-legenda-arquivos) é nomeado pela BASE, sem formato nem VAR.
+# pra achá-lo a partir do clipe (que tem _VERTICAL/_QUADRADO no fim), removemos
+# esses tokens do stem antes de procurar o irmão na mesma pasta.
+RE_FORMATO = re.compile(r"(?i)_(VERTICAL|QUADRADO|HORIZONTAL)$")
+RE_VAR = re.compile(r"(?i)_VAR\d+")
+
+
+def base_sem_formato_var(stem):
+    return RE_VAR.sub("", RE_FORMATO.sub("", stem))
 
 
 def dims_video(video):
@@ -54,16 +71,22 @@ def estilo_default(video):
 
 def coletar_videos(alvos):
     """Expande os alvos em arquivos de vídeo. Pasta → vídeos diretos (sem
-    recursão, ignorando a própria LEGENDADOS)."""
+    recursão, ignorando a pasta de saída 03_PREPARADOS). Clipes com _VAR<n> são
+    pulados em lote de pasta: variações de gancho vêm prontas da var-gancho-escrito
+    e não passam pela karaokê. (Um VAR apontado explicitamente como arquivo único
+    ainda é aceito.)"""
     videos = []
     for a in alvos:
         a = os.path.abspath(os.path.expanduser(a))
         if os.path.isdir(a):
             for nome in sorted(os.listdir(a)):
-                if nome == "LEGENDADOS":
+                if nome in ("LEGENDADOS", "03_PREPARADOS"):
                     continue
                 p = os.path.join(a, nome)
-                if os.path.isfile(p) and os.path.splitext(nome)[1].lower() in EXTS_VIDEO:
+                stem = os.path.splitext(nome)[0]
+                if (os.path.isfile(p)
+                        and os.path.splitext(nome)[1].lower() in EXTS_VIDEO
+                        and not RE_VAR.search(stem)):
                     videos.append(p)
         elif os.path.isfile(a):
             videos.append(a)
@@ -113,25 +136,35 @@ def main():
         stem = os.path.splitext(os.path.basename(video))[0]
         parent = os.path.dirname(video)
 
-        # localizar o json de timestamp por palavra
+        # localizar o json de timestamp por palavra: nomeado pela BASE (sem
+        # formato/VAR), na mesma pasta do clipe (02_OTIMIZADOS).
         if args.captions and len(videos) == 1:
             json_path = os.path.abspath(os.path.expanduser(args.captions))
         else:
-            json_path = os.path.join(parent, stem + ".json")
+            base = base_sem_formato_var(stem)
+            json_path = os.path.join(parent, base + ".json")
 
         if not os.path.exists(json_path):
             resultados.append({
                 "video": video,
                 "ok": False,
                 "erro": f"json de legenda ausente ({os.path.basename(json_path)}). "
-                        "Rode invisible-legenda-arquivos neste vídeo antes.",
+                        "Rode invisible-legenda-arquivos neste segmento antes.",
             })
             continue
 
+        # saída na pasta-irmã 03_PREPARADOS (etapa da linha de produção), não numa
+        # subpasta da entrada.
         out_dir = os.path.abspath(os.path.expanduser(args.out_dir)) if args.out_dir \
-            else os.path.join(parent, "LEGENDADOS")
+            else os.path.join(os.path.dirname(parent.rstrip("/")), "03_PREPARADOS")
         os.makedirs(out_dir, exist_ok=True)
-        out_path = os.path.join(out_dir, f"{stem}_LEGENDADO.mp4")
+        # _LEGENDADO entra ANTES do token de formato (formato sempre o último).
+        m = RE_FORMATO.search(stem)
+        if m:
+            nome_saida = f"{stem[:m.start()]}_LEGENDADO{m.group(0)}"
+        else:
+            nome_saida = f"{stem}_LEGENDADO"
+        out_path = os.path.join(out_dir, f"{nome_saida}.mp4")
 
         # 1) converter json -> public/captions.json
         c = subprocess.run(

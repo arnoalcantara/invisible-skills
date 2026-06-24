@@ -43,6 +43,7 @@ Saída (stdout): JSON {"resultados": [{origem, saida, ancora_y, folga, rosto, fo
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -175,7 +176,14 @@ def gerar_quadrado(video, out_dir, target_frac, ancora_fixa, crf, preset,
 
     raiz, ext = os.path.splitext(os.path.basename(video))
     os.makedirs(out_dir, exist_ok=True)
-    saida = os.path.join(out_dir, f"{raiz}_QUADRADO{ext}")
+    # o token de formato é SEMPRE o último: a entrada é <id>_OTIMIZADO_VERTICAL,
+    # então SUBSTITUI o _VERTICAL final por _QUADRADO (não anexa). Se não houver
+    # _VERTICAL no fim (entrada avulsa), anexa _QUADRADO como fallback.
+    if re.search(r"(?i)_VERTICAL$", raiz):
+        nome_q = re.sub(r"(?i)_VERTICAL$", "_QUADRADO", raiz)
+    else:
+        nome_q = f"{raiz}_QUADRADO"
+    saida = os.path.join(out_dir, f"{nome_q}{ext}")
 
     venc = encoder_para(codec_de(video))
     # lado = largura cheia; recorta só a altura. Áudio idêntico ao vertical (copy).
