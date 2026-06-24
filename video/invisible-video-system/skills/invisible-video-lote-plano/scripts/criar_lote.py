@@ -22,8 +22,8 @@ As preferências chegam por um JSON (--decisoes), não por dezenas de flags:
       "alvo_trilha": -37,
       "acelerar": true,
       "fator_aceleracao": 1.2,
-      "modo_silencio": "conservador",  # conservador | justo
-      "modo_respiro": "conservador",
+      "modo_silencio": "justo",        # justo (default do otimizador) | conservador
+      "modo_respiro": "conservador",   # conservador (default do otimizador) | justo
       "observacoes": ""
     }
 Campos ausentes assumem o default. `data` é passada de fora (--data AAAA-MM-DD)
@@ -53,7 +53,7 @@ DEFAULTS = {
     "alvo_trilha": -37,
     "acelerar": False,
     "fator_aceleracao": 1.2,
-    "modo_silencio": "conservador",
+    "modo_silencio": "justo",        # alinhado ao default do otimizador (v2.8.1)
     "modo_respiro": "conservador",
     "observacoes": "",
 }
