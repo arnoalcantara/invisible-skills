@@ -21,8 +21,9 @@ Você pega um vídeo com fala (professor, narração) e devolve **o mesmo vídeo
 de fundo por baixo** — a fala original intacta no nível certo, a trilha discreta atrás. O
 áudio original **nunca é removido**; a trilha é uma segunda camada, mixada bem abaixo.
 
-> O vídeo original **nunca é tocado**. A saída nasce em `99_FINALIZADOS/`, com o nome do
-> vídeo de origem + `_FINALIZADO` no fim.
+> O vídeo original **nunca é tocado**. A saída nasce na pasta-irmã `99_FINALIZADOS/`
+> (última etapa da linha; lê tipicamente de `04_COMBINADOS`), com o nome do vídeo de
+> origem + `_FINALIZADO` no fim.
 
 ## A ideia central: LUFS, não porcentagem
 
@@ -94,14 +95,14 @@ ffmpeg -i "99_FINALIZADOS/<nome>_FINALIZADO.mp4" -af ebur128 -f null - 2>&1 | gr
 ```
 
 ## Nomenclatura
-- Pasta de saída oficial: **`99_FINALIZADOS/`** (default dentro da pasta do vídeo).
+- Pasta de saída oficial: **`99_FINALIZADOS/`** (pasta-**irmã** da entrada, não subpasta).
 - Arquivo: **nome do vídeo de origem + `_FINALIZADO`** no fim.
-  Ex.: `..._LEGENDADO.mp4` → `..._LEGENDADO_FINALIZADO.mp4`.
+  Ex.: `GANCHO_VAV19__DESENV_VAV57_VERTICAL.mp4` → `GANCHO_VAV19__DESENV_VAV57_VERTICAL_FINALIZADO.mp4`.
 
 ## Encadeamento no sistema de vídeo
-Esta é tipicamente a **última etapa** da esteira: o vídeo já passou por desmembrador →
-combinador → otimizador → legendas-aplicador (saída em `LEGENDADOS/`), e aqui ganha a
-trilha, indo para `99_FINALIZADOS/`. Mas funciona em qualquer vídeo com fala.
+Esta é a **última etapa** da linha de produção: otimizador (`02_OTIMIZADOS`) → legendagem/
+variação (`03_PREPARADOS`) → combinador (`04_COMBINADOS`), e aqui ganha a trilha, indo
+para a pasta-irmã `99_FINALIZADOS/`. Mas funciona em qualquer vídeo com fala.
 
 ## Anti-padrões (não faça)
 - Controlar volume de trilha em "%". Use LUFS — é o único jeito consistente entre trilhas.

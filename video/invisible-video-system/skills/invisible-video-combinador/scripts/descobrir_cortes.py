@@ -37,17 +37,22 @@ Saída (stdout): JSON
       "projeto": "...", "modo": "subpastas|mesma_pasta",
       "segmentos": [
         {"nome": "GANCHO", "dir": "...", "padrao_conhecido": "gancho",
-         "cortes": [{"codigo": "VAV19", "arquivo": "<vertical>",
-                     "arquivo_quadrado": "<1:1 ou null>"}]},
+         "cortes": [{"codigo": "VAV19",
+                     "formatos": {
+                       "VERTICAL": {"base": "<path|null>", "vars": {"1": "<path>"}},
+                       "QUADRADO": {"base": "<path|null>", "vars": {}}}}]},
         ...
       ],
-    O `_QUADRADO` NÃO vira corte separado: é pareado como variante de formato do
-    corte de mesmo código (campo "arquivo_quadrado"). Assim a matriz retórica é
-    julgada UMA vez (no vertical/áudio) e o quadrado segue o mesmo esquema.
       "subpastas_ignoradas": [...],
       "sem_rotulo": [...]   # (modo B) arquivos cujo rótulo não foi reconhecido
     }
+Nem o formato (_VERTICAL/_QUADRADO) nem a variação (_VAR<n>) viram corte novo: são
+variantes do MESMO corte (mesmo código, mesmo áudio/texto). A matriz retórica é
+julgada UMA vez (no VERTICAL base) e a expansão formato×VAR acontece só ao combinar.
 A ORDEM da lista "segmentos" é a ordem de concatenação proposta.
+
+Na linha de produção, o combinador lê a pasta 03_PREPARADOS no modo MESMA PASTA
+(ganchos e desenvolvimentos prontos, soltos, identificados pelo rótulo no nome).
 """
 import argparse
 import json
@@ -78,43 +83,58 @@ RE_CODIGO = re.compile(r"[A-Z]{2,5}\d{1,4}", re.IGNORECASE)
 # falha entre "_" e dígito porque "_" conta como caractere de palavra.
 RE_NUM = re.compile(r"(?<!\d)(\d{1,4})(?!\d)")
 # sufixos de processamento que não são rótulo de segmento.
-RUIDO = {"OTIMIZADO", "VERTICAL", "HORIZONTAL", "FINAL", "RAW", "QUADRADO"}
+RUIDO = {"OTIMIZADO", "VERTICAL", "HORIZONTAL", "FINAL", "RAW", "QUADRADO", "LEGENDADO"}
+
+RE_VAR = re.compile(r"(?i)VAR(\d+)")
 
 
-def eh_quadrado(base):
-    """True se o corte é a variante QUADRADA (1:1) — token _QUADRADO no nome."""
-    return any(t.upper() == "QUADRADO" for t in tokens(base))
+def formato_de(base):
+    """Token de formato do corte: 'QUADRADO', 'VERTICAL' ou 'VERTICAL' (default).
+
+    O contrato da linha põe o formato como último token. Na ausência de token,
+    assume VERTICAL (o formato canônico)."""
+    toks = [t.upper() for t in tokens(base)]
+    if "QUADRADO" in toks:
+        return "QUADRADO"
+    return "VERTICAL"
 
 
-def parear_formatos(crus):
-    """Junta vertical + quadrado do MESMO corte numa entrada só.
+def var_de(base):
+    """Número da variação (_VAR<n>) ou None se for o corte base."""
+    m = RE_VAR.search(base)
+    return int(m.group(1)) if m else None
 
-    `crus` é uma lista de dicts {codigo, arquivo, quadrado(bool)} na ordem de
-    descoberta. O quadrado NÃO é um corte retórico novo — é a variante de formato
-    do corte com o mesmo código. Casa por código: cada corte vira
-    {codigo, arquivo (vertical), arquivo_quadrado (1:1 ou None)}.
 
-    Quadrado órfão (sem vertical de mesmo código) não se perde: entra como corte
-    próprio (arquivo = o quadrado), pra não sumir silenciosamente.
+def parear_variantes(crus):
+    """Agrupa as variantes de cada corte por código e por formato.
+
+    `crus` é uma lista de dicts {codigo, arquivo, formato, var} na ordem de
+    descoberta. Nem o formato nem a variação são cortes retóricos novos: são
+    variantes do MESMO corte (mesmo código, mesmo áudio/texto). Casa por código e
+    expõe, por formato, o clipe base e o dicionário de VARs:
+
+        {"codigo": "VAV19",
+         "formatos": {
+            "VERTICAL": {"base": <path|None>, "vars": {1: <path>, 2: <path>}},
+            "QUADRADO": {"base": <path|None>, "vars": {1: <path>}}}}
+
+    A matriz retórica é julgada UMA vez (no VERTICAL base) e vale pra todas as
+    variantes; a expansão (formato × VAR) acontece só na hora de combinar.
     """
-    verticais, quadrados, ordem = {}, {}, []
+    porcodigo = {}
+    ordem = []
     for c in crus:
         cod = c["codigo"]
-        if c["quadrado"]:
-            quadrados.setdefault(cod, c["arquivo"])
+        if cod not in porcodigo:
+            porcodigo[cod] = {}
+            ordem.append(cod)
+        fmt = c["formato"]
+        slot = porcodigo[cod].setdefault(fmt, {"base": None, "vars": {}})
+        if c["var"] is None:
+            slot["base"] = slot["base"] or c["arquivo"]
         else:
-            if cod not in verticais:
-                ordem.append(cod)
-            verticais[cod] = c["arquivo"]
-    cortes = []
-    for cod in ordem:
-        cortes.append({"codigo": cod, "arquivo": verticais[cod],
-                       "arquivo_quadrado": quadrados.get(cod)})
-    for cod, arq in quadrados.items():       # órfãos (raro): preserva
-        if cod not in verticais:
-            cortes.append({"codigo": cod, "arquivo": arq,
-                           "arquivo_quadrado": None, "orfao_quadrado": True})
-    return cortes
+            slot["vars"].setdefault(c["var"], c["arquivo"])
+    return [{"codigo": cod, "formatos": porcodigo[cod]} for cod in ordem]
 
 
 def extrair_codigo(base):
@@ -162,8 +182,8 @@ def listar_cortes_subpasta(pasta):
         if ext.lower() not in VIDEO_EXT:
             continue
         crus.append({"codigo": extrair_codigo(base), "arquivo": caminho,
-                     "quadrado": eh_quadrado(base)})
-    return parear_formatos(crus)
+                     "formato": formato_de(base), "var": var_de(base)})
+    return parear_variantes(crus)
 
 
 def montar_segmento_subpasta(caminho_pasta):
@@ -200,7 +220,7 @@ def agrupar_mesma_pasta(pasta, rotulos_extra):
             continue
         g = grupos.setdefault(singular, {"exibicao": exib, "crus": []})
         g["crus"].append({"codigo": extrair_codigo(base), "arquivo": caminho,
-                          "quadrado": eh_quadrado(base)})
+                          "formato": formato_de(base), "var": var_de(base)})
 
     segmentos = []
     for singular, g in grupos.items():
@@ -209,7 +229,7 @@ def agrupar_mesma_pasta(pasta, rotulos_extra):
             "dir": os.path.abspath(pasta),   # todos na mesma pasta
             "padrao_conhecido": singular if singular in PADROES_CONHECIDOS.values()
                                 else None,
-            "cortes": parear_formatos(g["crus"]),   # vertical + quadrado pareados
+            "cortes": parear_variantes(g["crus"]),   # variantes por formato/VAR
         })
 
     # ordena: ordem retórica conhecida primeiro, depois ordem dos --rotulos, depois alfabético
