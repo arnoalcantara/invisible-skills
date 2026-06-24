@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """legendar.py — gera a transcrição com timestamp por palavra (.json) para um vídeo
-ou uma pasta inteira de vídeos, salvando AO LADO da origem com o MESMO nome do vídeo.
+ou uma pasta inteira de vídeos, salvando AO LADO da origem nomeado pela BASE do corte.
 
-Regra de nome e pasta (fixa): para `<pasta>/CORTE.mp4` sai `<pasta>/CORTE.json`.
-O vídeo nunca é tocado; só nasce o arquivo irmão.
+Regra de nome e pasta (linha de produção): o .json é nomeado SEM o token de formato
+(_VERTICAL/_QUADRADO) e SEM _VAR<n>. Para `<pasta>/GANCHO_VAV19_OTIMIZADO_VERTICAL.mp4`
+sai `<pasta>/GANCHO_VAV19_OTIMIZADO.json` — um único .json serve o vertical, o quadrado
+e todas as VARs do mesmo segmento (mesmo áudio/texto). Em lote, o WhisperX roda UMA vez
+por base (representante: o _VERTICAL não-VAR), não por arquivo. O vídeo nunca é tocado.
 
 Por que JSON (e só JSON): traz `segments[].words[]` — cada palavra com start/end medido
 por wav2vec2, não interpolado. É a fonte pra animação palavra-a-palavra no Remotion,
@@ -27,6 +30,7 @@ Saída (stdout): JSON com um relatório por vídeo (gerado | pulado | erro) + re
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -75,13 +79,29 @@ def extrair_audio(video, wav):
     subprocess.run(cmd, check=True, capture_output=True)
 
 
+# tokens de formato e variação: o .json é nomeado pela BASE (sem eles), porque o
+# áudio/texto é idêntico entre vertical/quadrado e entre base/VARs — um .json serve
+# todos. Ex.: GANCHO_VAV19_OTIMIZADO_VAR1_VERTICAL → GANCHO_VAV19_OTIMIZADO.
+RE_FORMATO = re.compile(r"(?i)_(VERTICAL|QUADRADO|HORIZONTAL)$")
+RE_VAR = re.compile(r"(?i)_VAR\d+")
+
+
+def base_sem_formato_var(stem):
+    """Remove o token de formato (final) e qualquer _VAR<n> do stem."""
+    s = RE_FORMATO.sub("", stem)
+    s = RE_VAR.sub("", s)
+    return s
+
+
 def alvo_json(video):
-    """Caminho de saída irmão do vídeo: mesmo nome, extensão .json."""
-    return os.path.splitext(video)[0] + ".json"
+    """Caminho do .json irmão, nomeado pela BASE (sem formato nem VAR)."""
+    d = os.path.dirname(video)
+    base = base_sem_formato_var(os.path.splitext(os.path.basename(video))[0])
+    return os.path.join(d, base + ".json")
 
 
 def ja_pronto(video):
-    """True se o .json já existe e não está vazio."""
+    """True se o .json (da base) já existe e não está vazio."""
     p = alvo_json(video)
     return os.path.isfile(p) and os.path.getsize(p) > 0
 
@@ -124,7 +144,10 @@ def legendar_um(video, wx_bin, lang, model):
     # com a seção (gancho/desenvolvimento...) casando o texto contra a
     # transcrição — tempo medido sobre o vídeo atual, robusto a edição.
     secoes_rel = None
-    md_lado = os.path.splitext(video)[0] + ".md"
+    # o sidecar de roteiro também é nomeado pela base (sem formato): o otimizador
+    # grava <base>_OTIMIZADO.md. Casa pelo mesmo strip do .json.
+    base_md = base_sem_formato_var(os.path.splitext(os.path.basename(video))[0])
+    md_lado = os.path.join(os.path.dirname(video), base_md + ".md")
     if os.path.isfile(md_lado):
         try:
             with open(destino, encoding="utf-8") as f:
@@ -162,12 +185,35 @@ def main():
 
     wx_bin = resolver_bin(args.whisperx_bin, args.venv)
 
+    # dedupe por base: um .json serve vertical+quadrado+VARs do mesmo segmento
+    # (mesmo áudio). Agrupa por (dir, base) e roda WhisperX UMA vez por grupo,
+    # preferindo o representante _VERTICAL não-VAR (a fala "canônica" do segmento).
+    def rank_representante(video):
+        stem = os.path.splitext(os.path.basename(video))[0]
+        tem_var = bool(RE_VAR.search(stem))
+        eh_vertical = bool(re.search(r"(?i)_VERTICAL$", stem))
+        # menor rank = preferido: vertical não-VAR primeiro.
+        return (0 if not tem_var else 1, 0 if eh_vertical else 1, stem)
+
+    grupos = {}
+    for v in videos:
+        chave = alvo_json(v)  # mesmo .json ⇒ mesmo grupo
+        grupos.setdefault(chave, []).append(v)
+
+    representantes = []
+    for chave, membros in grupos.items():
+        representantes.append(sorted(membros, key=rank_representante)[0])
+    # preserva a ordem original de aparição dos representantes
+    ordem = {v: i for i, v in enumerate(videos)}
+    representantes.sort(key=lambda v: ordem[v])
+
     relatorios = []
     n_gerados = n_pulados = n_erros = 0
-    for v in videos:
+    for v in representantes:
         if not args.forcar and ja_pronto(v):
             relatorios.append({"video": os.path.basename(v), "status": "pulado",
-                               "motivo": "json já existe"})
+                               "motivo": "json da base já existe",
+                               "json": os.path.basename(alvo_json(v))})
             n_pulados += 1
             continue
         rep = legendar_um(v, wx_bin, args.lang, args.model)
@@ -182,7 +228,8 @@ def main():
     saida = {
         "alvo": alvo,
         "modo": "arquivo" if os.path.isfile(alvo) else "pasta",
-        "total": len(videos),
+        "total_videos": len(videos),
+        "bases": len(grupos),
         "gerados": n_gerados,
         "pulados": n_pulados,
         "erros": n_erros,

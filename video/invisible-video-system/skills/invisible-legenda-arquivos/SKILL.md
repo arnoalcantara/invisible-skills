@@ -1,16 +1,18 @@
 ---
 name: invisible-legenda-arquivos
 description: >
-  Gera a transcrição de vídeos que já existem. O usuário aponta um vídeo OU uma pasta de vídeos e a skill transcreve cada um com WhisperX (português, large-v3) e salva UM arquivo irmão ao lado da origem, com o MESMO nome do vídeo: um `.json` com a transcrição completa e timestamp por palavra (`segments[].words[]`, cada palavra com start/end medido — a fonte pra animação palavra-a-palavra no Remotion). O vídeo nunca é tocado. Roda em lote numa pasta inteira e é resumível (pula o que já tem `.json`). Use SEMPRE que o usuário pedir para "gerar legenda", "transcrever esses vídeos", "transcrever a pasta", "gerar o json", "tirar a transcrição do vídeo", "fazer as legendas pra animar no Remotion", ou apontar uma pasta de vídeos pedindo a transcrição. Requer ffmpeg e WhisperX (faz bootstrap).
+  Gera a transcrição de vídeos que já existem. O usuário aponta um vídeo OU uma pasta de vídeos e a skill transcreve com WhisperX (português, large-v3) e salva um `.json` irmão ao lado da origem — com a transcrição completa e timestamp por palavra (`segments[].words[]`, cada palavra com start/end medido — a fonte pra animação palavra-a-palavra no Remotion). Na linha de produção, o `.json` é nomeado pela BASE do corte, SEM o token de formato (_VERTICAL/_QUADRADO) nem _VAR<n>: um único `.json` serve o vertical, o quadrado e todas as variações do mesmo segmento (mesmo áudio). Em lote, roda WhisperX uma vez por base, não por arquivo. O vídeo nunca é tocado. Resumível (pula o que já tem `.json` da base). Use SEMPRE que o usuário pedir para "gerar legenda", "transcrever esses vídeos", "transcrever a pasta", "gerar o json", "tirar a transcrição do vídeo", "fazer as legendas pra animar no Remotion", ou apontar uma pasta de vídeos pedindo a transcrição. Requer ffmpeg e WhisperX (faz bootstrap).
 ---
 
 # Legendas (JSON com timestamp por palavra)
 
-O usuário aponta **um vídeo ou uma pasta de vídeos** e você devolve, para cada um, um arquivo irmão salvo **na mesma pasta, com o mesmo nome do vídeo**:
+O usuário aponta **um vídeo ou uma pasta de vídeos** e você devolve, por **base de segmento**, um `.json` irmão salvo **na mesma pasta**, nomeado **sem o token de formato nem _VAR**:
 
-- **`<nome>.json`** — transcrição **completa com timestamp por palavra** (`segments[].words[]`, cada palavra com `start`/`end` medido por wav2vec2, não interpolado). É a fonte pra animação palavra-a-palavra (estilo TikTok) no Remotion.
+- **`<base>.json`** — transcrição **completa com timestamp por palavra** (`segments[].words[]`, cada palavra com `start`/`end` medido por wav2vec2, não interpolado). É a fonte pra animação palavra-a-palavra (estilo TikTok) no Remotion.
 
-Geramos só o JSON: é o que o pipeline precisa. A `invisible-legendas-aplicador` consome esse `.json` pra queimar a legenda animada. O timestamp por palavra é o dado que importa — e só o JSON o carrega.
+Um `.json` por base serve **todas as variantes do segmento** — vertical, quadrado e VARs — porque o áudio (logo, os timestamps) é idêntico. Ex.: `GANCHO_VAV19_OTIMIZADO_VERTICAL.mp4` e `GANCHO_VAV19_OTIMIZADO_QUADRADO.mp4` compartilham `GANCHO_VAV19_OTIMIZADO.json`.
+
+Geramos só o JSON: é o que o pipeline precisa. A `invisible-legendas-aplicador` e a `invisible-video-var-gancho-escrito` consomem esse `.json` (achando-o pelo mesmo strip de formato/VAR). O timestamp por palavra é o dado que importa — e só o JSON o carrega.
 
 > O vídeo original **nunca é tocado**. Só nasce o `.json` ao lado dele.
 
@@ -48,16 +50,17 @@ Re-transcrever e sobrescrever o que já existe:
 python3 scripts/legendar.py "<pasta>" --whisperx-bin "<whisperx_bin>" --forcar
 ```
 
-Defaults embutidos: `--lang pt`, `--model large-v3`. O script roda em **lote** e é **resumível** — por padrão pula o vídeo cujo `.json` já existe; passe `--forcar` pra refazer. O progresso por vídeo sai no stderr; o relatório final em JSON no stdout.
+Defaults embutidos: `--lang pt`, `--model large-v3`. O script roda em **lote**, **deduplica por base** (uma transcrição por segmento, mesmo havendo vertical+quadrado+VARs) e é **resumível** — por padrão pula a base cujo `.json` já existe; passe `--forcar` pra refazer. O progresso sai no stderr; o relatório final em JSON no stdout.
 
 ### Fase 3 — Ler o relatório e resumir
-O stdout traz `total`, `gerados`, `pulados`, `erros` e um `relatorios[]` por vídeo. No resumo ao usuário, liste cada vídeo com seu status e o arquivo que nasceu (`saida`), e aponte a pasta onde ficou. Se algum vier com `status: erro`, mostre a `etapa` e o trecho de `stderr` — não declare sucesso geral se houve erro.
+O stdout traz `total_videos`, `bases`, `gerados`, `pulados`, `erros` e um `relatorios[]` por base. No resumo ao usuário, liste cada `.json` que nasceu (`saida`) e a base a que pertence, e aponte a pasta. Mencione quando uma base foi transcrita uma vez só apesar de ter vertical+quadrado+VARs (é o ganho da linha). Se algum vier com `status: erro`, mostre a `etapa` e o trecho de `stderr` — não declare sucesso geral se houve erro.
 
-## Como nomeia e onde salva (a regra, fixa)
-Para `<pasta>/CORTE.mp4`:
-- `<pasta>/CORTE.json`
+## Como nomeia e onde salva (a regra da linha de produção)
+O `.json` é nomeado pela **base do corte**, sem o token de formato (`_VERTICAL`/`_QUADRADO`) nem `_VAR<n>`, na mesma pasta dos vídeos (tipicamente `02_OTIMIZADOS`):
+- `GANCHO_VAV19_OTIMIZADO_VERTICAL.mp4` → `GANCHO_VAV19_OTIMIZADO.json`
+- `GANCHO_VAV19_OTIMIZADO_QUADRADO.mp4` → o mesmo `GANCHO_VAV19_OTIMIZADO.json`
 
-Mesmo nome do vídeo, mesma pasta, ao lado do original. Não há pasta de saída separada — a transcrição mora junto do vídeo a que pertence.
+Em lote, o representante transcrito é o `_VERTICAL` não-VAR. Não há pasta de saída separada — o `.json` mora junto dos vídeos do segmento.
 
 ## Encadeamento com o Remotion (o destino do JSON)
 O `.json` é o que o Remotion consome pra legenda animada palavra-a-palavra: cada `word` tem `start`/`end`, então dá pra destacar a palavra atual, agrupar de N em N, animar entrada/saída. É exatamente o que a `invisible-legendas-aplicador` lê pra queimar a legenda no vídeo.
@@ -67,7 +70,7 @@ Se houver um sidecar de roteiro `<video>.md` ao lado do vídeo (gerado pelo desm
 
 ## Anti-padrões (não faça)
 - Recodificar, cortar ou mover o vídeo — esta skill só transcreve, não toca no original.
-- Salvar o `.json` em pasta separada ou com nome diferente do vídeo — a regra é mesmo nome, mesma pasta.
+- Nomear o `.json` com o token de formato ou VAR no nome — a regra é nome-base (sem formato/VAR), pra um `.json` servir todas as variantes. Salvar em pasta separada também não: mora junto dos vídeos.
 - Gerar `.srt` ou qualquer outro formato — a skill entrega só o `.json`. O timestamp por palavra é o que o pipeline usa; o resto é peso morto.
 - Prometer ou esconder o download do modelo: cheque `modelo_pronto` e avise quando for `false`.
 - Transcrever de novo o que já tem `.json` num lote sem `--forcar` — o script já pula; respeite o resumível.
@@ -75,4 +78,4 @@ Se houver um sidecar de roteiro `<video>.md` ao lado do vídeo (gerado pelo desm
 
 ## Os scripts
 - `scripts/bootstrap.py` — detecta/instala ffmpeg + WhisperX (venv central reusado, nunca por projeto); reporta `whisperx_bin` e `modelo_pronto`. Cópia da do resto do sistema (cada skill autocontida).
-- `scripts/legendar.py` — extrai áudio mono 16k, roda WhisperX uma vez por vídeo (`--output_format json`), e move o `.json` pro lado do vídeo com o nome da origem. Lote + resumível. Imprime relatório JSON.
+- `scripts/legendar.py` — extrai áudio mono 16k, roda WhisperX (`--output_format json`) uma vez por **base** (deduplica vertical/quadrado/VARs pelo strip de formato+VAR), e move o `.json` pro lado dos vídeos nomeado pela base. Lote + resumível. Marca seções casando o `<base>_OTIMIZADO.md`. Imprime relatório JSON.

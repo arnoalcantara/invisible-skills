@@ -1,14 +1,14 @@
 ---
 name: invisible-video-combinador
 description: >
-  Combina cortes de SEGMENTOS de roteiro (saídas da invisible-video-bruto-desmembrador) para gerar peças novas — anúncios, VSLs — concatenando um corte de cada segmento numa cadeia ordenada. Os segmentos são pastas de nomes LIVRES (padrão Invisible: GANCHOS, DESENVOLVIMENTOS, CTAS; mas pode ser LEAD, HISTORIA, OFERTA, FECHAMENTO ou o que o projeto tiver), e podem ser DOIS OU MAIS. O usuário dirige o esquema: quais segmentos entram, em que ordem, quais VARIAM (cruzam) e quais ficam FIXOS (a peça nativa de cada origem). A skill transcreve os cortes (com cache), julga o encaixe retórico de cada transição que vai variar, monta a matriz justificada (✅/⚠️/❌), pede aprovação, normaliza para um alvo comum e concatena. Quando os cortes otimizados têm a variante QUADRADA (1:1, sufixo _QUADRADO, gerada pelo otimizador), a skill emite cada combinação aprovada nos DOIS formatos — vertical e quadrado — em paralelo, julgando o encaixe retórico UMA vez só (é sobre o áudio, idêntico nos dois), nunca cruzando formatos no concat. Use quando o usuário pedir "combina os cortes", "cruza gancho × desenvolvimento", "monta os anúncios", "varia o gancho mantendo a oferta nativa", "gera as combinações de VAV", "monta as VSLs combinando as seções", "combina também no quadrado". Saída padrão Full HD vertical MP4 (+ 1080×1080 quando há quadrado) em COMBINAÇÕES/. Requer ffmpeg e WhisperX (faz bootstrap).
+  Combina segmentos de roteiro JÁ PRONTOS (legendados/variados, vindos de 03_PREPARADOS) para gerar peças novas — anúncios, VSLs — concatenando um corte de cada segmento numa cadeia ordenada, SEM re-legendar (as peças já chegam legendadas). Os segmentos são de nomes LIVRES (padrão Invisible: GANCHO, DESENVOLVIMENTO, CTA; mas pode ser LEAD, HISTORIA, OFERTA, FECHAMENTO), lidos pelo rótulo no nome (modo mesma-pasta, flat). O usuário dirige o esquema: quais segmentos entram, em que ordem, quais VARIAM (cruzam) e quais ficam FIXOS (a peça nativa de cada origem). A análise da matriz é feita SÓ sobre os clipes VERTICAIS não-VAR (um por segmento+código) — o áudio/texto é idêntico entre formatos e variações, então a matriz vale pra todos. A skill transcreve esses representantes (com cache), julga o encaixe retórico par-a-par, monta a matriz justificada (✅/⚠️/❌) e SALVA a MATRIZ.md em 04_COMBINADOS ANTES de gerar qualquer vídeo, pede aprovação, normaliza e concatena. Na hora de combinar, EXPANDE cada par aprovado pelo produto cartesiano das variantes por segmento (clipe base + cada VAR) e por formato (VERTICAL×VERTICAL, QUADRADO×QUADRADO), nunca cruzando formatos. Ex.: GANCHO com base+VAR1 e DESENV só base → 2 peças por formato. Use quando o usuário pedir "combina os cortes", "cruza gancho × desenvolvimento", "monta os anúncios", "gera as combinações", "monta as VSLs". Saída em 04_COMBINADOS (vertical 1080×1920 + quadrado 1080×1080). Requer ffmpeg e WhisperX (faz bootstrap).
 ---
 
 # Combinador de Vídeo (cadeia de segmentos)
 
-Você combina cortes de **segmentos** de roteiro — as saídas da `invisible-video-bruto-desmembrador` — concatenando um corte de cada segmento numa **cadeia ordenada** para gerar peças novas (anúncios curtos, VSLs longas).
+Você combina segmentos de roteiro **já prontos** — clipes legendados (`_LEGENDADO`) e ganchos variados (`_VAR<n>`) que chegam de `03_PREPARADOS` — concatenando um de cada segmento numa **cadeia ordenada** para gerar peças novas (anúncios curtos, VSLs longas), **sem re-legendar**.
 
-Um segmento é uma pasta de cortes. O padrão Invisible é `GANCHOS/`, `DESENVOLVIMENTOS/`, `CTAS/`, mas **os nomes são livres e os segmentos podem ser dois ou mais** — uma VSL pode ter `LEAD/`, `HISTORIA/`, `OFERTA/`, `FECHAMENTO/`. Não trave em nome nenhum.
+Na linha de produção, a entrada é a pasta **`03_PREPARADOS`** (flat): ganchos e desenvolvimentos prontos, soltos, distinguidos pelo rótulo no nome. A saída vai pra pasta-irmã **`04_COMBINADOS`**. Os nomes são livres e os segmentos podem ser dois ou mais — uma VSL pode ter `LEAD`, `HISTORIA`, `OFERTA`, `FECHAMENTO`. Não trave em nome nenhum.
 
 **Quem dirige o esquema é o usuário.** Ele decide, na execução: quais segmentos entram, em que ordem se concatenam, quais **variam** (cruzam, gerando combinações) e quais ficam **fixos/nativos** (acompanham a peça de origem, sem cruzar).
 
@@ -21,14 +21,20 @@ Um segmento é uma pasta de cortes. O padrão Invisible é `GANCHOS/`, `DESENVOL
   - **Varia** — todos os cortes daquele segmento entram no cruzamento.
   - **Fixo (nativo)** — o corte daquele segmento é o que tem o **mesmo código** da peça base; não cruza, acompanha. Ex.: "varia gancho × desenvolvimento, mas a OFERTA é a nativa de cada vídeo".
 
-## Formato quadrado (1:1) em paralelo
+## Variantes por formato e VAR (o modelo de dados)
 
-Se o otimizador gerou a variante quadrada de cada corte (`_QUADRADO`, 1:1), o `descobrir_cortes.py` a expõe pareada como `arquivo_quadrado` de cada corte — **não** como corte novo. Regras:
+O `descobrir_cortes.py` agrupa, por segmento+código, **todas as variantes do mesmo corte** — porque o áudio/texto é idêntico entre elas. Cada corte vira:
 
-- **Julgue UMA vez.** O encaixe retórico é sobre o áudio, que é idêntico no vertical e no quadrado. A matriz vale para os dois. Nunca refaça a análise pro quadrado.
-- **Emita os dois.** Para cada cadeia aprovada, monte a combinação vertical (com os `arquivo`) **e** a quadrada (com os `arquivo_quadrado`), quando todos os cortes da cadeia têm a variante quadrada.
-- **Nunca cruze formato.** Vertical concatena com vertical (1080×1920), quadrado com quadrado (1080×1080). Misturar quebra o `concat -c copy` — e não faz sentido.
-- **Quadrado faltando** em algum corte da cadeia → gere só o vertical e **avise** quais cortes não têm `_QUADRADO` (rode o otimizador neles pra completar).
+```
+GANCHO / VAV19:
+  VERTICAL: { base: <path>, vars: {1: <path>, 2: <path>} }
+  QUADRADO: { base: <path>, vars: {1: <path>} }
+```
+
+Nem o formato (`_VERTICAL`/`_QUADRADO`) nem a variação (`_VAR<n>`) é um corte retórico novo — são variantes do mesmo corte. Daí duas regras:
+
+- **A matriz é julgada UMA vez**, sobre o `VERTICAL` `base` (não-VAR) de cada segmento+código. Vale pra todos os formatos e VARs.
+- **A expansão acontece só ao combinar** (produto cartesiano formato × VAR por segmento) — ver Fase 6. **Nunca cruza formato** (vertical só com vertical, quadrado só com quadrado). Se um formato falta em algum segmento da cadeia, pula esse formato e avisa.
 
 ## Princípio crítico de julgamento (não esquecer)
 
@@ -42,14 +48,11 @@ Com mais de dois segmentos, julgue **par-a-par cada transição vizinha que vai 
 `python3 scripts/bootstrap.py --check-only`. Garante ffmpeg + WhisperX. Se o modelo não estiver em cache, avise o download de ~1.5GB na 1ª transcrição.
 
 ### Fase 1 — Descobrir os segmentos
-`python3 scripts/descobrir_cortes.py "<pasta_projeto>"`. O script aceita **dois layouts** e detecta sozinho qual usar (campo `modo` na saída):
+`python3 scripts/descobrir_cortes.py "<03_PREPARADOS>"`. Na linha de produção a entrada é `03_PREPARADOS` no modo **mesma pasta** (flat): clipes soltos distinguidos pelo **rótulo no nome** (GANCHO, DESENVOLVIMENTO...) + **código** (VAV19, 28...). O script agrupa por rótulo, extrai o código e, por código, agrupa as variantes por formato e VAR (ver "Variantes por formato e VAR"). O layout de subpastas continua suportado (`modo: subpastas`) pra projetos antigos.
 
-- **Subpastas** (`modo: subpastas`) — cada segmento é uma pasta (`GANCHOS/`, `DESENVOLVIMENTOS/`...). É o que ele tenta primeiro.
-- **Mesma pasta** (`modo: mesma_pasta`) — todos os cortes soltos numa pasta só, distinguidos pelo **nome**: o nome sempre carrega o **rótulo da sessão** (GANCHO, DESENVOLVIMENTO...) e o **código/número** (19, VAV19, 28...), em qualquer ordem. O script agrupa por rótulo e extrai o código de cada um. Cai nesse modo quando não há subpastas com vídeo.
+Se os rótulos **não** são os conhecidos (gancho, desenvolvimento, cta, lead, historia, oferta, fechamento, prova), declare-os: `--mesma-pasta "<03_PREPARADOS>" --rotulos LEAD OFERTA FECHAMENTO`. Arquivos sem rótulo reconhecido voltam em `sem_rotulo` — mostre-os ao usuário.
 
-Se os cortes estão soltos e os rótulos **não** são os conhecidos (gancho, desenvolvimento, cta, lead, historia, oferta, fechamento, prova), declare-os: `--mesma-pasta "<pasta>" --rotulos LEAD OFERTA FECHAMENTO`. Arquivos cujo rótulo não foi reconhecido voltam em `sem_rotulo` — mostre-os ao usuário.
-
-Mostre ao usuário os segmentos achados (nome, nº de cortes, códigos) e o modo detectado.
+Mostre ao usuário os segmentos achados (nome, códigos, e por código os formatos/VARs disponíveis) e o modo detectado.
 
 ### Fase 2 — Definir o esquema de combinação (DIRIGIDO PELO USUÁRIO)
 **Pergunte explicitamente** — não assuma. Confirme:
@@ -57,89 +60,94 @@ Mostre ao usuário os segmentos achados (nome, nº de cortes, códigos) e o modo
 2. **A ordem** da cadeia (concatenação). Sugira a ordem retórica, mas confirme.
 3. **Quais variam e quais ficam fixos (nativos).** Ex.: "varia GANCHOS × DESENVOLVIMENTOS; OFERTA fixa na nativa de cada vídeo".
 
-Se o usuário não quiser usar a auto-descoberta, ele pode apontar os segmentos na ordem:
-- subpastas: `python3 scripts/descobrir_cortes.py "<projeto>" --segmentos GANCHOS DESENVOLVIMENTOS OFERTA`
-- mesma pasta: `python3 scripts/descobrir_cortes.py "<projeto>" --mesma-pasta "<pasta>" --rotulos GANCHO DESENVOLVIMENTO OFERTA` (a ordem dos `--rotulos` orienta a ordem da cadeia)
+Se o usuário não quiser usar a auto-descoberta, ele pode apontar a ordem:
+- `python3 scripts/descobrir_cortes.py "<projeto>" --mesma-pasta "<03_PREPARADOS>" --rotulos GANCHO DESENVOLVIMENTO OFERTA` (a ordem dos `--rotulos` orienta a ordem da cadeia)
 
 A combinação mais usual é só **gancho × desenvolvimento** — mas é o usuário que determina, sempre.
 
-**Cortes já otimizados.** Otimizar os cortes de segmento ANTES de combinar é a ordem preferível (um reencode só; a combinação vira cópia). Se o usuário fez isso com a `invisible-video-otimizador`, os cortes podem estar numa subpasta `OTIMIZADOS/` de cada segmento — aponte-os direto: `--segmentos GANCHOS/OTIMIZADOS DESENVOLVIMENTOS/OTIMIZADOS`. O nome `TIPO_ID_OTIMIZADO` não atrapalha: o código de origem (VAV19) é extraído do nome e `OTIMIZADO` é tratado como ruído, então os pares nativos seguem casando.
+As peças de `03_PREPARADOS` já chegam **prontas** (legendadas e/ou variadas, normalizadas pelo otimizador lá atrás). O combinador **não re-legenda**: só concatena. O nome carrega rótulo + código + `_OTIMIZADO[_LEGENDADO][_VAR<n>]` + formato no fim — o código (VAV19) é extraído e os tokens de processo/formato/VAR não atrapalham o casamento nativo.
 
-### Fase 3 — Obter o texto dos cortes que serão julgados (sidecar .md → senão transcreve)
-Só os segmentos que **variam** precisam do texto (os fixos nativos não se julgam). Para cada corte desses, **primeiro cheque o sidecar de roteiro** `<corte_sem_ext>.md` ao lado dele (vem do desmembrador, propagado pelo otimizador):
+### Fase 3 — Obter o texto dos representantes que serão julgados (sidecar .md → senão transcreve)
+A matriz é julgada **só sobre o VERTICAL base (não-VAR)** de cada segmento+código (`formatos.VERTICAL.base`) — o áudio/texto é o mesmo entre formatos e VARs. Só os segmentos que **variam** precisam do texto (os fixos nativos não se julgam). Para cada representante, **primeiro cheque o sidecar** `<corte_sem_ext>.md` ao lado dele:
 
 - **Se o `.md` existe** → leia o texto dele. Não transcreva.
 - **Se falta** → transcreva e **grave o `.md`** ao lado do corte (assim a próxima combinação reusa):
 ```bash
-python3 scripts/transcrever.py "<corte>" --whisperx-bin <do bootstrap> \
+python3 scripts/transcrever.py "<vertical_base>" --whisperx-bin <do bootstrap> \
     --cache-dir "<pasta_projeto>/.transcricao/wx_out"
 python3 scripts/sidecar_corte.py --json "<json_da_transcrição>" \
     --rotulo <SEGMENTO_EM_MAIÚSCULAS> --out "<corte_sem_ext>.md"
 ```
-O rótulo é o do segmento (GANCHO, DESENVOLVIMENTO...). Para a matriz importa só o texto; a borda não. A transcrição reusa cache (chave nome+tamanho+mtime).
+O rótulo é o do segmento (GANCHO, DESENVOLVIMENTO...). Para a matriz importa só o texto. A transcrição reusa cache (chave nome+tamanho+mtime). **Não transcreva os clipes `_VAR<n>` nem os `_QUADRADO`** — a matriz já vale pra eles.
 
-### Fase 4 — Analisar e propor a matriz
-Classifique cada corte dos segmentos que variam:
+### Fase 4 — Analisar e propor a matriz (só verticais não-VAR)
+Classifique cada representante (vertical base) dos segmentos que variam:
 - O que ele **promete** / qual continuação pede (se for o lado que abre a transição).
 - O **tipo de abertura** — dor, revelação, contestação, prova social/depoimento (se for o lado que recebe).
 
-Julgue **par-a-par** cada transição variável. Monte a matriz justificada: ✅ (fluido) / ⚠️ (limítrofe, com ressalva escrita) / ❌ (não casa), **com o porquê de cada célula**. Para cadeias de 3+ que variam em mais de uma transição, mostre a matriz de cada transição.
+Julgue **par-a-par** cada transição variável. Monte a matriz justificada: ✅ (fluido) / ⚠️ (limítrofe, com ressalva escrita) / ❌ (não casa), **com o porquê de cada célula**. Para cadeias de 3+ que variam em mais de uma transição, mostre a matriz de cada transição. Inclua sempre os **pares nativos** (mesma origem) como combinações válidas.
 
-Inclua sempre os **pares nativos** (mesma origem) como combinações válidas.
+A matriz é sobre **códigos** (GANCHO/VAV19 × DESENV/VAV57), não sobre formatos/VARs — esses são expandidos depois. Conte quantas peças a expansão vai gerar (pares aprovados × formatos comuns × produto das variantes por segmento) e mostre esse número.
 
-Diga quantas peças isso gera. Deixe explícito: "Nada foi gerado ainda. Confirma este esquema e esta matriz?" O usuário pode forçar ⚠️/❌ ou cortar ✅.
+### Fase 5 — Salvar a MATRIZ.md ANTES de gerar (passo obrigatório)
+Antes de qualquer vídeo, **escreva `04_COMBINADOS/MATRIZ.md`** com:
+- o esquema (segmentos, ordem, o que varia × o que é fixo);
+- a matriz ✅/⚠️/❌ justificada (uma tabela por transição variável);
+- a **contagem de peças** que serão geradas, já com as expansões (formato × VAR por segmento), listando os nomes de arquivo previstos.
 
-### Fase 5 — Config de saída
+Crie a pasta `04_COMBINADOS` se não existir e grave o `.md` lá. Então diga: "Matriz salva em 04_COMBINADOS/MATRIZ.md. Nada de vídeo foi gerado ainda. Confirma este esquema e esta matriz?" O usuário pode forçar ⚠️/❌, cortar ✅, ou pedir ajustes — reescreva a MATRIZ.md e só então prossiga.
+
+### Fase 6 — Config de saída
 Pergunte, oferecendo o default entre colchetes:
-- **[Full HD vertical 1080×1920, 30fps, HEVC/x265 CRF20, AAC 48k stereo, .mp4]** ← padrão.
+- **[Full HD vertical 1080×1920, 30fps, HEVC/x265 CRF20, AAC 48k stereo, .mp4]** ← padrão (e quadrado 1080×1080).
 - Alternativas: **4K** (2160×3840), **MOV**, **resolução nativa** (a maior entre os cortes da cadeia, sem rebaixar), **H.264/x264**.
 
-### Fase 6 — Normalizar (rede de segurança) e montar
-`concat -c copy` quebra com specs mistas. A normalização aqui é **rede de segurança**: o caminho ideal é os cortes já chegarem normalizados da `invisible-video-otimizador` (otimizados+normalizados pro mesmo alvo, em `OTIMIZADOS/`) — nesse caso o `concat -c copy` roda direto, sem reencode. O `normalizar.py` só entra quando algum corte ainda não está no alvo (specs divergentes).
+### Fase 7 — Expandir, normalizar e montar
+A matriz aprovada é sobre **códigos**. Aqui ela vira peças concretas pela **expansão cartesiana**. Para cada par aprovado (segA/codX × segB/codY na ordem da cadeia):
 
-**Antes de normalizar, cheque as specs** de cada corte com ffprobe. Se já batem com o alvo, **pule** a normalização daquele corte. Reuse a normalização de um corte entre todas as cadeias em que ele aparece.
+1. **Para cada formato F ∈ {VERTICAL, QUADRADO}** em que **todos** os segmentos da cadeia têm clipe (`formatos[F]` com `base` ou `vars`):
+2. **Produto cartesiano das variantes por segmento.** Para cada segmento, o conjunto de variantes é `{base} ∪ {cada VAR}` daquele formato. Combine uma variante de cada segmento — todas as combinações.
+   - Ex.: GANCHO/VAV19 tem `base`+`VAR1` em VERTICAL; DESENV/VAV57 só `base` → **2 peças verticais**: `GANCHO_VAV19__DESENV_VAV57` (base×base) e `GANCHO_VAV19_VAR1__DESENV_VAV57` (VAR1×base).
+   - Se um segmento tem `base`+`VAR1`+`VAR2` e o outro `base`+`VAR1` → 3×2 = 6 peças naquele formato.
+3. **Nunca cruze formato** (vertical só com vertical). Se F falta em algum segmento da cadeia, pule F e avise.
 
-Para cada cadeia aprovada (corte do segmento 1, do segmento 2, ... do segmento N, **na ordem da cadeia**):
-1. Normalize cada corte que **ainda não está** no alvo:
+Para cada peça (uma escolha de variante por segmento, num formato):
+- **Normalize** cada corte que ainda não bate o alvo (rede de segurança; as peças de `03_PREPARADOS` já costumam vir no alvo — cheque specs com ffprobe e pule quem bate). Quadrado é 1080×1080.
 ```bash
 python3 scripts/normalizar.py "<corte>" --out "<tmp>/<corte>.mp4" \
     --largura 1080 --altura 1920 --fps 30 --vcodec libx265 --crf 20 \
     --sample-rate 48000 --canais 2
 ```
-2. **Nivele a loudness da cadeia** (remove o degrau de volume na emenda). Passe os cortes da cadeia **na ordem**, já no formato comum (saídas do passo 1, ou os otimizados que já batiam o alvo). O `nivelar.py` mede o LUFS de cada um, casa todos com o **mais baixo** por atenuação pura (nunca sobe → nunca clipa, dinâmica intacta) e devolve as versões `_niv`:
+- **Nivele a loudness da cadeia** (tira o degrau na emenda; atenuação ao mais baixo, nunca sobe). A loudness final (−14 LUFS) é da `invisible-trilha-aplicador`, não aqui.
 ```bash
 python3 scripts/nivelar.py "<seg1_norm>" "<seg2_norm>" "<segN_norm>" --out-dir "<tmp>"
 ```
-A loudness final (−14 LUFS) **não** é tratada aqui — fica para a `invisible-trilha-aplicador`. Este passo só iguala os trechos entre si. Use os caminhos `_niv` (campo `cortes[].saida` do JSON) na concatenação.
-3. Concatene **na ordem da cadeia** (combinar.py aceita N partes) — usando as versões **niveladas**. Passe também os **sidecars `.md` dos cortes ORIGINAIS** (os otimizados, com o `.md` ao lado — **não** as versões normalizadas/niveladas temporárias), na MESMA ordem, para gerar o roteiro da combinação:
+- **Concatene** na ordem da cadeia, com as versões niveladas. Para a peça **VERTICAL base×base×…** (a representante), passe os **sidecars `.md` dos cortes originais** pra gerar o roteiro da combinação; para as demais peças (quadrado e qualquer VAR), **não** passe `--sidecars` (um `.md` só por combinação, o da vertical base — mesmo áudio/texto):
 ```bash
+# peça vertical representante (gera o .md):
 python3 scripts/combinar.py "<seg1_niv>" "<seg2_niv>" "<segN_niv>" \
-    --out "<projeto>/COMBINAÇÕES/<nome_da_peça>.mp4" \
+    --out "<projeto>/04_COMBINADOS/<nome_da_peça>_VERTICAL.mp4" \
     --sidecars "<seg1_orig>.md" "<seg2_orig>.md" "<segN_orig>.md" \
-    --out-md "<projeto>/COMBINAÇÕES/<nome_da_peça>.md"
+    --out-md "<projeto>/04_COMBINADOS/<nome_da_peça>_VERTICAL.md"
+# demais peças (quadrado, VARs): sem --sidecars
+python3 scripts/combinar.py "<…>" --out "<projeto>/04_COMBINADOS/<nome_da_peça>_QUADRADO.mp4"
 ```
-O `.md` da combinação junta as seções em sequência (gancho + desenvolvimento + ...), **sem tempos** — a marcação por tempo nasce depois, na `invisible-legenda-arquivos`, casando este texto contra a transcrição do vídeo já editado. Se algum corte não tiver `.md`, ele é registrado em `sidecars_faltando` e a combinação segue.
+O `.md` junta as seções em sequência, **sem tempos** — a marcação por tempo já foi feita na legendagem dos segmentos. Se um corte não tiver `.md`, vai em `sidecars_faltando` e segue.
 
-3. **Versão quadrada (mesma cadeia, formato 1:1).** Se todos os cortes da cadeia têm `arquivo_quadrado`, repita a concatenação com as variantes quadradas — os quadrados do otimizador já são 1080×1080 com specs idênticas, então normalmente é `concat -c copy` direto (se desconfiar, normalize com `--largura 1080 --altura 1080`). **NÃO passe `--sidecars` aqui e NÃO gere um `_QUADRADO.md`:** o roteiro é o mesmo da vertical (mesmo áudio) → **um `.md` só por combinação**, o da vertical. Nome do vídeo: o mesmo da vertical + sufixo `_QUADRADO` no fim.
-```bash
-python3 scripts/combinar.py "<seg1_quad>" "<seg2_quad>" "<segN_quad>" \
-    --out "<projeto>/COMBINAÇÕES/<nome_da_peça>_QUADRADO.mp4"
-```
-Se faltar a variante quadrada de algum corte da cadeia, pule só o quadrado dessa cadeia e avise quais cortes precisam passar pelo otimizador.
-
-### Fase 7 — Resumo
-Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e aponte 1–2 decisões representativas da matriz (de preferência uma ⚠️).
+### Fase 8 — Resumo
+Liste as peças geradas em `04_COMBINADOS/`, quantas e por qual esquema (e a expansão: nº de pares × formatos × variantes), e aponte 1–2 decisões representativas da matriz (de preferência uma ⚠️). Aponte qualquer formato pulado por falta de variante.
 
 ## Pontos de confirmação
-1. Segmentos descobertos. 2. **Esquema** (quais, ordem, varia×fixo). 3. Matriz justificada. 4. Config de saída. 5. Resumo final.
+1. Segmentos descobertos. 2. **Esquema** (quais, ordem, varia×fixo). 3. **MATRIZ.md salva e aprovada**. 4. Config de saída. 5. Resumo final.
 
 ## Nomenclatura
-- Pasta: `COMBINAÇÕES/` na raiz do projeto.
-- Arquivo: os **rótulos dos segmentos com seus códigos, na ordem da cadeia**, separados por `__`. Use o rótulo do segmento (singular, MAIÚSCULO) + código do corte:
-  - duas peças: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57.mp4`
-  - três: `GANCHO_VAV19__DESENVOLVIMENTO_VAV57__OFERTA_VAV19.mp4`
-  - nomes livres: `LEAD_VSL03__HISTORIA_VSL07__OFERTA_VSL03.mp4`
-  - **quadrado:** o mesmo nome da vertical + `_QUADRADO` no fim — `GANCHO_VAV19__DESENVOLVIMENTO_VAV57_QUADRADO.mp4`. O `.md` é só o da vertical (não há `_QUADRADO.md`).
+- Pasta: `04_COMBINADOS/` (pasta-irmã, etapa da linha). A matriz vai em `04_COMBINADOS/MATRIZ.md`.
+- Arquivo: os **rótulos dos segmentos com códigos (e VAR quando houver), na ordem da cadeia**, separados por `__`, com o **token de formato sempre no fim**. O `_VAR<n>` cola no segmento que ele varia:
+  - base × base: `GANCHO_VAV19__DESENV_VAV57_VERTICAL.mp4` (e `_QUADRADO.mp4`)
+  - VAR no gancho: `GANCHO_VAV19_VAR1__DESENV_VAV57_VERTICAL.mp4`
+  - VAR no desenvolvimento: `GANCHO_VAV19__DESENV_VAV57_VAR1_VERTICAL.mp4`
+  - três segmentos: `GANCHO_VAV19__DESENV_VAV57__OFERTA_VAV19_VERTICAL.mp4`
+  - O `.md` é só o da peça vertical base (não há `.md` por formato nem por VAR).
 
 ## Anti-padrões (não faça)
 - Travar em GANCHOS/DESENVOLVIMENTOS — os segmentos são de nome livre e podem ser 2 ou mais.
@@ -148,12 +156,13 @@ Liste as peças geradas em `COMBINAÇÕES/`, quantas e por qual esquema, e apont
 - Inverter a ordem da cadeia.
 - Reprovar por **forma gramatical** (a promessa é que manda).
 - Concatenar specs mistas (quebra o `-c copy`) — mas também não re-normalizar cortes que já chegaram no alvo da otimizadora: cheque specs antes e pule quem já bate.
-- Gerar antes da aprovação da matriz.
-- Transcrever segmentos fixos nativos à toa (não se julgam).
-- Tratar o `_QUADRADO` como corte retórico novo — é variante de formato (`arquivo_quadrado`), não opção de cruzamento. Não duplica a matriz.
-- Re-julgar o encaixe pro quadrado — é o mesmo áudio; julga uma vez, vale pros dois.
+- Gerar vídeo antes de salvar a `MATRIZ.md` e ter a aprovação.
+- Re-legendar as peças — elas já chegam prontas de `03_PREPARADOS`. O combinador só concatena.
+- Transcrever segmentos fixos nativos, clipes `_VAR<n>` ou `_QUADRADO` — a matriz é só sobre o vertical base não-VAR.
+- Tratar `_QUADRADO` ou `_VAR<n>` como corte retórico novo — são variantes do mesmo corte (mesmo áudio). Não duplicam a matriz; expandem só na hora de combinar.
+- Re-julgar o encaixe por formato/VAR — é o mesmo áudio; julga uma vez, vale pra todos.
 - Cruzar formato no concat (vertical com quadrado) — pareie vertical-com-vertical, quadrado-com-quadrado.
-- Gerar `_QUADRADO.md` — o roteiro é o mesmo; um `.md` só (o da vertical).
+- Gerar `.md` por formato ou por VAR — um `.md` só por combinação (o da vertical base).
 - Rebaixar resolução quando o usuário pediu "nativa".
 - **Pular o nivelamento** quando a cadeia mistura cortes de origens diferentes — é o que tira o degrau de volume na emenda. (Cadeia de um corte só não precisa.)
 - **Nivelar pra cima.** O nivelamento é sempre por atenuação ao piso da cadeia; subir trecho baixo clipa/esmaga. A loudness final é da trilha-aplicador.

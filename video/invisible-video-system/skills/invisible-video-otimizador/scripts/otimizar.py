@@ -255,7 +255,10 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
     # com normalização, o container/ext vem do alvo; senão, preserva o original.
     ext = ("." + alvo["container"]) if alvo else (os.path.splitext(video)[1] or ".mp4")
     os.makedirs(out_dir, exist_ok=True)
-    saida = os.path.join(out_dir, f"{base}_OTIMIZADO{ext}")
+    # o token de formato é SEMPRE o último (contrato da linha de produção): o
+    # vídeo otimizado é o vertical, então sai com _OTIMIZADO_VERTICAL. A variante
+    # quadrada (quadrado.py) troca _VERTICAL por _QUADRADO depois.
+    saida = os.path.join(out_dir, f"{base}_OTIMIZADO_VERTICAL{ext}")
 
     if len(segmentos) <= 1 and not silencios and not descartar:
         # nada a cortar — ainda assim entrega cópia reencodada? Não: só avisa.
@@ -297,7 +300,9 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
     sidecar_propagado = False
     md_entrada = os.path.splitext(video)[0] + ".md"
     if os.path.isfile(md_entrada):
-        md_saida = os.path.splitext(saida)[0] + ".md"
+        # o .md sai SEM token de formato (<base>_OTIMIZADO.md): um sidecar serve
+        # vertical e quadrado do mesmo segmento (mesmo áudio/texto).
+        md_saida = os.path.join(out_dir, f"{base}_OTIMIZADO.md")
         with open(md_entrada, encoding="utf-8") as f:
             conteudo_md = f.read()
         with open(md_saida, "w", encoding="utf-8") as f:
@@ -428,9 +433,14 @@ def main():
                       "(cada vídeo tem seus próprios intervalos de take)")
         descartar = []
 
+    # pasta-irmã da entrada: 02_OTIMIZADOS é etapa da linha de produção, irmã de
+    # 01_Brutas (fonte) e não subpasta da entrada.
     base = entrada if os.path.isdir(entrada) else os.path.dirname(entrada)
+    base = os.path.dirname(os.path.abspath(base.rstrip("/"))) \
+        if os.path.basename(os.path.abspath(base.rstrip("/"))).upper().startswith("01_") \
+        else os.path.abspath(base)
     out_dir = os.path.abspath(args.out_dir) if args.out_dir \
-        else os.path.join(base, "OTIMIZADOS")
+        else os.path.join(base, "02_OTIMIZADOS")
 
     resultados = []
     for v in videos:

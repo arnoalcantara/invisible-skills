@@ -1,7 +1,7 @@
 ---
 name: invisible-video-otimizador
 description: >
-  Pega um vídeo gravado e o deixa pronto: primeiro escolhe a melhor TAKE quando há várias tentativas da mesma fala (transcreve, agrupa as repetições e fica com a última), depois remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. Dois eixos de modo independentes, cada um conservador (default, validado) ou justo: modo de silêncio (o que conta como silêncio — conservador -35dB/0.3s, justo -33dB/0.15s) e modo de respiro (margem nas bordas — conservador 0.10/0.25, justo 0.05/0.18, sempre assimétrico). Só silêncios internos, começo e fim intactos; corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". Saída em OTIMIZADOS/. Requer ffmpeg; a seleção de takes requer WhisperX e o quadrado requer OpenCV (faz bootstrap).
+  Pega um vídeo gravado e o deixa pronto: primeiro escolhe a melhor TAKE quando há várias tentativas da mesma fala (transcreve, agrupa as repetições e fica com a última), depois remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. Dois eixos de modo independentes, cada um conservador (default, validado) ou justo: modo de silêncio (o que conta como silêncio — conservador -35dB/0.3s, justo -33dB/0.15s) e modo de respiro (margem nas bordas — conservador 0.10/0.25, justo 0.05/0.18, sempre assimétrico). Só silêncios internos, começo e fim intactos; corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg; a seleção de takes requer WhisperX e o quadrado requer OpenCV (faz bootstrap).
 ---
 
 # Otimizador de Vídeo (takes + silêncios + normalização)
@@ -12,7 +12,7 @@ Você pega um vídeo gravado e o deixa pronto para uso. São três coisas, nessa
 2. **Corte de silêncios internos** sem comer palavra, deixando o ritmo enxuto.
 3. **Normalização de formato** (opcional): resolução, fps, códec, áudio — no mesmo reencode, entregando o corte já padronizado e pronto pra concatenar.
 
-O original **nunca é tocado** — tudo sai em `OTIMIZADOS/`. O critério de silêncio foi afinado em iterações numa sessão real até ficar perfeito — está fechado, não reinvente os números sem motivo.
+O original **nunca é tocado** — tudo sai na pasta-irmã `02_OTIMIZADOS/`. O critério de silêncio foi afinado em iterações numa sessão real até ficar perfeito — está fechado, não reinvente os números sem motivo.
 
 ## Critério de corte — dois eixos de modo (conservador/justo)
 
@@ -119,11 +119,11 @@ Defaults já embutidos: `--modo-silencio conservador` (-35dB / 0.3s), `--modo-re
 `--descartar` vale **só para arquivo único**; em lote o script o ignora e avisa. O descarte de take, o corte de silêncio e a normalização acontecem no **mesmo reencode** — sem geração extra.
 
 ### Fase 3.7 — Versão quadrada (1:1) para o feed
-Depois de gerar os `_OTIMIZADO` (verticais), produza a versão **quadrada** de cada um, na **mesma pasta** `OTIMIZADOS/`. O quadrado caminha em paralelo ao vertical por toda a esteira (combinador, legendas, gancho-escrito, trilha) e sai junto no fim.
+Depois de gerar os `_OTIMIZADO_VERTICAL` (verticais), produza a versão **quadrada** de cada um, na **mesma pasta** `02_OTIMIZADOS/`. O quadrado caminha em paralelo ao vertical por toda a esteira (combinador, legendas, gancho-escrito, trilha) e sai junto no fim. O nome **substitui** `_VERTICAL` por `_QUADRADO` (formato sempre o último token): `<id>_OTIMIZADO_VERTICAL.mp4` → `<id>_OTIMIZADO_QUADRADO.mp4`.
 
-Rode com o **python da venv** (o que tem o OpenCV — campo `python_cv2` do bootstrap), apontando a pasta `OTIMIZADOS/`:
+Rode com o **python da venv** (o que tem o OpenCV — campo `python_cv2` do bootstrap), apontando a pasta `02_OTIMIZADOS/`:
 ```bash
-<python_cv2> scripts/quadrado.py "<.../OTIMIZADOS>" --contato
+<python_cv2> scripts/quadrado.py "<.../02_OTIMIZADOS>" --contato
 ```
 
 O que ele faz, por arquivo:
@@ -137,7 +137,7 @@ O que ele faz, por arquivo:
 
 **Nudge de um corte específico:** quando o usuário disser que um quadrado ficou alto/baixo demais, refaça **só aquele** com âncora manual (fração da folga, 0=topo, 0.5=centro, 1=base):
 ```bash
-<python_cv2> scripts/quadrado.py "<.../OTIMIZADOS/DME_VAV19_GANCHO_OTIMIZADO.mp4>" --ancora 0.45
+<python_cv2> scripts/quadrado.py "<.../02_OTIMIZADOS/DME_VAV19_GANCHO_OTIMIZADO_VERTICAL.mp4>" --ancora 0.45
 ```
 
 Pule esta fase só se o usuário disser explicitamente que **não** quer o quadrado (o padrão é sempre gerar os dois).
@@ -150,37 +150,40 @@ Cada resultado traz `verificacao`, `normalizado` e `takes_descartadas`:
 Se um vídeo voltar com `aviso` de "nenhum silêncio interno detectado" e não houver takes a descartar, não há o que otimizar — informe e siga.
 
 ### Fase 5 — Resumo
-Liste cada vídeo: nome de saída (`nome_saida`, já limpo — identificação preservada + `_OTIMIZADO`), os modos usados (`modo_silencio` + `silencio`, `modo_respiro` + `respiros`), takes descartadas (texto + tempo, se houve), silêncios cortados, segmentos mantidos, se foi normalizado (e pra qual alvo), e o caminho em `OTIMIZADOS/`.
+Liste cada vídeo: nome de saída (`nome_saida`, já limpo — identificação preservada + `_OTIMIZADO`), os modos usados (`modo_silencio` + `silencio`, `modo_respiro` + `respiros`), takes descartadas (texto + tempo, se houve), silêncios cortados, segmentos mantidos, se foi normalizado (e pra qual alvo), e o caminho em `02_OTIMIZADOS/`.
 
 ## Saída
-- Pasta `OTIMIZADOS/` ao lado da origem (ou `--out-dir`).
-- Arquivo: nome **limpo** a partir do original + `_OTIMIZADO`. A regra é **preservar toda a identificação** (tipo, código, prefixo, número — na ordem original) e **descartar só os tokens de ruído de processamento**: `BRUTA`, `VERTICAL`, `HORIZONTAL`, `RAW`, `FINAL`, `OTIMIZADO`. Nada de tipo/código se perde. Exemplos:
-  - `GANCHO_VAV19_BRUTA.mov` → `GANCHO_VAV19_OTIMIZADO.mov`
-  - `DME__VAV23__VERTICAL__BRUTA__DESENVOLVIMENTO.mp4` → `DME_VAV23_DESENVOLVIMENTO_OTIMIZADO.mp4` (o `DESENVOLVIMENTO` **fica**)
+- Pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`; ou `--out-dir`).
+- Arquivo: nome **limpo** a partir do original + `_OTIMIZADO` + token de formato `_VERTICAL` (sempre o último). A regra é **preservar toda a identificação** (tipo, código, prefixo, número — na ordem original) e **descartar só os tokens de ruído de processamento**: `BRUTA`, `VERTICAL`, `HORIZONTAL`, `RAW`, `FINAL`, `OTIMIZADO` (o `_VERTICAL` final é reescrito pela skill, não o herdado do bruto). Nada de tipo/código se perde. Exemplos:
+  - `GANCHO_VAV19_BRUTA.mov` → `GANCHO_VAV19_OTIMIZADO_VERTICAL.mov`
+  - `DME__VAV23__VERTICAL__BRUTA__DESENVOLVIMENTO.mp4` → `DME_VAV23_DESENVOLVIMENTO_OTIMIZADO_VERTICAL.mp4` (o `DESENVOLVIMENTO` **fica**)
 
   Separadores repetidos viram underscore único. A `<ext>` segue o `--container` quando normaliza. O campo `nome_saida` no JSON mostra o nome final de cada vídeo.
-- **Sidecar de roteiro:** se houver um `<video>.md` ao lado da entrada (vindo do desmembrador), ele é **propagado** para a saída casando o nome `_OTIMIZADO.md` — o otimizador **não transcreve** pra isso, só carrega o roteiro adiante. O JSON traz `sidecar_propagado: true/false`.
-- **Versão quadrada:** ao lado de cada `_OTIMIZADO.<ext>`, sai um `_OTIMIZADO_QUADRADO.<ext>` (1:1, largura cheia) e — com `--contato` — um `_CONTATO_QUADRADO.png` pra aprovação. A tag `_QUADRADO` entra logo após `_OTIMIZADO` e é carregada pelos sufixos seguintes da esteira (`..._OTIMIZADO_QUADRADO_LEGENDADO.mp4`). O quadrado **não** ganha `.md` próprio — o roteiro é o mesmo do vertical, um `.md` só por corte.
+- **Sidecar de roteiro:** se houver um `<video>.md` ao lado da entrada (vindo do desmembrador), ele é **propagado** para a saída **sem token de formato** (`<id>_OTIMIZADO.md`) — um sidecar serve vertical e quadrado (mesmo áudio/texto). O otimizador **não transcreve** pra isso, só carrega o roteiro adiante. O JSON traz `sidecar_propagado: true/false`.
+- **Versão quadrada:** ao lado de cada `_OTIMIZADO_VERTICAL.<ext>`, sai um `_OTIMIZADO_QUADRADO.<ext>` (1:1, largura cheia) — o token `_VERTICAL` é **substituído** por `_QUADRADO` (formato sempre o último token) — e, com `--contato`, um `_CONTATO_QUADRADO.png` pra aprovação. O quadrado **não** ganha `.md` próprio — o roteiro é o mesmo do vertical, um `.md` só por corte.
 
-## Encadeamento com o combinador (otimizar+normalizar ANTES de combinar)
+## Lugar na linha de produção (etapa 02)
 
-Esta skill é agnóstica de origem — otimiza qualquer vídeo ou pasta. A ordem **preferível** num projeto de combinação é otimizar **e normalizar** os cortes de segmento (GANCHOS, DESENVOLVIMENTOS...) **antes** de combiná-los:
+Esta skill é a **primeira etapa** da linha de produção de vídeo. Lê os brutos (de `01_Brutas` ou de qualquer pasta/arquivo) e grava os segmentos otimizados — vertical e quadrado — em `02_OTIMIZADOS`. Daí em diante a esteira é:
+
+```
+01_Brutas → [otimizador] → 02_OTIMIZADOS → [legenda-arquivos: .json] →
+            [legendas-aplicador / var-gancho-escrito] → 03_PREPARADOS →
+            [combinador] → 04_COMBINADOS → [trilha] → 99_FINALIZADOS
+```
+
+A normalização (`--normalizar`) acontece **aqui**, no mesmo reencode do corte de silêncio: cada segmento sai já no alvo comum, então a combinação lá na frente vira `concat -c copy` (cópia pura, sem reencode) — mínimo de gerações, mínimo de perda.
 
 ```bash
-python3 scripts/otimizar.py "<projeto>/GANCHOS" --normalizar
-python3 scripts/otimizar.py "<projeto>/DESENVOLVIMENTOS" --normalizar
+python3 scripts/otimizar.py "<projeto>/01_Brutas/GANCHOS" --normalizar
+python3 scripts/otimizar.py "<projeto>/01_Brutas/DESENVOLVIMENTOS" --normalizar
 ```
 
-Assim cada corte é reencodado **uma única vez** (silêncio + normalização juntos), sai em `OTIMIZADOS/` já no alvo comum, e a combinação vira `concat -c copy` (cópia pura, sem reencode) — mínimo de gerações, mínimo de perda. Aponte o combinador às pastas otimizadas:
-```
---segmentos GANCHOS/OTIMIZADOS DESENVOLVIMENTOS/OTIMIZADOS ...
-```
+> A seleção de takes é **por arquivo** — se os ganchos brutos têm várias tentativas, otimize cada um sozinho (com `--descartar`) **antes**, ou resolva as takes na etapa de desmembramento. O lote não escolhe takes.
 
-> A seleção de takes é **por arquivo** — se os ganchos brutos têm várias tentativas, otimize cada um sozinho (com `--descartar`) **antes** de jogá-los no lote/combinação, ou resolva as takes na etapa de desmembramento. O lote não escolhe takes.
+> Use o **mesmo alvo** ao normalizar todos os segmentos. Specs divergentes quebram o `concat -c copy` — o combinador tem rede de segurança (re-normaliza se detectar divergência), mas isso custa um reencode extra que o alvo único evita.
 
-> Use o **mesmo alvo** ao normalizar todas as pastas-segmento. Specs divergentes entre segmentos quebram o `concat -c copy` — a combinadora tem rede de segurança (re-normaliza se detectar divergência), mas isso custa um reencode extra que o alvo único evita.
-
-O nome limpo **não atrapalha** o combinador: como a identificação é preservada (rótulo + código no nome) e `OTIMIZADO` é tratado como ruído, ele extrai o código de origem (ex.: VAV19) e os pares nativos seguem casando.
+O nome carrega o contrato da linha: identificação preservada (rótulo + código), `_OTIMIZADO`, e o token de formato **sempre por último** (`_VERTICAL`/`_QUADRADO`). É o que a legenda-arquivos, a legendas-aplicador, a var-gancho e o combinador leem pra orquestrar tudo pelo nome.
 
 ## Anti-padrões (não faça)
 - Trocar silêncio ou respiro por números soltos quando o usuário só pediu "mais justo/seco": use os presets `--modo-silencio`/`--modo-respiro`. Override fino (`--silence-*`, `--respiro-*`) só com valor pedido explicitamente.
