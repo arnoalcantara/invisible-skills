@@ -54,10 +54,15 @@ invisible-copy-system/          # raiz do plugin (instalável como `invisible-co
 │   ├── big-idea.md
 │   ├── niveis-de-consciencia.md
 │   ├── sofisticacao.md
+│   ├── produtos/               # perfis de produto (substituem Briefing+Voz)
+│   │   ├── indice-produtos.md
+│   │   └── desafio-memorize-escrita.md
 │   ├── copy/                   # fundações de craft (cross-formato)
 │   │   ├── estruturas-de-copy.md   # frameworks: PAS, AIDA, BAB, 4 Ps
 │   │   ├── macroestrutura.md       # Gancho · Desenvolvimento · CTA (+ modo combinatório)
-│   │   └── angulos.md              # ângulos de variação de criativo
+│   │   ├── angulos.md              # ângulos de variação de criativo
+│   │   ├── figuras-de-retorica.md  # tricolon, anáfora, quiasmo… (cross-produto)
+│   │   └── modelos/                # esqueletos de persuasão por produtor
 │   └── formatos/               # regras estruturais por canal
 │       ├── reels.md
 │       ├── youtube.md
