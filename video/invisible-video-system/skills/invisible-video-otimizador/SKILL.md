@@ -1,18 +1,23 @@
 ---
 name: invisible-video-otimizador
 description: >
-  Pega um vídeo gravado e o deixa pronto: primeiro escolhe a melhor TAKE quando há várias tentativas da mesma fala (transcreve, agrupa as repetições e fica com a última), depois remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. Dois eixos de modo independentes: modo de silêncio (o que conta como silêncio — default justo -33dB/0.15s, ou conservador -35dB/0.3s) e modo de respiro (margem nas bordas — default conservador 0.10/0.25, ou justo 0.05/0.18, sempre assimétrico). Só silêncios internos, começo e fim intactos; corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg; a seleção de takes requer WhisperX e o quadrado requer OpenCV (faz bootstrap).
+  Pega um vídeo gravado e o deixa pronto: APARA AS PONTAS pela fala (transcreve a bruta com WhisperX e usa a 1ª e a última palavra pra cortar tudo que vem antes/depois da fala — suspiro, estalo de boca, barulho de cadeira no fim; o silencedetect sozinho não pega isso porque ruído não é silêncio), escolhe a melhor TAKE quando há várias tentativas da mesma fala (agrupa as repetições e fica com a última), remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. A transcrição da bruta é efêmera (só pra achar a borda da fala) e NÃO serve pra legenda — a legenda usa outro .json, gerado depois sobre o otimizado. Dois eixos de modo independentes: modo de silêncio (o que conta como silêncio — default justo -33dB/0.15s, ou conservador -35dB/0.3s) e modo de respiro (margem nas bordas — default conservador 0.10/0.25, ou justo 0.05/0.18, sempre assimétrico). Corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corta o barulho do fim", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg e WhisperX (o aparo de pontas transcreve sempre); o quadrado requer OpenCV (faz bootstrap).
 ---
 
-# Otimizador de Vídeo (takes + silêncios + normalização)
+# Otimizador de Vídeo (aparo de pontas + takes + silêncios + normalização)
 
-Você pega um vídeo gravado e o deixa pronto para uso. São três coisas, nessa ordem:
+Você pega um vídeo gravado e o deixa pronto para uso. São quatro coisas, nessa ordem:
 
-1. **Seleção de takes** (opcional, quando o vídeo tem repetições): um gancho gravado bruto costuma ter várias tentativas da mesma fala — a pessoa erra no meio, volta, repete. Você transcreve, identifica as takes da mesma frase e fica com a **última** (o critério é sempre a última take), descartando as anteriores. Se não houver repetição, segue direto.
-2. **Corte de silêncios internos** sem comer palavra, deixando o ritmo enxuto.
-3. **Normalização de formato** (opcional): resolução, fps, códec, áudio — no mesmo reencode, entregando o corte já padronizado e pronto pra concatenar.
+1. **Aparo de pontas** (sempre): o otimizador transcreve a **bruta** com WhisperX e usa a **primeira e a última palavra** pra cravar onde a fala de fato começa e termina. Tudo antes da 1ª palavra e depois da última — suspiro, estalo de boca, "tsc", o barulho da cadeira no fim — é **cortado**. O `silencedetect` sozinho não pega isso: pra ele, ruído é "som acima do limiar" = fala, então sobreviveria ao corte. É a transcrição que distingue palavra de ruído.
+2. **Seleção de takes** (opcional, quando o vídeo tem repetições): um gancho gravado bruto costuma ter várias tentativas da mesma fala — a pessoa erra no meio, volta, repete. Você transcreve, identifica as takes da mesma frase e fica com a **última** (o critério é sempre a última take), descartando as anteriores. Se não houver repetição, segue direto.
+3. **Corte de silêncios internos** sem comer palavra, deixando o ritmo enxuto.
+4. **Normalização de formato** (opcional): resolução, fps, códec, áudio — no mesmo reencode, entregando o corte já padronizado e pronto pra concatenar.
 
 O original **nunca é tocado** — tudo sai na pasta-irmã `02_OTIMIZADOS/`. O critério de silêncio foi afinado em iterações numa sessão real até ficar perfeito — está fechado, não reinvente os números sem motivo.
+
+**Dois `.json` diferentes, não confundir.** O aparo transcreve a **bruta** (JSON-1, timestamps pré-corte) só pra achar a borda da fala — é **efêmero** (cache em `.transcricao/` ao lado da entrada, não vai pra `02_OTIMIZADOS`). A legendagem usa outro `.json` (JSON-2), gerado **depois** pela `invisible-legenda-arquivos` sobre o vídeo **já otimizado** — timestamps diferentes, porque o corte deslocou tudo. Reaproveitar o JSON-1 pra legendar daria legenda fora de sincronia.
+
+**WhisperX é obrigatório** (não mais só pra takes): sem transcrição não há como achar onde a fala termina, então o script **falha** se o WhisperX não estiver disponível.
 
 ## Critério de corte — dois eixos de modo (conservador/justo)
 
@@ -27,13 +32,13 @@ São **dois presets independentes**, cada um com modo `conservador` e `justo`. *
 - **`justo`:** 0.05s entrada / 0.18s saída. Mais apertado nas duas pontas.
 - **Respiro simétrico come consoante final — nenhum modo usa.**
 
-- **Só silêncios internos.** Começo e fim do vídeo ficam intactos (em qualquer modo).
+- **Silêncios internos** são cortados; as **pontas** são aparadas pela borda da **fala** (1ª/última palavra do WhisperX), não pela borda do vídeo — com o mesmo respiro assimétrico. A fala em si nunca é tocada; o que cai fora é ruído.
 - **Corte ao frame exato** via `trim/atrim + setpts/asetpts + concat`.
 
 ## Fluxo de execução
 
 ### Fase 0 — Bootstrap
-`python3 scripts/bootstrap.py --check-only`. O **ffmpeg** é sempre necessário (corte de silêncio/normalização). O **WhisperX** só é necessário se você for selecionar takes — confira `whisperx: true` no JSON apenas nesse caso. O **OpenCV** (`opencv: true`, com `python_cv2` apontando o python da venv) é necessário pra gerar o quadrado — o bootstrap instala o `opencv-python-headless` na venv central. Se o usuário só quer enxugar silêncio/normalizar, ignore whisperx e opencv. Se faltar dependência, rode sem `--check-only` (instala) ou `brew install ffmpeg`. Se o JSON avisar que o modelo de transcrição não está em cache, avise o usuário do download (~1.5GB) **antes** de transcrever. (O modelo do YuNet, ~230KB, já vem versionado em `referencia/modelos/` — sem download.)
+`python3 scripts/bootstrap.py --check-only`. O **ffmpeg** é sempre necessário (corte de silêncio/normalização). O **WhisperX** também é **sempre necessário agora** — o aparo de pontas transcreve a bruta em toda otimização (não só pra takes); confira `whisperx: true` e pegue o `whisperx_bin` (passe-o ao `otimizar.py` via `--whisperx-bin`, senão ele resolve sozinho rodando o bootstrap em processo). O **OpenCV** (`opencv: true`, com `python_cv2` apontando o python da venv) é necessário pra gerar o quadrado — o bootstrap instala o `opencv-python-headless` na venv central. Se faltar dependência, rode sem `--check-only` (instala) ou `brew install ffmpeg`. Se o JSON avisar que o modelo de transcrição não está em cache, avise o usuário do download (~1.5GB) **antes** de transcrever. (O modelo do YuNet, ~230KB, já vem versionado em `referencia/modelos/` — sem download.)
 
 ### Fase 1 — Seleção de takes (só quando há repetições)
 Pergunte (ou deduza do pedido) se o vídeo tem **várias tentativas da mesma fala**. Vale **só para arquivo único** — em lote, cada vídeo teria seus próprios intervalos, então a seleção de takes não roda em pasta.
@@ -143,11 +148,12 @@ O que ele faz, por arquivo:
 Pule esta fase só se o usuário disser explicitamente que **não** quer o quadrado (o padrão é sempre gerar os dois).
 
 ### Fase 4 — Ler a verificação
-Cada resultado traz `verificacao`, `normalizado` e `takes_descartadas`:
+Cada resultado traz `verificacao`, `fala`, `normalizado` e `takes_descartadas`:
 - `silencios_residuais == 0` → ritmo limpo.
 - Residuais **> 0** não são necessariamente erro: pausas ~0.3–0.49s são o **respiro preservado** (o silencedetect mede do cruzamento de limiar, não da última sílaba). Só investigue se sobrarem pausas longas reais.
+- `fala` mostra onde a fala começa/termina (`inicio`/`fim`) e quanto o aparo cortou de cada ponta (`aparou_inicio_s`/`aparou_fim_s`) — é onde você vê o ruído do fim que foi removido.
 
-Se um vídeo voltar com `aviso` de "nenhum silêncio interno detectado" e não houver takes a descartar, não há o que otimizar — informe e siga.
+Se um vídeo voltar com `aviso` de "nada a otimizar" (sem silêncio interno, sem take e sem ruído nas pontas), não há o que fazer — informe e siga. Se voltar com `erro` (ex.: transcrição falhou), o aparo não rodou — reporte e não siga com aquele vídeo.
 
 ### Fase 5 — Resumo
 Liste cada vídeo: nome de saída (`nome_saida`, já limpo — identificação preservada + `_OTIMIZADO`), os modos usados (`modo_silencio` + `silencio`, `modo_respiro` + `respiros`), takes descartadas (texto + tempo, se houve), silêncios cortados, segmentos mantidos, se foi normalizado (e pra qual alvo), e o caminho em `02_OTIMIZADOS/`.
@@ -189,11 +195,11 @@ O nome carrega o contrato da linha: identificação preservada (rótulo + códig
 - Trocar silêncio ou respiro por números soltos quando o usuário só pediu "mais justo/seco": use os presets `--modo-silencio`/`--modo-respiro`. Override fino (`--silence-*`, `--respiro-*`) só com valor pedido explicitamente.
 - Acoplar os dois eixos: são independentes. Não force ambos em justo se o usuário só pediu um.
 - Usar respiro **simétrico** (come consoante final) — nenhum modo é simétrico.
-- Cortar começo ou fim do vídeo — só silêncios **internos**.
+- Comer a **fala** nas pontas — o aparo corta só o que está fora da 1ª/última palavra (ruído), com respiro. A primeira e a última palavra ficam sempre.
 - Tratar residuais ~0.3–0.4s como falha — é o respiro projetado.
 - Reprocessar arquivos que já têm `OTIMIZADO` no nome num lote (o script já os pula).
 - Normalizar pastas-segmento diferentes pra alvos diferentes quando vão ser combinadas.
-- Transcrever um vídeo que é fala única e limpa só por transcrever — a seleção de takes é pra quem tem repetição.
+- Reaproveitar o `.json` da bruta (JSON-1, do aparo) pra legendar — a legenda usa o JSON-2 da `invisible-legenda-arquivos`, gerado sobre o otimizado.
 - Tentar selecionar takes em lote (`--descartar` vale só pra arquivo único).
 
 ## Referência

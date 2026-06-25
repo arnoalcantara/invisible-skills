@@ -1,6 +1,15 @@
 #!/usr/bin/env python3
 """otimizar.py — remove silêncios internos de um vídeo sem comer palavra.
 
+APARO DE PONTAS (obrigatório): antes de cortar silêncio, transcreve a BRUTA com
+WhisperX e usa a 1ª e a última palavra pra cravar onde a fala começa e termina.
+Tudo antes da 1ª palavra e depois da última (suspiro, estalo de boca, barulho de
+cadeira no fim) é cortado — o silencedetect é cego a isso, porque ruído NÃO é
+silêncio. A transcrição da bruta é efêmera (cache em .transcricao/, não polui a
+esteira) e serve só pra isto; a legenda final é outro .json, gerado depois sobre
+o OTIMIZADO pela invisible-legenda-arquivos (timestamps diferentes, pós-corte).
+Sem WhisperX o script FALHA — o aparo não é opcional.
+
 Critério validado em sessão real (ver referencia/METODO.md):
   - silêncio = trecho ≥ 0.3s abaixo de -35dB (silencedetect; `d` é a duração
     MÍNIMA pra contar como silêncio — pausas menores ficam intactas).
@@ -10,7 +19,8 @@ Critério validado em sessão real (ver referencia/METODO.md):
     (após silence_start). Início de palavra tem ataque alto (0.1 basta); fim
     decai suave — cauda baixa de "S"/vogal átona — precisa 0.25 pra não comer.
     Respiro simétrico come consoante final: NÃO usar.
-  - só silêncios INTERNOS: começo e fim do vídeo ficam intactos.
+  - silêncios INTERNOS são cortados; as pontas são aparadas pela borda da FALA
+    (não pela borda do vídeo): a 1ª/última palavra define o limite, com respiro.
 
 Constrói os segmentos a MANTER (complemento dos silêncios, com respiros), e os
 recorta+concatena ao frame exato via filter_complex (trim/atrim + setpts/asetpts
@@ -180,6 +190,70 @@ def segmentos_a_manter(silencios, duracao, resp_in, resp_out):
     return [(a, b) for (a, b) in segmentos if b - a > 0.01]
 
 
+def bordas_da_fala(video, whisperx_bin, venv, cache_dir, model="large-v3", lang="pt"):
+    """Acha QUANDO a fala começa e termina na bruta, via WhisperX.
+
+    O silencedetect é cego ao texto: pra ele, ruído (estalo de boca, suspiro,
+    barulho de cadeira no fim) é "som acima do limiar" = fala, então sobrevive ao
+    corte. WhisperX dá timestamp por palavra; a primeira palavra marca onde a fala
+    de fato começa e a última onde termina. Tudo antes/depois é ruído a aparar.
+
+    Roda o transcrever.py (mesmo caminho da seleção de takes), que cacheia por
+    nome+tamanho+mtime — JSON efêmero, não polui a pasta da esteira. Os timestamps
+    são da BRUTA (pré-corte) e servem só pra isto; a legenda final é outro .json,
+    gerado depois sobre o otimizado pela invisible-legenda-arquivos.
+
+    Devolve (fala_ini, fala_fim) em segundos. Levanta RuntimeError se não
+    transcrever — o aparo das pontas é obrigatório (decisão: falha dura).
+    """
+    aqui = os.path.dirname(os.path.abspath(__file__))
+    transcrever = os.path.join(aqui, "transcrever.py")
+    cmd = [sys.executable, transcrever, video,
+           "--cache-dir", cache_dir, "--model", model, "--lang", lang]
+    if whisperx_bin:
+        cmd += ["--whisperx-bin", whisperx_bin]
+    if venv:
+        cmd += ["--venv", venv]
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(f"transcrição falhou (aparo de pontas): {proc.stderr[-800:] or proc.stdout[-800:]}")
+    try:
+        json_path = json.loads(proc.stdout)["json_path"]
+        with open(json_path, encoding="utf-8") as f:
+            data = json.load(f)
+    except (json.JSONDecodeError, KeyError, OSError) as e:
+        raise RuntimeError(f"não consegui ler a transcrição (aparo de pontas): {e}")
+
+    palavras = [w for seg in data.get("segments", []) for w in seg.get("words", [])
+                if w.get("start") is not None and w.get("end") is not None]
+    if not palavras:
+        raise RuntimeError("WhisperX não devolveu palavras com timestamp — "
+                           "sem como achar onde a fala começa/termina")
+    fala_ini = min(float(w["start"]) for w in palavras)
+    fala_fim = max(float(w["end"]) for w in palavras)
+    return fala_ini, fala_fim
+
+
+def aparar_pontas(segmentos, fala_ini, fala_fim, resp_in, resp_out, duracao):
+    """Clampa os keep-segments à janela da fala [fala_ini, fala_fim].
+
+    O começo e o fim do vídeo deixam de ser intocáveis: a janela passa a ser a
+    fala de verdade (1ª à última palavra do WhisperX), não 0..duração. Mantém o
+    respiro assimétrico nas pontas — ataque na entrada (resp_in antes da 1ª
+    palavra), cauda na saída (resp_out depois da última) — sem deixar a margem
+    vazar pra além do vídeo. Descarta segmentos que caem inteiros fora da janela.
+    """
+    ini = max(0.0, fala_ini - resp_in)
+    fim = min(duracao, fala_fim + resp_out)
+    aparados = []
+    for (a, b) in segmentos:
+        a2 = max(a, ini)
+        b2 = min(b, fim)
+        if b2 - a2 > 0.01:
+            aparados.append((a2, b2))
+    return aparados
+
+
 def subtrair_descartes(segmentos, descartar):
     """Remove dos segmentos a manter os intervalos de takes descartadas.
 
@@ -239,14 +313,25 @@ def montar_filter_complex(segmentos, alvo=None):
 
 
 def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
-                alvo=None, descartar=None):
+                alvo=None, descartar=None, transcricao=None):
     descartar = descartar or []
     specs = ffprobe_specs(video)
     if specs["duracao"] is None:
         return {"origem": video, "erro": "não consegui ler a duração (ffprobe)"}
 
+    # APARO DE PONTAS (obrigatório): a 1ª e a última palavra da transcrição cravam
+    # onde a fala começa/termina — ruído antes/depois é cortado. silencedetect não
+    # vê isso (ruído não é silêncio). `transcricao` traz whisperx_bin/venv/cache.
+    fala_ini, fala_fim = bordas_da_fala(
+        video, transcricao.get("whisperx_bin"), transcricao.get("venv"),
+        transcricao["cache_dir"], transcricao.get("model", "large-v3"),
+        transcricao.get("lang", "pt"))
+
     silencios = detectar_silencios(video, noise, dur_min)
     segmentos = segmentos_a_manter(silencios, specs["duracao"], resp_in, resp_out)
+    # apara o que está fora da janela da fala (ruído nas pontas).
+    segmentos = aparar_pontas(segmentos, fala_ini, fala_fim, resp_in, resp_out,
+                              specs["duracao"])
     # corte de takes no mesmo passo: remove os intervalos descartados da fala.
     segmentos = subtrair_descartes(segmentos, descartar)
 
@@ -260,12 +345,18 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
     # quadrada (quadrado.py) troca _VERTICAL por _QUADRADO depois.
     saida = os.path.join(out_dir, f"{base}_OTIMIZADO_VERTICAL{ext}")
 
-    if len(segmentos) <= 1 and not silencios and not descartar:
-        # nada a cortar — ainda assim entrega cópia reencodada? Não: só avisa.
+    # quanto o aparo das pontas removeu (início antes da 1ª palavra + cauda depois
+    # da última). Se houve aparo, há o que cortar mesmo sem silêncio interno.
+    aparou_inicio = max(0.0, (fala_ini - resp_in))
+    aparou_fim = max(0.0, specs["duracao"] - min(specs["duracao"], fala_fim + resp_out))
+    aparou = aparou_inicio + aparou_fim
+    if (len(segmentos) <= 1 and not silencios and not descartar
+            and aparou <= 0.05):
+        # nem silêncio interno, nem take, nem ruído nas pontas — nada a fazer.
         return {"origem": video, "saida": None,
                 "silencios": [], "segmentos": len(segmentos),
-                "aviso": "nenhum silêncio interno ≥%.2fs detectado; nada a otimizar"
-                         % dur_min}
+                "aviso": "nenhum silêncio interno ≥%.2fs nem ruído nas pontas; "
+                         "nada a otimizar" % dur_min}
 
     fc = montar_filter_complex(segmentos, alvo)
     # com alvo, o códec/fps/áudio são os do alvo; sem alvo, preserva o original.
@@ -322,6 +413,9 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
         "takes_descartadas": len(descartar),
         "normalizado": bool(alvo),
         "sidecar_propagado": sidecar_propagado,
+        "fala": {"inicio": round(fala_ini, 3), "fim": round(fala_fim, 3),
+                 "aparou_inicio_s": round(aparou_inicio, 3),
+                 "aparou_fim_s": round(aparou_fim, 3)},
         "verificacao": {
             "silencios_residuais": len(residuais),
             "ok": len(residuais) == 0,
@@ -379,6 +473,14 @@ def main():
     ap.add_argument("--container", default="mp4", help="mp4 ou mov")
     ap.add_argument("--sample-rate", default="48000")
     ap.add_argument("--canais", type=int, default=2)
+    # transcrição p/ o aparo de pontas (WhisperX). O bootstrap resolve isto e
+    # passa o --whisperx-bin; o --venv é fallback. --model/--lang só por exceção.
+    ap.add_argument("--whisperx-bin", default=None,
+                    help="caminho do whisperx (do bootstrap); aparo de pontas")
+    ap.add_argument("--venv", default=None,
+                    help="venv central com whisperx (fallback do aparo de pontas)")
+    ap.add_argument("--asr-model", default="large-v3")
+    ap.add_argument("--asr-lang", default="pt")
     args = ap.parse_args()
 
     # respiro: o --modo-respiro define o preset; --respiro-* sobrepõe ponta a ponta.
@@ -442,12 +544,47 @@ def main():
     out_dir = os.path.abspath(args.out_dir) if args.out_dir \
         else os.path.join(base, "02_OTIMIZADOS")
 
+    # Aparo de pontas é OBRIGATÓRIO e exige WhisperX. Resolve o binário (do
+    # --whisperx-bin, do --venv, ou do PATH via bootstrap em processo); se não
+    # houver, FALHA DURA — sem transcrição não dá pra achar a borda da fala.
+    whisperx_bin = args.whisperx_bin
+    venv = args.venv
+    if not whisperx_bin:
+        aqui = os.path.dirname(os.path.abspath(__file__))
+        bs = subprocess.run(
+            [sys.executable, os.path.join(aqui, "bootstrap.py"), "--check-only"],
+            capture_output=True, text=True)
+        try:
+            est = json.loads(bs.stdout)
+            whisperx_bin = est.get("whisperx_bin")
+            venv = venv or est.get("venv_central")
+        except json.JSONDecodeError:
+            pass
+    if not whisperx_bin:
+        print(json.dumps({
+            "erro": "WhisperX não encontrado — o aparo de pontas exige transcrição. "
+                    "Rode scripts/bootstrap.py (sem --check-only) pra instalar, "
+                    "ou passe --whisperx-bin."}, ensure_ascii=False))
+        sys.exit(1)
+    # cache efêmero da transcrição da bruta (JSON-1): NÃO vai pra 02_OTIMIZADOS,
+    # fica num .transcricao ao lado da entrada. A legenda final (JSON-2) é outra,
+    # gerada depois sobre o otimizado pela invisible-legenda-arquivos.
+    cache_dir = os.path.join(base, ".transcricao", "wx_out")
+    transcricao = {"whisperx_bin": whisperx_bin, "venv": venv,
+                   "cache_dir": cache_dir, "model": args.asr_model,
+                   "lang": args.asr_lang}
+
     resultados = []
     for v in videos:
-        resultados.append(otimizar_um(
-            v, out_dir, noise, smin,
-            resp_in, resp_out, args.crf, args.preset,
-            alvo, descartar))
+        try:
+            resultados.append(otimizar_um(
+                v, out_dir, noise, smin,
+                resp_in, resp_out, args.crf, args.preset,
+                alvo, descartar, transcricao))
+        except RuntimeError as e:
+            # falha dura do aparo: registra o erro do vídeo e segue o lote (cada
+            # resultado carrega seu erro; o agente decide o que fazer).
+            resultados.append({"origem": v, "erro": str(e)})
 
     saida_json = {"out_dir": out_dir, "resultados": resultados, "alvo": alvo,
                   "modo_respiro": args.modo_respiro,
