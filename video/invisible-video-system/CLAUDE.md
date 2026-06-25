@@ -146,7 +146,11 @@ Em `skills/invisible-video-otimizador/scripts/`:
   relatório. Não toca no vídeo.
 - `otimizar.py` — **apara as pontas** (transcreve a bruta com WhisperX via `transcrever.py`,
   pega a 1ª/última palavra e clampa os keep-segments à janela da fala, com respiro — corta
-  ruído antes/depois; FALHA DURO sem WhisperX), subtrai os intervalos de take descartada (via
+  ruído antes/depois; FALHA DURO sem WhisperX). A borda do fim é **ancorada no silêncio**, não
+  no `end` cru da última palavra: o wav2vec2 às vezes estica esse `end` através do silêncio até
+  o ruído seguinte (palavra "longa demais"), e confiar nele faria o ruído sobreviver — então o
+  fim real é o início do primeiro silêncio após a última palavra (`_ancorar_fim`). Subtrai os
+  intervalos de take descartada (via
   `--descartar`) dos keep-segments, roda silencedetect (preset `--modo-silencio`: conservador -35dB/0.3s ou
   justo -33dB/0.15s) → keep-segments com respiro assimétrico (preset `--modo-respiro`:
   conservador 0.10/0.25 ou justo 0.05/0.18). Os dois eixos são INDEPENDENTES; `--silence-*`
