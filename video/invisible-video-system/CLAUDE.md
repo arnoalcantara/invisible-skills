@@ -12,12 +12,16 @@ preferências, cria a pasta do lote vazia e grava o `PLAN_LOTE.md`) e
 uma etapa por vez, reconciliando o progresso com as pastas):
 
 - **`invisible-video-bruto-desmembrador`** — corta brutos em um vídeo por seção do roteiro.
-- **`invisible-video-otimizador`** — escolhe a melhor take quando há várias tentativas
-  da mesma fala (transcrição WhisperX, última take vence), remove silêncios internos sem
-  comer palavra e, opcionalmente, normaliza o formato no mesmo reencode. Entrega o corte
-  vertical como `<id>_OTIMIZADO_VERTICAL` em `02_OTIMIZADOS`; gera a variante quadrada (1:1)
-  trocando `_VERTICAL` por `_QUADRADO`, com âncora por detecção de rosto (YuNet). O sidecar
-  `.md` sai sem token de formato.
+- **`invisible-video-otimizador`** — **apara as pontas pela fala** (transcreve a bruta com
+  WhisperX e usa a 1ª/última palavra pra cortar ruído antes/depois da fala — o silencedetect
+  não vê ruído como cortável), escolhe a melhor take quando há várias tentativas da mesma fala
+  (transcrição WhisperX, última take vence), remove silêncios internos sem comer palavra e,
+  opcionalmente, normaliza o formato no mesmo reencode. A transcrição da bruta é **efêmera**
+  (JSON-1, cache em `.transcricao/`, só pro aparo) — NÃO é a legenda; a legenda é o JSON-2 da
+  legenda-arquivos, sobre o otimizado. WhisperX virou dependência obrigatória (o aparo
+  transcreve sempre). Entrega o corte vertical como `<id>_OTIMIZADO_VERTICAL` em `02_OTIMIZADOS`;
+  gera a variante quadrada (1:1) trocando `_VERTICAL` por `_QUADRADO`, com âncora por detecção de
+  rosto (YuNet). O sidecar `.md` sai sem token de formato.
 - **`invisible-legenda-arquivos`** — aponta uma pasta (tipicamente `02_OTIMIZADOS`) e gera um
   `.json` (timestamp por palavra) via WhisperX, nomeado pela **base** (sem formato nem VAR) —
   um `.json` serve vertical, quadrado e VARs. Deduplica por base (roda WhisperX uma vez por
@@ -133,14 +137,17 @@ Em `skills/invisible-video-combinador/scripts/`:
 
 Em `skills/invisible-video-otimizador/scripts/`:
 
-- `bootstrap.py`, `transcrever.py` — **cópias** das do desmembrador. O `transcrever.py`
-  só é usado quando há seleção de takes (transcrição WhisperX); o resto da skill é ffmpeg puro.
+- `bootstrap.py`, `transcrever.py` — **cópias** das do desmembrador. O `transcrever.py` é
+  usado **sempre** agora: o aparo de pontas transcreve a bruta em toda otimização (além da
+  seleção de takes). O JSON da bruta é efêmero (cache do transcrever, não vai pra esteira).
 - `selecionar_takes.py` — lê o JSON do WhisperX, quebra a fala em blocos por pausa longa,
   agrupa blocos com texto parecido (`difflib`, transitivo) e marca as takes anteriores pra
   descarte (a última vence). Stdlib puro, sem ffmpeg. Devolve os intervalos `descartar` +
   relatório. Não toca no vídeo.
-- `otimizar.py` — subtrai os intervalos de take descartada (via `--descartar`) dos
-  keep-segments, roda silencedetect (preset `--modo-silencio`: conservador -35dB/0.3s ou
+- `otimizar.py` — **apara as pontas** (transcreve a bruta com WhisperX via `transcrever.py`,
+  pega a 1ª/última palavra e clampa os keep-segments à janela da fala, com respiro — corta
+  ruído antes/depois; FALHA DURO sem WhisperX), subtrai os intervalos de take descartada (via
+  `--descartar`) dos keep-segments, roda silencedetect (preset `--modo-silencio`: conservador -35dB/0.3s ou
   justo -33dB/0.15s) → keep-segments com respiro assimétrico (preset `--modo-respiro`:
   conservador 0.10/0.25 ou justo 0.05/0.18). Os dois eixos são INDEPENDENTES; `--silence-*`
   e `--respiro-*` sobrepõem cada preset →
