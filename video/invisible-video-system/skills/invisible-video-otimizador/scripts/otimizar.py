@@ -35,20 +35,21 @@ vídeo no mesmo reencode do corte de silêncio. Quem decide os intervalos é a S
 aplica o recorte. Só faz sentido pra um ARQUIVO único (cada vídeo tem seus próprios
 intervalos), não pra lote.
 
-Normaliza no mesmo passo (opcional): com --normalizar, o corte de silêncio e a
-padronização de formato (resolução/fps/códec/áudio) viram um reencode único —
-saída pronta pra concatenar. Sem --normalizar, preserva as specs do original.
+Normaliza SEMPRE: o corte de silêncio e a padronização de formato (resolução/fps/
+códec/áudio) viram um reencode único — saída pronta pra concatenar. O alvo default
+é FHD vertical (1080x1920/30fps/HEVC/AAC 48k); --largura/--altura/--vcodec/... trocam
+o alvo. (--normalizar virou no-op: a normalização não é mais opcional.)
 
 Uso:
     python3 otimizar.py <arquivo_ou_pasta> [--out-dir <dir>]
-        [--modo-silencio conservador|justo]  # -35dB/0.3s ou -33dB/0.15s
+        [--modo-silencio justo|conservador]  # -33dB/0.15s (default) ou -35dB/0.3s
         [--silence-noise -35dB] [--silence-min 0.3]   # sobrepõem o --modo-silencio
-        [--modo-respiro conservador|justo]   # respiro 0.10/0.25 ou 0.05/0.18
-        [--respiro-entrada 0.10] [--respiro-saida 0.25]   # sobrepõem o --modo-respiro
+        [--modo-respiro justo|conservador]   # respiro 0.05/0.18 (default) ou 0.10/0.25
+        [--respiro-entrada 0.05] [--respiro-saida 0.18]   # sobrepõem o --modo-respiro
         [--descartar "12.30-18.90,40.10-45.00"]
         [--crf 20] [--preset medium]
-        [--normalizar --largura 1080 --altura 1920 --fps 30
-         --vcodec libx265 --container mp4 --sample-rate 48000 --canais 2]
+        [--largura 1080 --altura 1920 --fps 30
+         --vcodec libx265 --container mp4 --sample-rate 48000 --canais 2]  # trocam o alvo
 
 Saída (stdout): JSON {"resultados": [{origem, saida, silencios, segmentos, verificacao}]}
 """
@@ -64,8 +65,8 @@ VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".avi", ".webm"}
 # DOIS eixos de modo, INDEPENDENTES (não se acoplam):
 #
 # 1) Respiro = margem deixada nas bordas da fala (entrada/saída em segundos).
+#    justo (DEFAULT): margem menor nas duas pontas (ritmo mais seco) — é o padrão.
 #    conservador: o critério validado em sessão real — preserva mais cauda/ataque.
-#    justo: margem menor nas duas pontas (ritmo mais seco).
 #    Ambos assimétricos (saída > entrada): o fim da palavra decai suave e precisa
 #    de mais margem que o início, que tem ataque alto.
 MODOS_RESPIRO = {
@@ -499,9 +500,9 @@ def main():
     ap.add_argument("--silence-noise", default=None)
     ap.add_argument("--silence-min", type=float, default=None)
     ap.add_argument("--modo-respiro", choices=list(MODOS_RESPIRO),
-                    default="conservador",
-                    help="margem nas bordas: conservador (0.10/0.25, validado) "
-                         "ou justo (0.05/0.18, corte mais apertado)")
+                    default="justo",
+                    help="margem nas bordas: justo (0.05/0.18, default, corte mais "
+                         "apertado) ou conservador (0.10/0.25, preserva mais cauda/ataque)")
     # se passados, sobrepõem o preset do --modo-respiro (ponta a ponta, em segundos).
     ap.add_argument("--respiro-entrada", type=float, default=None)
     ap.add_argument("--respiro-saida", type=float, default=None)
@@ -510,10 +511,11 @@ def main():
                          "Só para arquivo único.")
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--preset", default="medium")
-    # Normalização (opcional). Se QUALQUER uma destas vier, a otimizadora
-    # normaliza no mesmo reencode. Sem elas, preserva as specs do original.
+    # Normalização SEMPRE ativa: toda otimização sai no alvo (default FHD vertical),
+    # no mesmo reencode do corte. --normalizar virou no-op (aceito e ignorado) pra
+    # não quebrar quem ainda passa; os --largura/--altura/--vcodec/... trocam o alvo.
     ap.add_argument("--normalizar", action="store_true",
-                    help="normaliza para o alvo (default FHD vertical) no mesmo passo")
+                    help="(no-op) a normalização é sempre ativa; mantido por compat")
     ap.add_argument("--largura", type=int, default=1080)
     ap.add_argument("--altura", type=int, default=1920)
     ap.add_argument("--fps", default="30")
@@ -558,13 +560,12 @@ def main():
                                           "(esperado ini-fim, ex.: 12.3-18.9)"}))
                 sys.exit(1)
 
-    alvo = None
-    if args.normalizar:
-        alvo = {
-            "largura": args.largura, "altura": args.altura, "fps": args.fps,
-            "vcodec": args.vcodec, "container": args.container,
-            "sample_rate": args.sample_rate, "canais": args.canais,
-        }
+    # normalização sempre ativa — o alvo é sempre montado (default FHD vertical).
+    alvo = {
+        "largura": args.largura, "altura": args.altura, "fps": args.fps,
+        "vcodec": args.vcodec, "container": args.container,
+        "sample_rate": args.sample_rate, "canais": args.canais,
+    }
 
     entrada = os.path.abspath(args.entrada)
     if not os.path.exists(entrada):
