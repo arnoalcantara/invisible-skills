@@ -7,7 +7,7 @@
     {
       "name": "invisible-copy",
       "source": "./copy/invisible-copy-system",
-      "description": "Sistema de agentes de copy da Invisible: Estrategista (gera o Briefing de Campanha a partir do Arquivo Base) e Copywriter (transforma Briefing + Arquivo de Voz em peças de copy em qualquer formato)."
+      "description": "Sistema de agentes de copy da Invisible: Estrategista (gera o Briefing de Campanha a partir do Arquivo Base) e Copywriter (transforma Briefing + Arquivo de Voz — ou um perfil de produto salvo, que dispensa o briefing — em peças de copy em qualquer formato). Inclui o perfil do Desafio Memorize com a Escrita."
     },
     {
       "name": "invisible-doc-to-presentation",
