@@ -93,8 +93,15 @@ export const HookText: React.FC<{ src: string; videoJaLegendado?: boolean }> = (
 
 const SentenceView: React.FC<{ sentence: Sentence }> = ({ sentence }) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, height } = useVideoConfig();
   const baseMs = sentence.words[0].startMs;
+
+  // a tipografia foi calibrada para 1920 de altura (vertical). Em formatos mais
+  // baixos (quadrado 1080) a mesma fonte estoura o quadro pelo topo — escalamos
+  // o tamanho pela altura real para a frase caber centralizada.
+  const scale = height / 1920;
+  const sizeBase = Math.round(SIZE_BASE * scale);
+  const sizeEmph = Math.round(SIZE_EMPH * scale);
 
   return (
     <AbsoluteFill
@@ -107,7 +114,7 @@ const SentenceView: React.FC<{ sentence: Sentence }> = ({ sentence }) => {
       <div
         style={{
           fontFamily: FONT_FAMILY,
-          fontSize: SIZE_BASE, // base para os gaps em "em" (spans sobrescrevem o seu)
+          fontSize: sizeBase, // base para os gaps em "em" (spans sobrescrevem o seu)
           textAlign: "center",
           lineHeight: 1.18,
           color: COLOR,
@@ -137,7 +144,7 @@ const SentenceView: React.FC<{ sentence: Sentence }> = ({ sentence }) => {
               key={i}
               style={{
                 display: "inline-block",
-                fontSize: w.emphasis ? SIZE_EMPH : SIZE_BASE,
+                fontSize: w.emphasis ? sizeEmph : sizeBase,
                 fontWeight: w.emphasis ? 700 : 500,
                 fontStyle: w.emphasis ? "italic" : "normal",
                 opacity,
