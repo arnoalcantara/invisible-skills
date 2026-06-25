@@ -190,13 +190,58 @@ def segmentos_a_manter(silencios, duracao, resp_in, resp_out):
     return [(a, b) for (a, b) in segmentos if b - a > 0.01]
 
 
-def bordas_da_fala(video, whisperx_bin, venv, cache_dir, model="large-v3", lang="pt"):
-    """Acha QUANDO a fala começa e termina na bruta, via WhisperX.
+# Uma palavra falada raramente passa de ~1.2s; acima disso (com folga) o `end`
+# do wav2vec2 quase sempre foi ESTICADO por som não-fala depois dela (ruído,
+# respiração, batida). Nesse caso o `end` é lixo e a borda real vem do silêncio.
+PALAVRA_LONGA_S = 1.5
+
+
+def _ancorar_fim(palavras, silencios, duracao):
+    """Fim REAL da fala, robusto ao `end` inflado da última palavra.
+
+    O wav2vec2 às vezes estica o `end` da última palavra através do silêncio até
+    o ruído que vem depois (ex.: "futuro." 6.59→11.27 num clipe de 11.46 com
+    silêncio de 7.14 a 11.24). Confiar nesse `end` faz o aparo preservar o ruído.
+
+    Regra: pega o `start` da última palavra (confiável) e procura o primeiro
+    silêncio que começa a partir daí — a fala termina onde esse silêncio começa.
+    Se a última palavra é "longa demais" (end-start > PALAVRA_LONGA_S), o `end`
+    é descartado de vez. Sem silêncio após a palavra, cai no `end` limitado a
+    start+PALAVRA_LONGA_S. Sem inflar (palavra curta, sem silêncio), usa o `end`.
+    """
+    ult = palavras[-1]
+    u_ini, u_fim = float(ult["start"]), float(ult["end"])
+    inflada = (u_fim - u_ini) > PALAVRA_LONGA_S
+    # primeiro silêncio que começa em/depois do início da última palavra
+    sil_apos = next((s for (s, e) in sorted(silencios) if s >= u_ini - 0.05), None)
+    if sil_apos is not None:
+        # a fala termina onde o silêncio começa (nunca depois do end real).
+        return min(sil_apos, u_fim) if not inflada else sil_apos
+    if inflada:
+        return min(u_ini + PALAVRA_LONGA_S, duracao)
+    return u_fim
+
+
+def _ancorar_inicio(palavras, silencios):
+    """Início REAL da fala. Espelha _ancorar_fim, mas o `start` infla bem menos
+    que o `end`, então é mais simples: usa o `start` da 1ª palavra, recuado até o
+    fim do silêncio inicial se a palavra começa logo após ele."""
+    p_ini = float(palavras[0]["start"])
+    # silêncio inicial que termina pouco antes da 1ª palavra → fala começa no fim dele
+    sil_ini = next((e for (s, e) in sorted(silencios) if s <= 0.1 and e <= p_ini + 0.05), None)
+    return max(sil_ini, p_ini) if sil_ini is not None else p_ini
+
+
+def bordas_da_fala(video, whisperx_bin, venv, cache_dir, silencios, duracao,
+                   model="large-v3", lang="pt"):
+    """Acha QUANDO a fala começa e termina na bruta, via WhisperX + silêncio.
 
     O silencedetect é cego ao texto: pra ele, ruído (estalo de boca, suspiro,
     barulho de cadeira no fim) é "som acima do limiar" = fala, então sobrevive ao
     corte. WhisperX dá timestamp por palavra; a primeira palavra marca onde a fala
-    de fato começa e a última onde termina. Tudo antes/depois é ruído a aparar.
+    começa e a última onde termina. MAS o `end` da última palavra (e o `start` da
+    primeira) às vezes é esticado pelo wav2vec2 até o ruído vizinho — por isso as
+    bordas são ANCORADAS no silêncio detectado, não tomadas cruas do JSON.
 
     Roda o transcrever.py (mesmo caminho da seleção de takes), que cacheia por
     nome+tamanho+mtime — JSON efêmero, não polui a pasta da esteira. Os timestamps
@@ -229,8 +274,9 @@ def bordas_da_fala(video, whisperx_bin, venv, cache_dir, model="large-v3", lang=
     if not palavras:
         raise RuntimeError("WhisperX não devolveu palavras com timestamp — "
                            "sem como achar onde a fala começa/termina")
-    fala_ini = min(float(w["start"]) for w in palavras)
-    fala_fim = max(float(w["end"]) for w in palavras)
+    palavras.sort(key=lambda w: float(w["start"]))
+    fala_ini = _ancorar_inicio(palavras, silencios)
+    fala_fim = _ancorar_fim(palavras, silencios, duracao)
     return fala_ini, fala_fim
 
 
@@ -319,15 +365,18 @@ def otimizar_um(video, out_dir, noise, dur_min, resp_in, resp_out, crf, preset,
     if specs["duracao"] is None:
         return {"origem": video, "erro": "não consegui ler a duração (ffprobe)"}
 
-    # APARO DE PONTAS (obrigatório): a 1ª e a última palavra da transcrição cravam
-    # onde a fala começa/termina — ruído antes/depois é cortado. silencedetect não
-    # vê isso (ruído não é silêncio). `transcricao` traz whisperx_bin/venv/cache.
+    silencios = detectar_silencios(video, noise, dur_min)
+
+    # APARO DE PONTAS (obrigatório): a transcrição crava onde a fala começa/termina;
+    # ruído antes/depois é cortado. O silencedetect sozinho não vê isso (ruído não é
+    # silêncio), e o `end` da última palavra do WhisperX às vezes é esticado pelo
+    # ruído — por isso as bordas são ANCORADAS no silêncio (ver bordas_da_fala).
+    # `transcricao` traz whisperx_bin/venv/cache.
     fala_ini, fala_fim = bordas_da_fala(
         video, transcricao.get("whisperx_bin"), transcricao.get("venv"),
-        transcricao["cache_dir"], transcricao.get("model", "large-v3"),
-        transcricao.get("lang", "pt"))
+        transcricao["cache_dir"], silencios, specs["duracao"],
+        transcricao.get("model", "large-v3"), transcricao.get("lang", "pt"))
 
-    silencios = detectar_silencios(video, noise, dur_min)
     segmentos = segmentos_a_manter(silencios, specs["duracao"], resp_in, resp_out)
     # apara o que está fora da janela da fala (ruído nas pontas).
     segmentos = aparar_pontas(segmentos, fala_ini, fala_fim, resp_in, resp_out,
