@@ -15,8 +15,9 @@ uma etapa por vez, reconciliando o progresso com as pastas):
 - **`invisible-video-otimizador`** — **apara as pontas pela fala** (transcreve a bruta com
   WhisperX e usa a 1ª/última palavra pra cortar ruído antes/depois da fala — o silencedetect
   não vê ruído como cortável), escolhe a melhor take quando há várias tentativas da mesma fala
-  (transcrição WhisperX, última take vence), remove silêncios internos sem comer palavra e,
-  opcionalmente, normaliza o formato no mesmo reencode. A transcrição da bruta é **efêmera**
+  (transcrição WhisperX, última take vence), remove silêncios internos sem comer palavra e
+  **sempre normaliza** o formato no mesmo reencode (alvo default FHD vertical, trocável por
+  flags). Silêncio e respiro vêm ambos `justo` por default. A transcrição da bruta é **efêmera**
   (JSON-1, cache em `.transcricao/`, só pro aparo) — NÃO é a legenda; a legenda é o JSON-2 da
   legenda-arquivos, sobre o otimizado. WhisperX virou dependência obrigatória (o aparo
   transcreve sempre). Entrega o corte vertical como `<id>_OTIMIZADO_VERTICAL` em `02_OTIMIZADOS`;
@@ -151,15 +152,17 @@ Em `skills/invisible-video-otimizador/scripts/`:
   o ruído seguinte (palavra "longa demais"), e confiar nele faria o ruído sobreviver — então o
   fim real é o início do primeiro silêncio após a última palavra (`_ancorar_fim`). Subtrai os
   intervalos de take descartada (via
-  `--descartar`) dos keep-segments, roda silencedetect (preset `--modo-silencio`: conservador -35dB/0.3s ou
-  justo -33dB/0.15s) → keep-segments com respiro assimétrico (preset `--modo-respiro`:
-  conservador 0.10/0.25 ou justo 0.05/0.18). Os dois eixos são INDEPENDENTES; `--silence-*`
-  e `--respiro-*` sobrepõem cada preset →
-  filter_complex (trim/atrim+concat, com `scale+pad+setsar` opcional via `--normalizar`)
-  → reencode → verifica. Descarte de take, corte de silêncio e normalização no MESMO
-  reencode. Aceita arquivo ou pasta (lote); `--descartar` vale só pra arquivo único. Por
-  padrão preserva specs; com `--normalizar` padroniza no mesmo passo (a normalização migrou
-  do combinador pra cá — fundir tudo num só reencode evita gerações extras). O nome de saída
+  `--descartar`) dos keep-segments, roda silencedetect (preset `--modo-silencio`, default justo
+  -33dB/0.15s; ou conservador -35dB/0.3s) → keep-segments com respiro assimétrico (preset
+  `--modo-respiro`, default justo 0.05/0.18; ou conservador 0.10/0.25). Os dois eixos são
+  INDEPENDENTES e ambos vêm justo por default; `--silence-*` e `--respiro-*` sobrepõem cada
+  preset → filter_complex (trim/atrim+concat, com `scale+pad+setsar`) → reencode → verifica.
+  Aparo, descarte de take, corte de silêncio e normalização no MESMO reencode. Aceita arquivo
+  ou pasta (lote); `--descartar` vale só pra arquivo único. **A normalização é SEMPRE ativa**
+  (alvo default FHD vertical; `--largura`/`--altura`/`--vcodec`/`--container`/... trocam o alvo;
+  `--normalizar` virou no-op aceito por compat) — a normalização migrou do combinador pra cá,
+  fundir tudo num só reencode evita gerações extras. Como o container default é `mp4`, entrada
+  `.mov` sai `.mp4`. O nome de saída
   é limpo via `nome_saida_base()` + token de formato: **preserva toda a identificação** (tipo,
   código, prefixo, número, na ordem original), descarta tokens de ruído de processo (BRUTA,
   VERTICAL, HORIZONTAL, RAW, FINAL, OTIMIZADO) e acrescenta `_OTIMIZADO_VERTICAL` (formato sempre

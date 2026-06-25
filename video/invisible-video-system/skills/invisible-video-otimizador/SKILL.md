@@ -1,7 +1,7 @@
 ---
 name: invisible-video-otimizador
 description: >
-  Pega um vídeo gravado e o deixa pronto: APARA AS PONTAS pela fala (transcreve a bruta com WhisperX e usa a 1ª e a última palavra pra cortar tudo que vem antes/depois da fala — suspiro, estalo de boca, barulho de cadeira no fim; o silencedetect sozinho não pega isso porque ruído não é silêncio), escolhe a melhor TAKE quando há várias tentativas da mesma fala (agrupa as repetições e fica com a última), remove os silêncios internos sem comer palavra, e — opcionalmente — NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo, entregando o corte pronto pra concatenar. A transcrição da bruta é efêmera (só pra achar a borda da fala) e NÃO serve pra legenda — a legenda usa outro .json, gerado depois sobre o otimizado. Dois eixos de modo independentes: modo de silêncio (o que conta como silêncio — default justo -33dB/0.15s, ou conservador -35dB/0.3s) e modo de respiro (margem nas bordas — default conservador 0.10/0.25, ou justo 0.05/0.18, sempre assimétrico). Corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corta o barulho do fim", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg e WhisperX (o aparo de pontas transcreve sempre); o quadrado requer OpenCV (faz bootstrap).
+  Pega um vídeo gravado e o deixa pronto: APARA AS PONTAS pela fala (transcreve a bruta com WhisperX e usa a 1ª e a última palavra pra cortar tudo que vem antes/depois da fala — suspiro, estalo de boca, barulho de cadeira no fim; o silencedetect sozinho não pega isso porque ruído não é silêncio), escolhe a melhor TAKE quando há várias tentativas da mesma fala (agrupa as repetições e fica com a última), remove os silêncios internos sem comer palavra, e SEMPRE NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo (alvo default FHD vertical 1080x1920/30fps/HEVC/AAC; trocável por flags), entregando o corte pronto pra concatenar. A transcrição da bruta é efêmera (só pra achar a borda da fala) e NÃO serve pra legenda — a legenda usa outro .json, gerado depois sobre o otimizado. Dois eixos de modo independentes, ambos justo por default: modo de silêncio (o que conta como silêncio — default justo -33dB/0.15s, ou conservador -35dB/0.3s) e modo de respiro (margem nas bordas — default justo 0.05/0.18, ou conservador 0.10/0.25, sempre assimétrico). Corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corta o barulho do fim", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg e WhisperX (o aparo de pontas transcreve sempre); o quadrado requer OpenCV (faz bootstrap).
 ---
 
 # Otimizador de Vídeo (aparo de pontas + takes + silêncios + normalização)
@@ -21,15 +21,15 @@ O original **nunca é tocado** — tudo sai na pasta-irmã `02_OTIMIZADOS/`. O c
 
 ## Critério de corte — dois eixos de modo (conservador/justo)
 
-São **dois presets independentes**, cada um com modo `conservador` e `justo`. **O default de cada eixo é diferente:** silêncio vem `justo` (ritmo mais seco é o padrão pedido); respiro vem `conservador` (não mutilar palavra). **Não se acoplam** — o usuário pode pôr um em justo e o outro em conservador.
+São **dois presets independentes**, cada um com modo `conservador` e `justo`. **Os dois vêm `justo` por default** (ritmo seco é o padrão pedido). **Não se acoplam** — o usuário pode pôr um em justo e o outro em conservador.
 
 **1. Modo de silêncio** (`--modo-silencio`) — o que conta como silêncio cortável:
 - **`justo` (default):** **-33dB / 0.15s**. Limiar mais alto pega mais coisa como silêncio; duração menor corta pausas mais curtas. Ritmo mais seco — é o padrão.
 - **`conservador`:** silêncio = trecho **≥ 0.3s abaixo de -35dB**. O `d` do `silencedetect` é a duração mínima; pausa de 0.3s+ é cortada, menor fica intacta. **-35dB e não -30:** a -30 a palavra final dita baixo (decrescendo natural no fim da frase) caía como silêncio. -35 trata fala fraca como fala. Use quando preservar cauda/ataque importar mais que ritmo.
 
 **2. Modo de respiro** (`--modo-respiro`) — a margem deixada nas bordas da fala (assimétrica: saída > entrada, porque o fim da palavra decai suave e o início tem ataque alto):
-- **`conservador` (default, validado):** 0.10s entrada / 0.25s saída. Preserva ataque e cauda com folga.
-- **`justo`:** 0.05s entrada / 0.18s saída. Mais apertado nas duas pontas.
+- **`justo` (default):** 0.05s entrada / 0.18s saída. Mais apertado nas duas pontas — é o padrão.
+- **`conservador`:** 0.10s entrada / 0.25s saída. Preserva ataque e cauda com folga. Use quando o corte justo estiver comendo borda.
 - **Respiro simétrico come consoante final — nenhum modo usa.**
 
 - **Silêncios internos** são cortados; as **pontas** são aparadas pela borda da **fala** (1ª/última palavra do WhisperX), não pela borda do vídeo — com o mesmo respiro assimétrico. A fala em si nunca é tocada; o que cai fora é ruído.
@@ -71,30 +71,29 @@ Quando há takes a resolver:
 
 Se `n_grupos_repetidos` for 0, não há repetição — siga sem `--descartar`.
 
-### Fase 2 — Decidir o formato de saída (normalizar ou preservar)
-Pergunte ao usuário se quer **normalizar** o formato no mesmo passo (recomendado quando os vídeos vão ser combinados depois, ou quando vêm com specs mistas):
+### Fase 2 — Formato de saída (normalização sempre ativa)
+A normalização é **sempre** aplicada — não é mais opcional. Toda otimização sai no alvo, no mesmo reencode do corte. O alvo padrão é **Full HD vertical**: 1080×1920, 30fps, HEVC (libx265 CRF20, `-tag:v hvc1`), AAC 48kHz stereo, `.mp4`. Não precisa passar nada pra isso acontecer.
 
-- **Preservar specs do original** (default quando o usuário só quer enxugar o ritmo) — não passa `--normalizar`. Cada vídeo sai no mesmo formato em que entrou.
-- **Normalizar para um alvo comum** — passa `--normalizar`. O alvo padrão é **Full HD vertical**: 1080×1920, 30fps, HEVC (libx265 CRF20, `-tag:v hvc1`), AAC 48kHz stereo, `.mp4`. Ofereça as alternativas e deixe o FHD/MP4 como default:
-  - **4K** vertical: `--largura 2160 --altura 3840`
-  - **MOV**: `--container mov`
-  - **H.264**: `--vcodec libx264`
-  - outra resolução/fps/áudio conforme o pedido.
+Só toque no alvo se o pedido for específico (override dos defaults):
+- **4K** vertical: `--largura 2160 --altura 3840`
+- **MOV**: `--container mov`
+- **H.264**: `--vcodec libx264`
+- outra resolução/fps/áudio conforme o pedido.
 
-A normalização usa `scale+pad+setsar=1` (encaixa preservando proporção, barras se preciso) — cobre entrada que não seja 9:16 sem distorcer.
+A normalização usa `scale+pad+setsar=1` (encaixa preservando proporção, barras se preciso) — cobre entrada que não seja 9:16 sem distorcer. (Como o container default é `mp4`, uma entrada `.mov` sai `.mp4` — é o esperado da padronização.) A flag `--normalizar` ainda é aceita mas virou no-op.
 
 ### Fase 2.5 — Escolher os modos (silêncio e respiro)
-Dois presets **independentes**, com defaults diferentes: silêncio vem `justo`, respiro vem `conservador`. Pergunte (ou deduza do pedido); na dúvida, deixe os defaults (silêncio justo + respiro conservador).
+Dois presets **independentes**, **ambos `justo` por default** (ritmo seco é o padrão). Na dúvida, deixe os defaults (silêncio justo + respiro justo) — não precisa passar nada.
 
 - **Modo de silêncio** (`--modo-silencio`): `justo` (-33dB / 0.15s — default, pega mais silêncio e pausas mais curtas) ou `conservador` (-35dB / 0.3s — preserva mais cauda/ataque).
-- **Modo de respiro** (`--modo-respiro`): `conservador` (0.10/0.25) ou `justo` (0.05/0.18 — bordas mais rentes).
+- **Modo de respiro** (`--modo-respiro`): `justo` (0.05/0.18 — default, bordas mais rentes) ou `conservador` (0.10/0.25 — mais folga). Suba o respiro pra conservador se o corte justo estiver comendo borda de palavra.
 
-Pode misturar (ex.: silêncio justo + respiro conservador). Quando o usuário pedir genericamente "corte mais seco/apertado/justo", o natural é pôr **os dois** em justo — confirme se ele quer um ou ambos. Override fino só se pedir número específico: `--silence-noise`/`--silence-min` e `--respiro-entrada`/`--respiro-saida` sobrepõem o preset correspondente.
+Pode misturar. Override fino só se pedir número específico: `--silence-noise`/`--silence-min` e `--respiro-entrada`/`--respiro-saida` sobrepõem o preset correspondente.
 
 ### Fase 3 — Otimizar
-Tudo num reencode só (descarte de take + corte de silêncio + normalização opcional).
+Tudo num reencode só (aparo de pontas + descarte de take + corte de silêncio + normalização — sempre).
 
-Caso simples (sem takes, preservando specs):
+Caso padrão (sem takes; já apara pontas, corta silêncio justo, respiro justo e normaliza FHD vertical):
 ```bash
 python3 scripts/otimizar.py "<arquivo_ou_pasta>"
 ```
@@ -102,26 +101,23 @@ Com descarte de takes (vindo da Fase 1):
 ```bash
 python3 scripts/otimizar.py "<video>" --descartar "0.0-1.7,3.0-5.05"
 ```
-Corte mais seco (os dois eixos em justo):
+Respiro com mais folga (silêncio segue justo):
 ```bash
-python3 scripts/otimizar.py "<arquivo_ou_pasta>" --modo-silencio justo --modo-respiro justo
+python3 scripts/otimizar.py "<arquivo_ou_pasta>" --modo-respiro conservador
 ```
-Só o silêncio mais agressivo, respiro com folga:
+Trocando o alvo de normalização (4K MOV H.264):
 ```bash
-python3 scripts/otimizar.py "<arquivo_ou_pasta>" --modo-silencio justo
-```
-Otimizando **e** normalizando (FHD vertical default):
-```bash
-python3 scripts/otimizar.py "<arquivo_ou_pasta>" --normalizar
-```
-Tudo junto (takes + normalização 4K MOV H.264):
-```bash
-python3 scripts/otimizar.py "<video>" --descartar "0.0-1.7,3.0-5.05" --normalizar \
+python3 scripts/otimizar.py "<arquivo_ou_pasta>" \
   --largura 2160 --altura 3840 --container mov --vcodec libx264
 ```
-Defaults já embutidos: `--modo-silencio justo` (-33dB / 0.15s), `--modo-respiro conservador` (0.10/0.25), `--crf 20`, `--preset medium`. Silêncio e respiro vêm dos respectivos `--modo-*`; só passe os overrides finos (`--silence-noise`/`--silence-min`, `--respiro-entrada`/`--respiro-saida`) se o usuário pedir um número específico — e avise que está saindo dos presets.
+Tudo junto (takes + alvo 4K MOV H.264):
+```bash
+python3 scripts/otimizar.py "<video>" --descartar "0.0-1.7,3.0-5.05" \
+  --largura 2160 --altura 3840 --container mov --vcodec libx264
+```
+Defaults já embutidos: `--modo-silencio justo` (-33dB / 0.15s), `--modo-respiro justo` (0.05/0.18), normalização FHD vertical, `--crf 20`, `--preset medium`. Silêncio e respiro vêm dos respectivos `--modo-*`; só passe os overrides finos (`--silence-noise`/`--silence-min`, `--respiro-entrada`/`--respiro-saida`) se o usuário pedir um número específico — e avise que está saindo dos presets.
 
-`--descartar` vale **só para arquivo único**; em lote o script o ignora e avisa. O descarte de take, o corte de silêncio e a normalização acontecem no **mesmo reencode** — sem geração extra.
+`--descartar` vale **só para arquivo único**; em lote o script o ignora e avisa. O aparo de pontas, o descarte de take, o corte de silêncio e a normalização acontecem no **mesmo reencode** — sem geração extra.
 
 ### Fase 3.7 — Versão quadrada (1:1) para o feed
 Depois de gerar os `_OTIMIZADO_VERTICAL` (verticais), produza a versão **quadrada** de cada um, na **mesma pasta** `02_OTIMIZADOS/`. O quadrado caminha em paralelo ao vertical por toda a esteira (combinador, legendas, gancho-escrito, trilha) e sai junto no fim. O nome **substitui** `_VERTICAL` por `_QUADRADO` (formato sempre o último token): `<id>_OTIMIZADO_VERTICAL.mp4` → `<id>_OTIMIZADO_QUADRADO.mp4`.
