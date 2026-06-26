@@ -36,7 +36,7 @@ Não precisa reinstalar do zero nem baixar arquivo manualmente.
 | `invisible-video-system` | Esteira de vídeo da Invisible: onze skills numa linha de produção por pastas de etapa numeradas (01_Brutas → 02_OTIMIZADOS → 03_PREPARADOS → 04_COMBINADOS → 99_FINALIZADOS). O nome do arquivo orquestra o fluxo. Inclui desmembrador, otimizador, legendagem (gerador + aplicador karaokê), variação de gancho escrito, combinador (matriz cartesiana), trilha, denoiser, acelerador e o par planejador/maestro de lote. WhisperX e Remotion como dependências. |
 | `invisible-organizacao` | Reorganiza pastas de empresa pelo sistema PARA (Tiago Forte) + forma numerada (Jeff Su): classifica cada item por acionabilidade, propõe plano de movimentação e aplica com reversibilidade (manifesto + reversor). |
 | `invisible-radar` | Radar de referências: coleta material de fontes públicas e o prepara para copy. A skill `invisible-video-to-text` transforma um vídeo (link do Instagram, TikTok ou YouTube — ou arquivo local) num `material.md` unificado: transcreve a fala (WhisperX) e lê o texto na tela (caixinha, legenda, título) por visão, não OCR. Entrega só coleta organizada — não escreve copy. |
-| `invisible-carrossel-visual` | Sistema visual de carrossel: a skill `invisible-carrossel-visual` recebe um roteiro pronto (texto card a card da `invisible-carrossel`) e uma pasta de referências, e renderiza os cards como PNGs. Decodifica a identidade visual das referências por visão e a congela num `_ESTILO.md` por pasta; veste o texto respeitando o papel de cada slide (capa/interno/fecho) e gera via GPT Image 2 (Higgsfield CLI), com o texto dentro da imagem. É o lado visual; não escreve copy. |
+| `invisible-carrossel-visual` | Sistema visual de carrossel, duas skills. `invisible-estilo-decoder`: aponta uma pasta de referências → lê por visão (decompõe grids) → congela o sistema visual num `[Pasta]_ESTILO.md` na pasta. `invisible-carrossel-visual`: o produtor visual — recebe um roteiro pronto (texto card a card da `invisible-carrossel`) e uma pasta de referências, lê o `*_ESTILO.md`, veste o texto respeitando o papel de cada slide (capa/interno/fecho) e gera via GPT Image 2 (Higgsfield CLI), com o texto dentro da imagem. É o lado visual; não escreve copy. |
 
 ## Estrutura do repositório
 
@@ -49,7 +49,7 @@ organizacao/                      → invisible-organizacao-system
 radar/                            → radar de referências (coleta → material p/ copy)
   invisible-radar-system/         → invisible-video-to-text
 carrosseis/                       → produção visual de carrossel (roteiro → cards PNG)
-  invisible-carrossel-visual-system/ → invisible-carrossel-visual
+  invisible-carrossel-visual-system/ → invisible-estilo-decoder + invisible-carrossel-visual
 ```
 
 Cada skill tem seu próprio `.claude-plugin/plugin.json`. Para publicar uma skill nova, adicione a pasta na categoria certa e registre a entrada no `marketplace.json`.

@@ -4,7 +4,17 @@ Sistema visual de carrossel da Invisible. Transforma um **roteiro pronto** (text
 
 É o lado VISUAL do carrossel. O lado COPY é a skill `invisible-carrossel` (plugin `invisible-copy`), que escreve o texto fiel à fonte. Aqui, esse texto é renderizado.
 
-## Skill
+## Skills
+
+### `invisible-estilo-decoder`
+
+Aponte uma **pasta de referências visuais** (imagens de inspiração de um estilo) e a skill as lê por **visão** (decompondo grids) e congela o sistema visual num arquivo **`[NomeDaPasta]_ESTILO.md`** salvo na própria pasta. Esse briefing é o contrato que o produtor visual lê em vez de re-analisar as imagens a cada carrossel — mais barato, mais rápido e idêntico toda vez. Não gera imagem; só o contrato.
+
+```
+> decodifica o estilo dessas referências: <pasta>
+```
+
+O `[Pasta]_ESTILO.md` é editável à mão: é a fonte da verdade do estilo.
 
 ### `invisible-carrossel-visual`
 
