@@ -21,11 +21,8 @@ A divisão é limpa: quem escreve não renderiza; quem renderiza não inventa te
 
 Não há cadastro de fonte/paleta/mood por marca. O visual é **decodificado das imagens** da pasta. Trocou as referências, trocou o visual.
 
-- **Se a pasta já tem um `_ESTILO.md`** (briefing congelado): **leia ele** e use o bloco de injeção. Não re-analise as imagens. É o caso recorrente (mesmo estilo, muitos carrosséis) — mais rápido, mais barato, e **idêntico toda vez**.
-- **Se não tem `_ESTILO.md`**: decodifique as imagens por **visão** (Read tool em cada uma):
-  - Detecte se cada imagem é **unitária ou grid** (grid 3×3 = 9 refs; print de feed = 6+). Decomponha grids mentalmente.
-  - Extraia: **moldura/elementos fixos** (detail signature), **modos de fundo** (dark/light e suas cores), **tipografia** (fonte, pesos, caixa), **accent** (como o destaque é feito), **registro tonal** (claro/médio/escuro — não escureça além do que as refs mostram), e o **repertório por papel de slide** (como é a capa, como são os internos, como é o fecho).
-  - **Ofereça salvar** o resultado como `_ESTILO.md` na pasta, para virar recorrente.
+- **Se a pasta já tem um briefing congelado** (arquivo no padrão `*_ESTILO.md`, ex.: `Notes_ESTILO.md`): **leia ele** e use o bloco de injeção. Não re-analise as imagens. É o caso recorrente (mesmo estilo, muitos carrosséis) — mais rápido, mais barato, e **idêntico toda vez**. (Procure por qualquer arquivo terminando em `_ESTILO.md` na pasta.)
+- **Se não há `*_ESTILO.md`**: decodifique. O jeito certo é **invocar a skill `invisible-estilo-decoder`** (do mesmo plugin), que lê as imagens por visão e salva o `[Pasta]_ESTILO.md` na pasta. Depois leia o arquivo gerado e siga. (Se preferir decodificar inline: Read tool em cada imagem, extraindo moldura/detail signature, modos de fundo e cores, tipografia, accent literal, registro tonal — sem escurecer além das refs —, e o repertório por papel de slide; salve no padrão `[Pasta]_ESTILO.md`.)
 
 > **Erros de decodificação a evitar (lição da casa):** (1) não puxe a paleta pro escuro se as refs são claras/médias — o registro tonal das refs manda; (2) o estilo de imagem vem das refs, não da ilustração literal do assunto.
 
@@ -56,7 +53,7 @@ O `--wait` do Higgsfield dá **HTTP 502 com frequência na coleta**, e o job **c
 
 ### Fase 1 — Insumos e estilo
 1. **Aponte o roteiro** (arquivo no disco) e leia-o. Identifique os cards e o **papel** de cada um.
-2. **Aponte a pasta de referências.** Se houver `_ESTILO.md`, leia-o. Senão, decodifique as imagens por visão e ofereça congelar.
+2. **Aponte a pasta de referências.** Se houver um `*_ESTILO.md`, leia-o. Senão, rode a `invisible-estilo-decoder` para gerar o `[Pasta]_ESTILO.md` e leia-o.
 → Apresente o **PLANO** (estilo decodificado em 1 parágrafo · nº de cards · papel de cada um) e **PARE para aprovação.**
 
 ### Fase 2 — Prova de UM card (portão)

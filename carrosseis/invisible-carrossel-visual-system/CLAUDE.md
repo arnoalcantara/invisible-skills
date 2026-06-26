@@ -10,7 +10,10 @@ Complementa o lado COPY (`invisible-carrossel`, no plugin `invisible-copy`): aqu
 
 | Skill | Função |
 |---|---|
-| `invisible-carrossel-visual` | Produtor visual: roteiro pronto + pasta de referências → cards PNG. Decodifica refs por visão (congela em `_ESTILO.md`), veste o texto por papel de slide, gera via GPT Image 2 (Higgsfield CLI). |
+| `invisible-estilo-decoder` | Decodificador de estilo: aponta uma pasta de referências → lê por visão (decompõe grids) → congela o briefing num `[Pasta]_ESTILO.md` salvo na pasta. Não gera imagem; só o contrato de estilo. |
+| `invisible-carrossel-visual` | Produtor visual: roteiro pronto + pasta de referências → cards PNG. Lê o `*_ESTILO.md` (ou roda o decoder se não houver), veste o texto por papel de slide, gera via GPT Image 2 (Higgsfield CLI). |
+
+> Fluxo: **decoder** congela o estilo de uma pasta uma vez → **produtor** usa esse `[Pasta]_ESTILO.md` em todos os carrosséis daquele estilo.
 
 ## Princípios de arquitetura
 
