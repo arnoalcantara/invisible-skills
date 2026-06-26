@@ -38,6 +38,11 @@
       "name": "invisible-radar",
       "source": "./radar/invisible-radar-system",
       "description": "Radar de referências da Invisible: skills que coletam material de referência de fontes públicas e o preparam para criação de copy. A primeira skill, invisible-video-to-text, transforma um vídeo (link do Instagram, TikTok ou YouTube — ou um arquivo local) num material.md unificado: transcreve a fala (WhisperX) e lê o texto na tela (caixinha de pergunta, legenda, título) interpretando frames com visão (não OCR), e junta tudo num arquivo rotulado pronto para alimentar as skills de copy (invisible-carrossel / invisible-copy). Requer yt-dlp, ffmpeg e WhisperX (faz bootstrap num venv central)."
+    },
+    {
+      "name": "invisible-carrossel-visual",
+      "source": "./carrosseis/invisible-carrossel-visual-system",
+      "description": "Sistema visual de carrossel da Invisible. A skill invisible-carrossel-visual é o produtor visual: recebe um roteiro pronto (texto card a card, da skill de copy invisible-carrossel) e uma pasta de referências visuais, e renderiza os cards finais como PNGs. A identidade visual sai 100% das referências — a skill as decodifica por visão (fonte, paleta, registro tonal, moldura, detail signature; decompõe grids) e congela o resultado num _ESTILO.md na própria pasta, lido depois em vez de re-analisar. Veste o texto na linguagem decodificada e gera via GPT Image 2 (Higgsfield CLI), com o texto renderizado DENTRO da imagem, respeitando o papel de cada slide (capa/interno/fecho). Coleta robusta: dispara o job e recupera por id (nunca confia no --wait, que dá 502 e cobra mesmo falhando). NÃO inventa copy nem altera texto — só o veste. Requer Higgsfield CLI logado (faz bootstrap)."
     }
   ]
 }
