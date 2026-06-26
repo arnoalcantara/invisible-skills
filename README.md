@@ -29,7 +29,7 @@ Não precisa reinstalar do zero nem baixar arquivo manualmente.
 
 | Skill | O que faz |
 |-------|-----------|
-| `invisible-copy` | Sistema de dois agentes de copy: **Estrategista** (gera o Briefing de Campanha a partir do Arquivo Base) e **Copywriter** (transforma Briefing + Arquivo de Voz em peças de copy em qualquer formato). |
+| `invisible-copy` | Sistema de três agentes de copy: **Estrategista** (gera o Briefing de Campanha a partir do Arquivo Base), **Copywriter** (transforma Briefing + Arquivo de Voz em peças de copy em qualquer formato) e **Carrossel** (transforma material escrito bruto — transcrição, print, insight — em carrosséis posicionados, em três modos: autoridade prática, mudança de percepção e editorial, mais um modo de mapa de pauta). |
 
 ## Estrutura do repositório
 
