@@ -1,6 +1,6 @@
 # invisible-copy-system
 
-Sistema de agentes de copy da **Invisible**. Dois agentes — **Estrategista** e **Copywriter** — operam sobre uma base de conhecimento compartilhada para produzir, com método, a estratégia e a copy de uma campanha.
+Sistema de agentes de copy da **Invisible**. Três agentes — **Estrategista**, **Copywriter** e **Carrossel** — operam sobre uma base de conhecimento compartilhada para produzir, com método, a estratégia e a copy de uma campanha.
 
 A inteligência mora na `base/` (fonte única de verdade). Os agentes são finos: orquestram, conduzem o usuário com aprovação em cada etapa, e consomem os módulos da base.
 
@@ -26,9 +26,24 @@ Arquivo Base de Curso  (pronto, feito fora deste sistema)
    PEÇAS DE COPY  (anúncio, e-mail, VSL, carrossel, reels… em peça única ou matriz combinatória)
 ```
 
-- O **Briefing de Campanha** é o artefato intermediário e o contrato entre os dois agentes.
-- O **Arquivo de Voz** (DNA de escrita da marca/expert) é pré-existente e separado do briefing; o copywriter o aplica em toda peça.
-- A separação é proposital: **pensar** (estratégia, uma vez por campanha) ≠ **escrever** (copy, muitas vezes).
+Em paralelo, fora do fluxo do briefing, há um terceiro agente que parte de **material escrito bruto**:
+
+```
+   Material escrito bruto  (transcrição de aula, print, insight, anotação — no disco)
+        │
+        ▼
+   AGENTE CARROSSEL  (invisible-carrossel/SKILL.md)
+   lê o material + Arquivo de Voz (ou perfil de produto) → escolhe um modo
+   (autoridade · percepção · editorial) → conduz por 5 etapas com aprovação → produz
+        │
+        ▼
+   ROTEIRO DE CARROSSEL  (texto card a card + indicação visual)
+   — opção de MODO MAPA antes: varre o corpus e devolve uma pauta de dezenas de carrosséis —
+```
+
+- O **Briefing de Campanha** é o artefato intermediário e o contrato entre Estrategista e Copywriter.
+- O **Arquivo de Voz** (DNA de escrita da marca/expert) é pré-existente e separado do briefing; Copywriter e Carrossel o aplicam em toda peça — no Carrossel, como **lente** sobre a qual a postura do modo é impressa.
+- A separação é proposital: **pensar** (estratégia, uma vez por campanha) ≠ **escrever** (copy, muitas vezes). O **Carrossel** é uma via paralela: parte de material bruto, não do briefing, e entrega só o roteiro de copy (a renderização visual é de outra skill).
 
 ---
 
@@ -40,10 +55,12 @@ invisible-copy-system/          # raiz do plugin (instalável como `invisible-co
 │   └── plugin.json             # manifesto do plugin
 ├── README.md
 ├── skills/                     # os agentes, descobertos pelo Claude Code
-│   ├── estrategista/
+│   ├── invisible-estrategista-copy/
 │   │   └── SKILL.md            # agente Estrategista
-│   └── copywriter/
-│       └── SKILL.md            # agente Copywriter
+│   ├── invisible-copywriter/
+│   │   └── SKILL.md            # agente Copywriter
+│   └── invisible-carrossel/
+│       └── SKILL.md            # agente Carrossel (3 modos + mapa)
 ├── base/                       # conhecimento compartilhado — FONTE ÚNICA
 │   ├── icp.md                  # perfil do cliente ideal
 │   ├── dores-e-desejos.md
@@ -68,7 +85,10 @@ invisible-copy-system/          # raiz do plugin (instalável como `invisible-co
 │       ├── youtube.md
 │       ├── aquecimento.md
 │       ├── legenda-instagram.md
-│       ├── carrossel.md
+│       ├── carrossel.md            # anatomia card-a-card (base, genérica)
+│       ├── carrossel-autoridade.md # método modo autoridade prática
+│       ├── carrossel-percepcao.md  # método modo mudança de percepção (dado real)
+│       ├── carrossel-editorial.md  # método modo editorial
 │       ├── email.md
 │       ├── whatsapp.md
 │       ├── landing-page.md
@@ -138,6 +158,6 @@ Este sistema é distribuído como **plugin** dentro do marketplace público `arn
 /plugin install invisible-copy@arno-skills
 ```
 
-Isso instala as duas skills: **`invisible-estrategista-copy`** e **`invisible-copywriter`**, já com a `base/` compartilhada e o `briefing/` juntos no plugin. Os outputs continuam indo para `campanhas/` no diretório onde você roda o Claude.
+Isso instala as três skills: **`invisible-estrategista-copy`**, **`invisible-copywriter`** e **`invisible-carrossel`**, já com a `base/` compartilhada e o `briefing/` juntos no plugin. Os outputs continuam indo para `campanhas/` no diretório onde você roda o Claude.
 
 **Empacotamento (como funciona por dentro):** as skills vivem em `skills/<agente>/SKILL.md`; a `base/` e o `briefing/` ficam na raiz do plugin e são referenciados pelas skills a partir de `../../`. `${CLAUDE_PLUGIN_ROOT}` não expande no corpo do SKILL.md, por isso cada skill confirma o caminho da base com `ls ../../base` antes de ler os módulos.

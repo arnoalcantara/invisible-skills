@@ -4,7 +4,7 @@ Este arquivo orienta qualquer instância de Claude (Claude Code, Cowork) que tra
 
 ## O que é este repositório
 
-Sistema de agentes de copy da Invisible. Dois agentes — **Estrategista** (`invisible-estrategista-copy/SKILL.md`) e **Copywriter** (`invisible-copywriter/SKILL.md`) — operam sobre uma base de conhecimento compartilhada (`base/`) para produzir a estratégia e a copy de uma campanha. O artefato intermediário entre os dois é o **Briefing de Campanha** (`briefing/template-briefing.md`). Veja o `README.md` para a visão completa.
+Sistema de agentes de copy da Invisible. Três agentes — **Estrategista** (`invisible-estrategista-copy/SKILL.md`), **Copywriter** (`invisible-copywriter/SKILL.md`) e **Carrossel** (`invisible-carrossel/SKILL.md`) — operam sobre uma base de conhecimento compartilhada (`base/`). Estrategista e Copywriter produzem a estratégia e a copy de uma campanha, com o **Briefing de Campanha** (`briefing/template-briefing.md`) como artefato intermediário. Carrossel transforma material escrito bruto (transcrição, print, insight) em carrosséis posicionados, em três modos (autoridade prática, mudança de percepção, editorial) lendo os métodos em `base/formatos/carrossel-[modo].md`. Veja o `README.md` para a visão completa.
 
 ## Princípios do sistema (não quebrar ao editar)
 

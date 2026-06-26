@@ -1,7 +1,7 @@
 {
   "name": "invisible-copy",
-  "description": "Sistema de agentes de copy da Invisible. Dois agentes — Estrategista e Copywriter — operam sobre uma base de conhecimento compartilhada para produzir a estratégia (Briefing de Campanha) e a copy de uma campanha. Suporta perfis de produto (base/produtos/) que dispensam o briefing para produtos recorrentes — começando pelo Desafio Memorize com a Escrita.",
-  "version": "1.4.0",
+  "description": "Sistema de agentes de copy da Invisible. Três agentes — Estrategista, Copywriter e Carrossel — operam sobre uma base de conhecimento compartilhada. Estrategista produz a estratégia (Briefing de Campanha); Copywriter transforma o briefing em peças de copy em qualquer formato; Carrossel transforma material escrito bruto (transcrição, print, insight) em carrosséis posicionados, em três modos (autoridade prática, mudança de percepção, editorial) mais um modo de mapa de pauta. Suporta perfis de produto (base/produtos/) que dispensam o briefing para produtos recorrentes — começando pelo Desafio Memorize com a Escrita.",
+  "version": "1.5.0",
   "author": {
     "name": "Arno Alcantara"
   }

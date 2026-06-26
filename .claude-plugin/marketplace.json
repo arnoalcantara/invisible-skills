@@ -7,7 +7,7 @@
     {
       "name": "invisible-copy",
       "source": "./copy/invisible-copy-system",
-      "description": "Sistema de agentes de copy da Invisible: Estrategista (gera o Briefing de Campanha a partir do Arquivo Base) e Copywriter (transforma Briefing + Arquivo de Voz — ou um perfil de produto salvo, que dispensa o briefing — em peças de copy em qualquer formato). Inclui o perfil do Desafio Memorize com a Escrita."
+      "description": "Sistema de agentes de copy da Invisible: Estrategista (gera o Briefing de Campanha a partir do Arquivo Base), Copywriter (transforma Briefing + Arquivo de Voz — ou um perfil de produto salvo, que dispensa o briefing — em peças de copy em qualquer formato) e Carrossel (transforma material escrito bruto — transcrição, print, insight — em carrosséis posicionados, em três modos: autoridade prática, mudança de percepção e editorial, mais um modo de mapa de pauta). A voz da marca é uma lente: a postura do modo é impressa sobre ela. Inclui o perfil do Desafio Memorize com a Escrita."
     },
     {
       "name": "invisible-doc-to-presentation",
