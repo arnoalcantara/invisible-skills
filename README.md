@@ -30,13 +30,18 @@ Não precisa reinstalar do zero nem baixar arquivo manualmente.
 | Skill | O que faz |
 |-------|-----------|
 | `invisible-copy` | Sistema de três agentes de copy: **Estrategista** (gera o Briefing de Campanha a partir do Arquivo Base), **Copywriter** (transforma Briefing + Arquivo de Voz em peças de copy em qualquer formato) e **Carrossel** (transforma material escrito bruto — transcrição, print, insight — em carrosséis posicionados, em três modos: autoridade prática, mudança de percepção e editorial, mais um modo de mapa de pauta). |
+| `invisible-radar` | Radar de referências: coleta material de fontes públicas e o prepara para copy. A skill `invisible-video-to-text` transforma um vídeo (link do Instagram, TikTok ou YouTube — ou arquivo local) num `material.md` unificado: transcreve a fala (WhisperX) e lê o texto na tela (caixinha, legenda, título) por visão, não OCR. Entrega só coleta organizada — não escreve copy. |
 
 ## Estrutura do repositório
 
 ```
 .claude-plugin/marketplace.json   → catálogo de skills instaláveis
-copy/                             → skills da categoria copy
-  invisible-copy-system/          → skill invisible-copy
+copy/                             → skills de copy (estrategista, copywriter, carrossel)
+apresentacoes/                    → skills de slides/apresentações
+video/                            → invisible-video-system (esteira de vídeo)
+organizacao/                      → invisible-organizacao-system
+radar/                            → radar de referências (coleta → material p/ copy)
+  invisible-radar-system/         → invisible-video-to-text
 ```
 
 Cada skill tem seu próprio `.claude-plugin/plugin.json`. Para publicar uma skill nova, adicione a pasta na categoria certa e registre a entrada no `marketplace.json`.

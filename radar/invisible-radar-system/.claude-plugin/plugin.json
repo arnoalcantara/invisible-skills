@@ -1,0 +1,8 @@
+{
+  "name": "invisible-radar",
+  "description": "Radar de referências da Invisible. Skills que coletam material de referência de fontes públicas e o preparam para estudo e criação de copy. A primeira skill, invisible-video-to-text, transforma um vídeo (link do Instagram, TikTok ou YouTube — ou um arquivo local) num material.md unificado: transcreve a fala (WhisperX) e lê o texto na tela (caixinha de pergunta, legenda, título) interpretando frames com visão, e junta tudo num arquivo rotulado pronto para alimentar as skills de copy. Requer yt-dlp, ffmpeg e WhisperX (faz bootstrap num venv central).",
+  "version": "0.1.0",
+  "author": {
+    "name": "Arno Alcantara"
+  }
+}

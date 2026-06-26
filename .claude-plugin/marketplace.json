@@ -33,6 +33,11 @@
       "name": "invisible-organizacao",
       "source": "./organizacao/invisible-organizacao-system",
       "description": "Reorganiza pastas de empresa pelo sistema PARA (Tiago Forte) + forma numerada (Jeff Su): classifica cada item por acionabilidade, propõe plano de movimentação e aplica com reversibilidade (manifesto + reversor)."
+    },
+    {
+      "name": "invisible-radar",
+      "source": "./radar/invisible-radar-system",
+      "description": "Radar de referências da Invisible: skills que coletam material de referência de fontes públicas e o preparam para criação de copy. A primeira skill, invisible-video-to-text, transforma um vídeo (link do Instagram, TikTok ou YouTube — ou um arquivo local) num material.md unificado: transcreve a fala (WhisperX) e lê o texto na tela (caixinha de pergunta, legenda, título) interpretando frames com visão (não OCR), e junta tudo num arquivo rotulado pronto para alimentar as skills de copy (invisible-carrossel / invisible-copy). Requer yt-dlp, ffmpeg e WhisperX (faz bootstrap num venv central)."
     }
   ]
 }
