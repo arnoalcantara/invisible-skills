@@ -28,7 +28,9 @@ Estruturas auxiliares de tese:
 - "Isso já foi verdade. Hoje, não mais."
 - "A maioria acredita nisso. Quem cresce percebeu aquilo."
 
-Se o material não tem tese com tensão real, **proponha uma nova** — não force um carrossel sem virada.
+Se o material não tem tese com tensão real, **proponha uma nova**; não force um carrossel sem virada.
+
+> **Fidelidade (com uma exceção).** A tese, os exemplos e o léxico saem da fonte, com as palavras da pessoa, sem floreio inventado. A **única** parte que vem de fora é o **dado/prova**, que é pesquisado (Seção 3), nunca fabricado. Fora o dado, segure-se no material e preserve as peculiaridades.
 
 ---
 
@@ -87,7 +89,8 @@ Se a pesquisa não retornar dado confiável: troque por **comportamento observá
 
 Cruza o estilo informativo-editorial do modo com o `writing-rules.md` do Arno (a regra global vence no conflito). Remova antes de entregar:
 
-- **Marcas de IA (`writing-rules.md`):** *aprofundar, ressaltar, robusto, multifacetado, transformador, abrangente, delve, leverage...*; "de X a Y"; gerúndio + vírgula abrindo parágrafo; **travessão como conector universal**.
+- **Marcas de IA (`writing-rules.md`):** *aprofundar, ressaltar, robusto, multifacetado, transformador, abrangente, delve, leverage...*; "de X a Y"; gerúndio + vírgula abrindo parágrafo.
+- **Travessão (—): PROIBIDO**, sem exceção. Use ponto, ponto e vírgula, dois-pontos ou parênteses (`copy/portugues-natural.md`, Regra 6).
 - **Muletas do modo:** "sustenta/raiz/gesto" como tique; a construção **"não é sobre X… é sobre Y"**.
 - **Linguagem fast-content:** "essa é pra você que ainda não sabe!", "corre pra ver essa dica!", "aprenda de uma vez por todas!", emoji, exclamação dramática.
 
@@ -109,5 +112,6 @@ Densidade ideal por slide: 1 ideia; frase principal até 2 linhas; expansão at�
 3. **Todo número tem fonte real citada** (web search) — nenhum dado inventado?
 4. Onde não houve dado, troquei por comportamento observável ou marquei `[DADO A CONFIRMAR]`?
 5. A nova percepção é nomeada com clareza (não "talvez")?
-6. A voz é a da marca, com a lente de percepção por cima?
-7. Varri a lista de banidas (Seção 5) e passei por `portugues-natural.md`?
+6. A voz é a da fonte/marca, com a lente de percepção por cima, e preservei as peculiaridades?
+7. Varri a lista de banidas (Seção 5), **sem nenhum travessão**, e passei por `portugues-natural.md`?
+8. Entreguei só texto, sem nenhuma indicação visual?

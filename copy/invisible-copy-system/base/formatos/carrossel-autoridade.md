@@ -27,11 +27,13 @@ O carrossel de autoridade se sustenta em **pilares práticos** extraídos do mat
 
 Cada pilar é **independente, memorável e útil**. Escrito como **frase final** (a conclusão), não como título de slide.
 
+> **Fidelidade primeiro.** O pilar nasce de uma frase real da fonte. Use as palavras que a pessoa usou; aproxime ao máximo, não traduza pro seu jeito nem invente frase de efeito quando a fala já entregou a ideia. As peculiaridades da fonte (expressões próprias, exemplos inusitados) são o ouro do pilar, não ruído a limpar. (Régua mestre na `SKILL.md`.)
+
 ### Como extrair pilares do material bruto
 1. **De transcrição:** ache frases de instrução, crítica ou virada. Corte o excesso, nomeie a essência.
    *Fala:* "vejo gente criando conteúdo só porque precisa postar, e entrega qualquer coisa" → *Pilar:* "Não poste o que você mesmo não acredita."
 2. **De print/conversa:** ache erro real, frustração, tentativa frustrada. Traduza informalidade em princípio.
-   *Print:* "tento seguir calendário, mas largo na 2ª semana" → *Pilar:* "Se o calendário trava, o problema não é disciplina — é a rigidez da estrutura."
+   *Print:* "tento seguir calendário, mas largo na 2ª semana" → *Pilar:* "Se o calendário trava, o problema não é disciplina; é a rigidez da estrutura."
 3. **De anotações soltas:** agrupe por afinidade, batize com linguagem de marca.
    *Notas:* "autenticidade, energia, consistência" → *Pilar:* "Conteúdo bom começa com clareza de identidade."
 
@@ -52,19 +54,20 @@ A faixa é flexível — ajuste à densidade do material; não estique nem compr
 
 ## 3. A voz como lente (não a voz deste módulo)
 
-Este módulo **não tem voz própria**. Ele é uma **lente de autoridade prática** aplicada sobre a voz da marca que vem do Arquivo de Voz ou do perfil de produto. O resultado é *a versão de autoridade prática daquela voz*: a postura é firme, direta, aplicável; o léxico, o ritmo e o registro são os da marca.
+Este módulo **não tem voz própria**. Ele é uma **lente de autoridade prática** aplicada sobre a voz da fonte ou da marca. Essa voz vem (em ordem do caso real) da **própria escrita do material** transcrito, de um Arquivo de Voz, ou de um perfil de produto. O resultado é *a versão de autoridade prática daquela voz*: a postura é firme, direta, aplicável; o léxico, o ritmo e o registro são os da fonte/marca.
 
-- A marca é íntima e calorosa? A autoridade prática soa firme **dentro** desse calor, não masculina-fria por cima dele.
+- O default é a **voz do próprio material**. Se a transcrição já tem jeito de falar próprio, é dele que sai o registro; a lente só dá firmeza e ordem prática.
+- A marca é íntima e calorosa? A autoridade prática soa firme **dentro** desse calor, não fria por cima dele.
 - A marca é sóbria e técnica? A firmeza encaixa natural.
-- Nunca importe um "tom masculino editorial" genérico por cima da voz — isso apaga a marca. (Era a falha do agente-fonte: tinha uma voz fixa.)
+- Nunca importe um "tom editorial" genérico por cima da voz; isso apaga o que a fonte tinha de bom. (Era a falha do agente-fonte: tinha uma voz fixa.)
 
 ---
 
 ## 4. Encerramento (biblioteca do modo)
 
 O último slide é fecho de pensamento, não fim de post. Tipos:
-1. **Afirmativo com tese** — reafirma o posicionamento. "Posicionamento não se explica. Se sustém." *(evite a palavra "sustenta" — ver Seção 5; reescreva o sentido)*
-2. **Provocador** — vira o olhar. "Você quer engajamento — ou reconhecimento?"
+1. **Afirmativo com tese:** reafirma o posicionamento. "Quem tem clareza não precisa gritar." *(evite as muletas "sustenta/raiz/gesto"; ver Seção 5)*
+2. **Provocador:** vira o olhar. "Você quer engajamento ou reconhecimento?"
 3. **CTA editorial** — direciona com elegância, sem venda forçada. "Quer estruturar sua marca de verdade? Comece pelo conteúdo."
 4. **Assinatura de valor** — frase de bio/manifesto. "Clareza não é estética. É sobrevivência de marca."
 5. **Repetição da tese** — fecha com a ideia do slide 1 em nova forma.
@@ -85,7 +88,7 @@ Cruza o estilo de autoridade prática com o `writing-rules.md` do Arno (a regra 
 **Marcas de IA (do `writing-rules.md` global):**
 - Vocabulário de IA e equivalentes PT: *aprofundar, ressaltar, robusto, multifacetado, transformador, abrangente...*
 - "De X a Y" para simular amplitude; abrir parágrafo com gerúndio + vírgula.
-- **Travessão como conector universal** — use com parcimônia, só para ênfase dramática.
+- **Travessão (—): PROIBIDO**, sem exceção. Use ponto, ponto e vírgula, dois-pontos ou parênteses (`copy/portugues-natural.md`, Regra 6).
 
 **Linguagem fraca de conteúdo (do estilo do modo):**
 - "dica", "truque", "dica rápida", "passo a passo simples", "bora lá", "vem comigo".
@@ -108,5 +111,7 @@ Cruza o estilo de autoridade prática com o `writing-rules.md` do Arno (a regra 
 3. Cada slide do meio entrega um pilar aplicável (responde "o que eu faço com isso?")?
 4. A voz é a da marca, com a lente de autoridade prática por cima (não um tom genérico)?
 5. Encerramento com marca ou CTA editorial, sem "salva e compartilha"?
-6. Varri a lista de banidas (Seção 5) — sem "sustenta/raiz/gesto/não é sobre…é sobre"?
-7. Passei por `portugues-natural.md`?
+6. As frases-chave vieram da fonte, e nenhuma peculiaridade foi higienizada?
+7. Varri a lista de banidas (Seção 5): sem "sustenta/raiz/gesto/não é sobre…é sobre" e **sem nenhum travessão**?
+8. Passei por `portugues-natural.md`?
+9. Entreguei só texto, sem nenhuma indicação visual?
