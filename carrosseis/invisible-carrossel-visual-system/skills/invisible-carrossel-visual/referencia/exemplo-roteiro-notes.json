@@ -1,0 +1,19 @@
+{
+  "estilo": "notes",
+  "ratio": "4x5",
+  "cards": [
+    { "papel": "capa", "tema": "dark",
+      "titulo": "O cliente\nvisualizou",
+      "destaque": "o preço que\nvocê enviou\ne sumiu?",
+      "cta": "Faça isso aqui 👉" },
+    { "papel": "interno", "tema": "light",
+      "blocos": [
+        {"emoji": "❌", "label": "NÃO DIGA:", "texto": "Então você não vai fechar?"},
+        {"emoji": "✅", "label": "DIGA:", "texto": "Se não for o momento ideal para fecharmos, sem problemas."},
+        {"texto": "Posso entender o que pesou na decisão ou o que te deixou inseguro?"}
+      ] },
+    { "papel": "fecho", "tema": "light",
+      "titulo": "Esse post\nte ajudou?",
+      "destaque": "Salva ele pra\nnão perder!" }
+  ]
+}

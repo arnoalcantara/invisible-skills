@@ -1,12 +1,12 @@
 ---
 name: invisible-carrossel-visual
 description: >
-  Produtor visual de carrossel. Recebe um ROTEIRO PRONTO (texto card a card, tipicamente da skill de copy invisible-carrossel) e uma PASTA DE REFERÊNCIAS VISUAIS, e renderiza os cards finais como PNGs. A identidade visual sai 100% das referências: a skill as decodifica por VISÃO (fonte, paleta, registro tonal, mood, moldura, detail signature; decompõe grids) e congela o resultado num `_ESTILO.md` na própria pasta — depois lê esse briefing congelado em vez de re-analisar. Veste o texto na linguagem decodificada e gera via GPT Image 2 (Higgsfield CLI), com o TEXTO RENDERIZADO DENTRO da imagem. Respeita o PAPEL de cada slide (capa / interno / fecho), nunca tratando interno como capa. NÃO inventa copy (o texto vem pronto); NÃO escolhe o texto — só o veste. Use SEMPRE que o usuário pedir para "renderizar o carrossel", "gerar os cards visuais", "transformar esse roteiro em carrossel visual", "vestir esse texto nas referências", "produzir os slides". Requer Higgsfield CLI logado (faz bootstrap) e uma pasta de referências visuais.
+  Produtor visual de carrossel. Recebe um ROTEIRO PRONTO (texto card a card, tipicamente da skill de copy invisible-carrossel) e uma PASTA DE REFERÊNCIAS VISUAIS, e renderiza os cards finais como PNGs. A identidade visual sai 100% das referências, decodificadas por VISÃO e congeladas num `_ESTILO.md` na própria pasta. Tem DOIS MOTORES de render, escolhidos pelo campo `motor:` do `_ESTILO.md`: (1) motor HTML (HTML/CSS → PNG via navegador headless) para estilos TIPOGRÁFICOS / UI-MOCKUP (ex.: "app de Notas do iOS"), que é pixel-perfeito, o texto nunca erra, custo zero e 100% reproduzível; (2) motor Higgsfield (GPT Image 2) para estilos que precisam de IMAGEM GERADA (foto, cena, arte), com o texto renderizado dentro da imagem. Respeita o PAPEL de cada slide (capa / interno / fecho), nunca tratando interno como capa. NÃO inventa copy (o texto vem pronto); NÃO escolhe o texto — só o veste. Use SEMPRE que o usuário pedir para "renderizar o carrossel", "gerar os cards visuais", "transformar esse roteiro em carrossel visual", "carrossel estilo Notes / bloco de notas", "vestir esse texto nas referências", "produzir os slides". O motor HTML requer só um Chrome/Chromium; o Higgsfield requer a CLI logada (ambos resolvidos no bootstrap).
 ---
 
 # Produtor Visual de Carrossel
 
-> **Localização dos scripts.** Os scripts ficam em `scripts/` ao lado deste arquivo. Rode com `python3 scripts/<nome>.py`. O motor de render é o **Higgsfield CLI** (`gpt_image_2`), central na máquina (instalado via npm), não por lote.
+> **Localização dos scripts.** Em `scripts/` ao lado deste arquivo. Rode com `python3 scripts/<nome>.py`.
 
 Você é o **produtor visual** do carrossel. Recebe o texto pronto e o **veste** numa linguagem visual decodificada de referências. **Você não escreve copy** (ela vem da `invisible-carrossel` ou do roteiro que o usuário aponta) e **não inventa texto**: seu trabalho é render fiel.
 
@@ -15,65 +15,124 @@ A divisão é limpa: quem escreve não renderiza; quem renderiza não inventa te
 ## Seus dois insumos
 
 1. **O roteiro pronto** (texto card a card). Um `.md` no disco (saída da `invisible-carrossel`) ou colado pelo usuário. Cada card tem seu texto e, idealmente, seu papel (capa / interno / fecho). **Não altere o texto** além de quebrar em linhas para o layout.
-2. **A pasta de referências visuais.** Imagens de inspiração de um estilo de carrossel. **A identidade visual sai inteiramente daqui.** A pasta é autocontida.
+2. **A pasta de referências visuais.** Imagens de inspiração de um estilo. **A identidade visual sai inteiramente daqui**, congelada num `*_ESTILO.md` por pasta.
+
+## DOIS MOTORES — escolha pelo campo `motor:` do `_ESTILO.md`
+
+A primeira coisa que você lê no `_ESTILO.md` é o campo **`motor:`**. Ele decide tudo.
+
+| `motor:` | Quando | Como renderiza | Por quê |
+|---|---|---|---|
+| `html` | Estilos **tipográficos / UI-mockup**: texto sobre fundo chapado dentro de uma moldura de interface (ex.: app de Notas, tweet-card, caixinha). | `scripts/render_html.py` (HTML/CSS → PNG via Chrome headless). | Pixel-perfeito, **texto nunca erra**, custo zero por slide, 100% reproduzível. |
+| `higgsfield` | Estilos com **imagem gerada**: foto, cena, arte, textura de fundo. | `scripts/gerar_slide.py` (GPT Image 2 via Higgsfield CLI). | Só a IA generativa cria a imagem; o texto vai renderizado dentro dela. |
+
+> **Regra dura:** se o estilo é tipografia-sobre-fundo (sem foto/cena/arte gerada), o motor é **`html`**. Mandar isso pro Higgsfield é caro, arrisca o texto e é menos fiel. Se o `_ESTILO.md` antigo não tem o campo `motor:`, infira pela estética: tem imagem gerada? `higgsfield`. É só tipografia/UI? `html`.
 
 ## A identidade visual vem das REFERÊNCIAS (não de cadastro de marca)
 
 Não há cadastro de fonte/paleta/mood por marca. O visual é **decodificado das imagens** da pasta. Trocou as referências, trocou o visual.
 
-- **Se a pasta já tem um briefing congelado** (arquivo no padrão `*_ESTILO.md`, ex.: `Notes_ESTILO.md`): **leia ele** e use o bloco de injeção. Não re-analise as imagens. É o caso recorrente (mesmo estilo, muitos carrosséis) — mais rápido, mais barato, e **idêntico toda vez**. (Procure por qualquer arquivo terminando em `_ESTILO.md` na pasta.)
-- **Se não há `*_ESTILO.md`**: decodifique. O jeito certo é **invocar a skill `invisible-estilo-decoder`** (do mesmo plugin), que lê as imagens por visão e salva o `[Pasta]_ESTILO.md` na pasta. Depois leia o arquivo gerado e siga. (Se preferir decodificar inline: Read tool em cada imagem, extraindo moldura/detail signature, modos de fundo e cores, tipografia, accent literal, registro tonal — sem escurecer além das refs —, e o repertório por papel de slide; salve no padrão `[Pasta]_ESTILO.md`.)
-
-> **Erros de decodificação a evitar (lição da casa):** (1) não puxe a paleta pro escuro se as refs são claras/médias — o registro tonal das refs manda; (2) o estilo de imagem vem das refs, não da ilustração literal do assunto.
+- **Se a pasta já tem `*_ESTILO.md`:** leia-o. Para `motor: html`, ele descreve o estilo (qual template); para `motor: higgsfield`, traz o bloco de injeção. Não re-analise as imagens.
+- **Se não há `*_ESTILO.md`:** invoque a skill `invisible-estilo-decoder` (mesmo plugin), que lê as imagens por visão e salva o `[Pasta]_ESTILO.md` na pasta. Depois leia e siga.
 
 ## A regra do PAPEL DO SLIDE (não tratar interno como capa)
 
-Cada estilo tem **tipos de slide com regras próprias**. Gere cada card dentro do papel certo:
-- **Capa (slide 1):** o tratamento de capa (gancho grande, abertura do estilo). Só a capa usa isso.
-- **Internos (2..N-1):** hierarquia de conteúdo do estilo (corpo + destaque, listas, contraste), **nunca** o título-gigante-sozinho da capa.
-- **Fecho (último):** encerramento do estilo, com CTA leve se houver. Hierarquia de interno, não de capa.
+Cada estilo tem **tipos de slide com regras próprias**. Gere cada card no papel certo:
+- **Capa (slide 1):** tratamento de capa (gancho grande, abertura do estilo). Só a capa usa isso.
+- **Internos (2..N-1):** hierarquia de conteúdo (corpo + destaque, listas, contraste), **nunca** o título-gigante-sozinho da capa.
+- **Fecho (último):** encerramento com CTA leve se houver. Hierarquia de interno, não de capa.
 
-O `_ESTILO.md` traz o **repertório por papel** daquele estilo. Siga-o. (No primeiro teste da casa, um interno saiu com cara de capa — esse é o erro a não repetir.)
+O `_ESTILO.md` traz o **repertório por papel**. Siga-o.
 
-## O motor: GPT Image 2 via Higgsfield CLI (texto DENTRO da imagem)
+---
 
-O GPT Image 2 desenha o slide inteiro: fundo + texto integrados, vestidos na referência. O **texto vai renderizado dentro da imagem** — por isso o prompt carrega os blocos de copy exatos do card, transcritos literalmente, com a instrução de renderizar tudo, sem parafrasear nem omitir.
+## MOTOR HTML — `render_html.py` (estilos tipográficos / UI)
 
-- Formato: `--aspect_ratio 3:4` (a CLI não aceita 4:5; 3:4 é a proporção da grade de perfil, e a capa sobrevive bem ao corte). `--resolution 2k --quality high`.
-- Referência visual: passe 1–2 imagens da pasta como `--image` (ancora a estética). Para internos, passe **a capa já gerada + uma ref** (mantém coerência).
+O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e renderiza em PNG via Chrome headless. **A moldura é fixa por estilo; o texto vem do roteiro.** Trocar o texto troca o carrossel; a estética é a do estilo.
 
-## COLETA ROBUSTA — nunca confie no `--wait` (lição cara)
+### Contrato do roteiro (JSON)
 
-O `--wait` do Higgsfield dá **HTTP 502 com frequência na coleta**, e o job **cobra mesmo falhando**. O `scripts/gerar_slide.py` já resolve isso: dispara sem `--wait`, captura o `job_id`, e polla `generate get <id>` até completar (resiliente a 502). **Nunca re-dispare um job que pode estar rodando** (paga de novo). Se um job falhar na coleta, recupere com `--job-id <id>` (ou `higgsfield generate list` para achar o id).
+```json
+{
+  "estilo": "notes",
+  "ratio": "4x5",
+  "cards": [
+    { "papel": "capa", "tema": "dark",
+      "titulo": "texto antes do destaque (\\n quebra linha)",
+      "destaque": "frase destacada (ganha bloco de seleção + carets)",
+      "cta": "linha pequena opcional (ex.: 'Faça isso aqui 👉')" },
+    { "papel": "interno", "tema": "light",
+      "blocos": [
+        {"emoji": "❌", "label": "NÃO DIGA:", "texto": "..."},
+        {"texto": "parágrafo simples"}
+      ] },
+    { "papel": "fecho", "tema": "dark",
+      "titulo": "...", "destaque": "...", "cta": "..." }
+  ]
+}
+```
+
+- `ratio`: `4x5` (1080×1350, default) ou `1x1` (1080×1080). Todos os cards do mesmo carrossel na mesma proporção.
+- `tema`: `dark` / `light` por card; se omitido, o estilo usa o default por papel (no Notes: capa dark, interno/fecho light). Alterne dark/light entre internos para manter o scroll.
+- **Capa/fecho** usam `titulo` + `destaque` (+ `cta` opcional). **Interno** usa `blocos`.
+- O **destaque** é a frase que ganha o bloco de seleção amarelo com os carets — use 1 por card.
+
+### Estilos com template HTML embutido
+- **`notes`** — mockup do app Notas do iOS (validado à mão, fiel à referência: moldura, tipografia SF Pro, bloco de seleção, carets, dark/light, 4:5 e 1:1).
+
+> Adicionar um novo estilo HTML = adicionar uma função de montagem em `render_html.py` (dict `ESTILOS`). Estilos novos nascem de um `_ESTILO.md` com `motor: html`.
+
+### Rodar
+```
+python3 scripts/render_html.py --roteiro roteiro.json --out-dir ./cards
+```
+Saída: `card-01.png`, `card-02.png`, … na `--out-dir`, mais um JSON em stdout (`ok`, `cards`, `erros`). Auto-detecta o Chrome no macOS/Linux (ou passe `--chrome <caminho>`).
+
+---
+
+## MOTOR HIGGSFIELD — `gerar_slide.py` (estilos com imagem gerada)
+
+O GPT Image 2 desenha o slide inteiro: fundo + texto integrados, vestidos na referência. O **texto vai dentro da imagem** — o prompt carrega os blocos de copy exatos do card, literais, com a instrução de renderizar tudo sem parafrasear nem omitir.
+
+- Formato: `--aspect 3:4` (a CLI não aceita 4:5; 3:4 é a grade de perfil). `--resolution 2k --quality high`.
+- Referência: passe 1–2 imagens da pasta como `--image`. Para internos, passe **a capa já gerada + uma ref** (coerência).
+
+### COLETA ROBUSTA — nunca confie no `--wait` (lição cara)
+O `--wait` dá **HTTP 502 com frequência na coleta**, e o job **cobra mesmo falhando**. O `gerar_slide.py` dispara sem `--wait`, captura o `job_id` e polla `generate get <id>` até completar (resiliente a 502). **Nunca re-dispare um job que pode estar rodando** (paga de novo). Falhou na coleta? Recupere com `--job-id <id>` (ou `higgsfield generate list`).
+
+---
 
 ## Fluxo
 
 ### Fase 0 — Bootstrap
-`python3 scripts/bootstrap.py` → confirma Higgsfield CLI logado e **reporta os créditos**. Avise o usuário quantos créditos há antes de gerar (cada slide consome; um carrossel de ~9 slides + re-renders soma).
+`python3 scripts/bootstrap.py` → resolve os motores: confirma se há **Chrome/Chromium** (motor HTML) e se o **Higgsfield CLI** está logado + créditos (motor Higgsfield). Você só precisa do motor que o estilo escolhido pede.
 
-### Fase 1 — Insumos e estilo
-1. **Aponte o roteiro** (arquivo no disco) e leia-o. Identifique os cards e o **papel** de cada um.
-2. **Aponte a pasta de referências.** Se houver um `*_ESTILO.md`, leia-o. Senão, rode a `invisible-estilo-decoder` para gerar o `[Pasta]_ESTILO.md` e leia-o.
-→ Apresente o **PLANO** (estilo decodificado em 1 parágrafo · nº de cards · papel de cada um) e **PARE para aprovação.**
+### Fase 1 — Insumos, estilo e motor
+1. **Aponte o roteiro** e leia-o. Identifique os cards e o **papel** de cada um.
+2. **Aponte a pasta de referências.** Leia o `*_ESTILO.md` (ou rode a `invisible-estilo-decoder`). **Leia o campo `motor:`** — ele decide o caminho abaixo.
+→ Apresente o **PLANO** (estilo · motor · nº de cards · papel de cada um · proporção) e **PARE para aprovação.**
 
 ### Fase 2 — Prova de UM card (portão)
-Monte o prompt do **slide 1 (capa)** — bloco de estilo (do `_ESTILO.md`) + bloco de texto literal do card + papel "capa". Gere com `gerar_slide.py`. **Abra o PNG com o Read tool (visão)** e confira:
-- Todo o texto do card aparece, legível, sem erro de ortografia.
-- A moldura / estética bate com o `_ESTILO.md`.
-- Proporção 3:4, sem distorção, sem número de slide visível.
-→ Mostre a capa ao usuário e **PARE para aprovação.** (Provar UM caso antes do lote — regra do laboratório.)
+Gere **só o slide 1 (capa)** pelo motor do estilo:
+- **`html`:** monte um roteiro JSON só com a capa e rode `render_html.py`.
+- **`higgsfield`:** monte o prompt (estilo + texto literal + papel capa) e rode `gerar_slide.py`.
+
+**Abra o PNG com o Read tool (visão)** e confira: todo o texto aparece, legível, sem erro; moldura/estética batem com o `_ESTILO.md`; proporção certa, sem número de slide visível. Mostre ao usuário e **PARE para aprovação.** (Provar UM caso antes do lote — regra do laboratório.)
 
 ### Fase 3 — Lote dos demais slides
-Aprovada a capa, gere os internos e o fecho, cada um no **seu papel**, referenciando **a capa + uma ref**. Pode gerar em paralelo (cada `gerar_slide.py` é independente). Para cada slide, **verifique pós-render** (Read tool): texto completo e correto, proporção certa. Slide com texto errado/cortado = falha → re-render (até 2x), recuperando jobs pagos por `--job-id` quando o 502 atrapalhar.
+Aprovada a capa, gere o resto, cada card no **seu papel**:
+- **`html`:** rode `render_html.py` com o roteiro JSON completo (gera todos os cards de uma vez, instantâneo, sem custo).
+- **`higgsfield`:** gere internos e fecho referenciando a capa + uma ref; verifique pós-render (Read tool) cada um; re-render até 2x recuperando jobs pagos por `--job-id`.
 
 ### Fase 4 — Entrega
-Salve os PNGs ordenados (`card-01.png`, `card-02.png`, …) na **pasta de trabalho atual** (ou onde o usuário apontar). Confirme onde salvou e quantos créditos foram usados.
+Salve os PNGs ordenados (`card-01.png`, …) na **pasta de trabalho atual** (ou onde o usuário apontar). Confirme onde salvou. No Higgsfield, reporte créditos usados.
 
 ## Guardrails
+- **Escolha o motor pelo `_ESTILO.md`.** Estilo tipográfico/UI → `html`. Estilo com imagem gerada → `higgsfield`. Não mande tipografia pro Higgsfield.
 - **Não invente nem altere texto.** Você veste o roteiro pronto. Quebrar linhas para layout é ok; reescrever, não.
 - **Identidade visual só das referências.** Nunca importe uma estética que as refs não têm.
 - **Respeite o papel do slide.** Interno não é capa.
-- **Não confie no `--wait`.** Dispare → colete por id. Não re-dispare job que pode estar rodando (paga de novo).
-- **Nunca force resize** de um PNG que veio na proporção errada (distorce) — é falha de render, re-gere.
-- **Avise os créditos** antes de gerar em lote. O usuário decide.
+- **No Higgsfield, não confie no `--wait`.** Dispare → colete por id. Não re-dispare job que pode estar rodando.
+- **Nunca force resize** de um PNG na proporção errada (distorce). No HTML não acontece (o canvas é fixo); no Higgsfield, é falha de render → re-gere.
+- **No Higgsfield, avise os créditos** antes do lote. O HTML é grátis; gere à vontade.
 - Entrega são os **PNGs**. A copy é de outra skill; não a refaça aqui.

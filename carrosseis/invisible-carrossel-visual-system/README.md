@@ -22,27 +22,39 @@ Recebe dois insumos:
 1. **Roteiro pronto** — um `.md` com o texto card a card (saída da `invisible-carrossel`).
 2. **Pasta de referências visuais** — imagens de inspiração de um estilo de carrossel.
 
-E entrega os **cards renderizados** (PNG, 3:4), com o texto dentro da imagem, na estética das referências.
+E entrega os **cards renderizados** (PNG), na estética das referências.
+
+**Dois motores de render**, escolhidos pelo campo `motor:` do `_ESTILO.md`:
+
+| `motor:` | Para | Como | Vantagem |
+|---|---|---|---|
+| `html` | Estilos **tipográficos / UI-mockup** (ex.: app de Notas, tweet-card) | HTML/CSS → PNG via Chrome headless (`render_html.py`) | Pixel-perfeito, texto nunca erra, custo zero, reproduzível |
+| `higgsfield` | Estilos com **imagem gerada** (foto, cena, arte) | GPT Image 2 via Higgsfield CLI (`gerar_slide.py`), texto dentro da imagem | Único caminho quando o fundo é imagem generativa |
 
 **Como funciona:**
-- Decodifica as referências por **visão** (fonte, paleta, registro tonal, moldura, detail signature; decompõe grids) e congela o resultado num `_ESTILO.md` na própria pasta. Da próxima vez, lê o briefing congelado em vez de re-analisar.
-- Veste o texto na linguagem decodificada, respeitando o **papel** de cada slide (capa / interno / fecho).
-- Gera via **GPT Image 2 (Higgsfield CLI)**, com o texto renderizado dentro da imagem.
+- Decodifica as referências por **visão** e congela num `_ESTILO.md` na pasta (com o campo `motor:`). Da próxima vez, lê o briefing congelado.
+- **Lê o `motor:`** e roteia para o render certo.
+- Veste o texto respeitando o **papel** de cada slide (capa / interno / fecho).
 - Prova UM card (a capa) antes do lote; verifica cada slide por visão pós-render.
 
-**Coleta robusta:** dispara o job e recupera por id; nunca confia no `--wait` do Higgsfield (que dá 502 na coleta e cobra mesmo falhando).
+**Motor HTML — contrato de roteiro (JSON):** cada card tem `papel` (capa/interno/fecho), `tema` (dark/light), e o conteúdo (`titulo`+`destaque`+`cta` na capa/fecho; `blocos` no interno). `ratio` = `4x5` (default) ou `1x1`. Ver a docstring de `render_html.py`.
+
+**Motor Higgsfield — coleta robusta:** dispara o job e recupera por id; nunca confia no `--wait` (que dá 502 na coleta e cobra mesmo falhando).
+
+### Estilos com template HTML pronto
+- **`notes`** — mockup do app Notas do iOS (moldura, SF Pro, bloco de seleção amarelo com carets, dark/light, 4:5 e 1:1). Validado à mão contra referências reais.
 
 ## Requisitos
 
-- **Higgsfield CLI** instalado e logado:
+- **Motor HTML:** um **Chrome/Chromium** (no macOS, o Google Chrome basta). Sem login, grátis.
+- **Motor Higgsfield** (só para estilos com imagem gerada):
   ```bash
   npm install -g @higgsfield/cli
   higgsfield auth login
-  higgsfield account status
   ```
 - Uma **pasta de referências visuais** (com ou sem `_ESTILO.md`).
 
-A skill faz bootstrap (`scripts/bootstrap.py`) e reporta os créditos antes de gerar.
+A skill faz bootstrap (`scripts/bootstrap.py`) e reporta o estado de cada motor.
 
 ## Uso
 
@@ -50,10 +62,10 @@ A skill faz bootstrap (`scripts/bootstrap.py`) e reporta os créditos antes de g
 > renderiza esse carrossel: <roteiro.md>, usando as referências em <pasta>
 ```
 
-A skill decodifica/lê o estilo, mostra o plano, gera a capa para aprovação, e então o lote.
+A skill lê o estilo + motor, mostra o plano, gera a capa para aprovação, e então o lote.
 
 ## Roadmap
 
 - **v0.1.0:** motor Higgsfield (texto-na-imagem).
-- **Fase 2:** Canva como motor 2 para estilos UI-mockup/tipográficos (mais barato, texto nunca erra).
+- **v0.3.0:** motor HTML (HTML/CSS → PNG) para estilos tipográficos / UI-mockup; primeiro estilo: `notes`.
 - **Modo notícia:** pesquisa pauta por nicho e gera o carrossel ponta a ponta.

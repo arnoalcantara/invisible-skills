@@ -11,26 +11,27 @@ Complementa o lado COPY (`invisible-carrossel`, no plugin `invisible-copy`): aqu
 | Skill | Função |
 |---|---|
 | `invisible-estilo-decoder` | Decodificador de estilo: aponta uma pasta de referências → lê por visão (decompõe grids) → congela o briefing num `[Pasta]_ESTILO.md` salvo na pasta. Não gera imagem; só o contrato de estilo. |
-| `invisible-carrossel-visual` | Produtor visual: roteiro pronto + pasta de referências → cards PNG. Lê o `*_ESTILO.md` (ou roda o decoder se não houver), veste o texto por papel de slide, gera via GPT Image 2 (Higgsfield CLI). |
+| `invisible-carrossel-visual` | Produtor visual: roteiro pronto + pasta de referências → cards PNG. Lê o `*_ESTILO.md` (ou roda o decoder se não houver), veste o texto por papel de slide, e renderiza pelo **motor que o `_ESTILO.md` declara**: `html` (HTML/CSS → PNG, estilos tipográficos/UI) ou `higgsfield` (GPT Image 2, estilos com imagem gerada). |
 
 > Fluxo: **decoder** congela o estilo de uma pasta uma vez → **produtor** usa esse `[Pasta]_ESTILO.md` em todos os carrosséis daquele estilo.
 
 ## Princípios de arquitetura
 
 - **Identidade visual = referências.** Não há cadastro de estética por marca. O visual sai 100% das imagens da pasta, decodificadas por visão e congeladas num `_ESTILO.md` por pasta (briefing reutilizável).
+- **Dois motores, escolha pelo `_ESTILO.md`.** O campo `motor:` decide: `html` (HTML/CSS → PNG via Chrome headless) para estilos tipográficos/UI-mockup — pixel-perfeito, texto nunca erra, custo zero, reproduzível; `higgsfield` (GPT Image 2) para estilos com imagem gerada. Regra dura: tipografia-sobre-fundo nunca vai pro Higgsfield.
 - **Papel do slide.** Capa, interno e fecho têm repertórios próprios no `_ESTILO.md`. Interno nunca é tratado como capa.
-- **Texto dentro da imagem.** GPT Image 2 desenha fundo + texto integrados. Verificação pós-render (visão) garante texto correto.
-- **Coleta robusta.** O `--wait` do Higgsfield dá 502 na coleta e cobra mesmo falhando. Os scripts disparam o job e recuperam por id; nunca re-disparam um job que pode estar rodando.
-- **Motor central.** Higgsfield CLI instalado na máquina (npm), não por lote. `bootstrap.py` confirma login e reporta créditos.
+- **Motor HTML: moldura fixa por estilo, texto do roteiro.** O `render_html.py` embute o template do estilo (a moldura) e veste o texto que vem do roteiro JSON. Adicionar um estilo HTML = uma função de montagem no dict `ESTILOS`.
+- **Motor Higgsfield: coleta robusta.** O `--wait` dá 502 na coleta e cobra mesmo falhando. Dispara o job e recupera por id; nunca re-dispara um job que pode estar rodando.
+- **Motores centrais, não por lote.** Chrome (HTML) e Higgsfield CLI (npm) vivem na máquina. `bootstrap.py` reporta o estado de cada um; só é preciso o motor que o estilo pede.
 
 ## Estilos recorrentes
 
-Cada estilo de carrossel vive como uma **pasta de referências** com um `_ESTILO.md` congelado. O usuário aponta a pasta; a skill lê o briefing pronto. Trocar de estilo = trocar de pasta.
+Cada estilo de carrossel vive como uma **pasta de referências** com um `_ESTILO.md` congelado (que declara o `motor:`). O usuário aponta a pasta; a skill lê o briefing pronto. Trocar de estilo = trocar de pasta. Estilos com template HTML pronto: **`notes`** (app Notas do iOS).
 
 ## Roadmap
 
 - **v0.1.0:** produtor visual com motor Higgsfield (texto-na-imagem).
-- **Fase 2 — Canva como motor 2:** para estilos UI-mockup/tipográficos (ex.: app de Notas), um template com molduras vazias + injeção de texto via Canva MCP sai mais barato e o texto nunca erra. O Higgsfield fica para estilos com imagem gerada.
+- **v0.3.0:** motor HTML (HTML/CSS → PNG) para estilos tipográficos / UI-mockup; primeiro estilo: `notes` (validado à mão contra referências reais). Seleção de motor pelo `_ESTILO.md`.
 - **Modo notícia:** vocação herdada do sistema de referência (Human Academy) — pesquisa pauta por nicho, gera texto (ou delega à `invisible-carrossel`) e veste no visual.
 
 ## Convenções

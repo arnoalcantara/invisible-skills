@@ -4,13 +4,23 @@ Referência técnica do método de render. Lido pelo agente quando precisa de de
 
 ---
 
-## 1. Por que texto DENTRO da imagem (e não fundo + texto por cima)
+## 1. Dois motores — escolha pela natureza do estilo
 
-O GPT Image 2 renderiza tipografia legível dentro da imagem. Para estilos onde o card é **tipografia sobre fundo** (ex.: mockup de app de Notas), o modelo desenha fundo e texto integrados, vestidos na referência. Validado em prova real: textos longos em português, zero erro de ortografia.
+A skill tem dois motores de render, declarados no campo `motor:` do `_ESTILO.md`:
 
-A verificação pós-render (abrir o PNG com visão e conferir o texto) é o que torna isso seguro: se o texto sai errado, é falha de render → re-gera.
+**Motor HTML (`motor: html`) — estilos tipográficos / UI-mockup.** Quando o card é **tipografia sobre fundo chapado dentro de uma moldura de interface** (ex.: app de Notas, tweet-card, caixinha), o render certo é HTML/CSS → PNG por navegador headless (`render_html.py`). A moldura é reconstruída em código uma vez (fiel à referência, validada à mão), e o texto vem do roteiro. Vantagens: **pixel-perfeito, texto de verdade (nunca erra), custo zero por slide, 100% reproduzível**. Foi por isso que o estilo `notes` virou motor HTML: testá-lo no Higgsfield era caro, arriscava o texto e era menos fiel.
 
-> Alternativa para estilos puramente tipográficos/UI-mockup: **Canva** (template com molduras vazias + injeção de texto via MCP) sai mais barato e o texto nunca erra, porque é texto de verdade. Fica como motor 2 (não implementado nesta v1). O Higgsfield brilha quando o estilo precisa de **imagem gerada** (foto, cena, arte).
+**Motor Higgsfield (`motor: higgsfield`) — estilos com imagem gerada.** Quando o estilo precisa de **foto, cena ou arte gerada** como fundo, só a IA generativa resolve. O GPT Image 2 desenha fundo + texto integrados, vestidos na referência (`gerar_slide.py`). Aqui a verificação pós-render (abrir o PNG com visão e conferir o texto) é obrigatória: texto errado = falha → re-gera.
+
+> Regra dura: tipografia-sobre-fundo (sem imagem gerada) é sempre motor HTML. Não mande isso pro Higgsfield.
+
+## 1.1. Motor HTML — como funciona por dentro
+
+`render_html.py` embute, por estilo, a **moldura fixa** (CSS + SVGs da UI) e uma função de montagem que veste o conteúdo de cada card. O contrato de entrada é um **roteiro JSON** (ver `referencia/exemplo-roteiro-notes.json` e a docstring do script): `estilo`, `ratio` (`4x5`/`1x1`), e `cards[]` com `papel` (capa/interno/fecho), `tema` (dark/light) e o conteúdo por papel (`titulo`+`destaque`+`cta` na capa/fecho; `blocos` no interno). O script renderiza cada card via Chrome headless e valida a dimensão do PNG (não força resize).
+
+Adicionar um **estilo HTML novo** = escrever uma função `montar_html_<estilo>(card, ratio)` e registrá-la no dict `ESTILOS`. O estilo nasce de um `_ESTILO.md` com `motor: html` (o briefing visual continua sendo o contrato; o template o implementa em código).
+
+Estilo pronto: **`notes`** (app Notas do iOS — moldura, SF Pro, bloco de seleção amarelo com carets de seleção, dark/light, 4:5 e 1:1; cores amostradas por pixel da referência).
 
 ## 2. O `_ESTILO.md` — briefing visual congelado por pasta
 
