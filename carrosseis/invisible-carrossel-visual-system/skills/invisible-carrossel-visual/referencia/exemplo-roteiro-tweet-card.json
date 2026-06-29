@@ -1,0 +1,21 @@
+{
+  "estilo": "tweet_card",
+  "ratio": "4x5",
+  "cards": [
+    {
+      "tema": "light",
+      "nome": "Arno Alcântara",
+      "handle": "arnoalcantara",
+      "verificado": true,
+      "avatar": "/caminho/local/para/foto-de-perfil.jpg",
+      "texto": "A maioria das pessoas não fracassa por falta de talento.\n\nFracassa por excesso de distração."
+    },
+    {
+      "tema": "dark",
+      "nome": "Alex Hormozi",
+      "handle": "AlexHormozi",
+      "verificado": true,
+      "texto": "Whatever you do, don't be the guy who gives up at the exact moment when you should be fighting with everything you have."
+    }
+  ]
+}

@@ -77,8 +77,23 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
 - **Capa/fecho** usam `titulo` + `destaque` (+ `cta` opcional). **Interno** usa `blocos`.
 - O **destaque** é a frase que ganha o bloco de seleção amarelo com os carets — use 1 por card.
 
+> Os campos do card **dependem do estilo**. Os de cima são do `notes`. Cada estilo abaixo traz seu próprio conjunto.
+
 ### Estilos com template HTML embutido
-- **`notes`** — mockup do app Notas do iOS (validado à mão, fiel à referência: moldura, tipografia SF Pro, bloco de seleção, carets, dark/light, 4:5 e 1:1).
+
+- **`notes`** — mockup do app Notas do iOS (validado à mão, fiel à referência: moldura, tipografia SF Pro, bloco de seleção, carets, dark/light, 4:5 e 1:1). Campos: `papel`, `tema`, `titulo`, `destaque`, `cta`, `blocos` (ver acima).
+
+- **`tweet_card`** — print de tweet do X (Twitter), sub-modo **sólido** (fundo branco/preto chapado, estilo Hormozi). Tweet é **layout único** (sem papel capa/interno/fecho): cabeçalho editável + corpo grande centralizado no eixo Y. Cores oficiais do X, tipografia SF Pro, dark/light, 4:5 e 1:1. Campos do card:
+  ```json
+  { "tema": "light",
+    "nome": "Arno Alcântara",
+    "handle": "arnoalcantara",         // @ é adicionado sozinho
+    "avatar": "/caminho/foto.jpg",     // opcional; sem foto → círculo com a inicial do nome
+    "verificado": true,                // opcional; default true (selo azul do X)
+    "data": "16 de fev. de 2018",      // opcional; default ausente
+    "texto": "corpo do tweet (\\n\\n separa parágrafos)" }
+  ```
+  > O avatar é embutido via base64 (arquivo **local**; URL remota não é confiável no headless). O sub-modo `imagem` (card flutuante sobre fundo) ainda **não** está implementado.
 
 > Adicionar um novo estilo HTML = adicionar uma função de montagem em `render_html.py` (dict `ESTILOS`). Estilos novos nascem de um `_ESTILO.md` com `motor: html`.
 
