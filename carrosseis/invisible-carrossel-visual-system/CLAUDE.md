@@ -26,12 +26,13 @@ Complementa o lado COPY (`invisible-carrossel`, no plugin `invisible-copy`): aqu
 
 ## Estilos recorrentes
 
-Cada estilo de carrossel vive como uma **pasta de referências** com um `_ESTILO.md` congelado (que declara o `motor:`). O usuário aponta a pasta; a skill lê o briefing pronto. Trocar de estilo = trocar de pasta. Estilos com template HTML pronto: **`notes`** (app Notas do iOS).
+Cada estilo de carrossel vive como uma **pasta de referências** com um `_ESTILO.md` congelado (que declara o `motor:`). O usuário aponta a pasta; a skill lê o briefing pronto. Trocar de estilo = trocar de pasta. Estilos com template HTML pronto: **`notes`** (app Notas do iOS) e **`tweet_card`** (print de tweet do X, sub-modo sólido).
 
 ## Roadmap
 
 - **v0.1.0:** produtor visual com motor Higgsfield (texto-na-imagem).
 - **v0.3.0:** motor HTML (HTML/CSS → PNG) para estilos tipográficos / UI-mockup; primeiro estilo: `notes` (validado à mão contra referências reais). Seleção de motor pelo `_ESTILO.md`.
+- **v0.4.0:** segundo estilo HTML: `tweet_card` (print de tweet do X, sólido — cabeçalho editável nome/handle/avatar/selo/data, avatar local com fallback de inicial, dark/light, 4:5 e 1:1). Validado à mão contra referências reais.
 - **Modo notícia:** vocação herdada do sistema de referência (Human Academy) — pesquisa pauta por nicho, gera texto (ou delega à `invisible-carrossel`) e veste no visual.
 
 ## Convenções

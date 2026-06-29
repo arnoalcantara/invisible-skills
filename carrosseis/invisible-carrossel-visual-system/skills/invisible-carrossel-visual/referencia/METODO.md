@@ -20,7 +20,9 @@ A skill tem dois motores de render, declarados no campo `motor:` do `_ESTILO.md`
 
 Adicionar um **estilo HTML novo** = escrever uma função `montar_html_<estilo>(card, ratio)` e registrá-la no dict `ESTILOS`. O estilo nasce de um `_ESTILO.md` com `motor: html` (o briefing visual continua sendo o contrato; o template o implementa em código).
 
-Estilo pronto: **`notes`** (app Notas do iOS — moldura, SF Pro, bloco de seleção amarelo com carets de seleção, dark/light, 4:5 e 1:1; cores amostradas por pixel da referência).
+Estilos prontos:
+- **`notes`** (app Notas do iOS — moldura, SF Pro, bloco de seleção amarelo com carets de seleção, dark/light, 4:5 e 1:1; cores amostradas por pixel da referência).
+- **`tweet_card`** (print de tweet do X, sub-modo sólido — fundo branco/preto, cabeçalho editável `nome`/`handle`/`avatar`/`verificado`/`data`, corpo grande centralizado no eixo Y, SF Pro, dark/light, 4:5 e 1:1; cores oficiais do X amostradas por pixel da referência). Tweet é layout único: **sem `papel`**. Avatar é arquivo local embutido via base64, com fallback de círculo+inicial quando não há foto. Sub-modo `imagem` (card sobre fundo) ainda não implementado.
 
 ## 2. O `_ESTILO.md` — briefing visual congelado por pasta
 
