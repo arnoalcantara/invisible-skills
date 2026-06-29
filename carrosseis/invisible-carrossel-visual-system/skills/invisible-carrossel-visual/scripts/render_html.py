@@ -13,7 +13,9 @@ roteiro troca o carrossel; a estética é a do estilo escolhido.
 
 Estilos suportados (template embutido):
   - notes      : mockup do app Notas do iOS (validado à mão, fiel à referência).
-  - tweet_card : print de tweet do X (Twitter), sub-modo sólido (fundo branco/preto).
+  - tweet_card : print de tweet do X (Twitter). Dois sub-modos pelo campo `fundo`:
+                 "solido" (default; tweet tela-cheia, fundo branco/preto) e
+                 "imagem" (card escuro flutuante sobre uma imagem de fundo).
 
 Contrato do ROTEIRO (JSON):
 {
@@ -41,15 +43,23 @@ ESTILO "notes":
 
 ESTILO "tweet_card" (cabeçalho editável; tweet é layout único, sem papel):
 {
-  "tema": "dark" | "light",                    # opcional; default light
+  "fundo": "solido" | "imagem",                # opcional; default "solido"
+  "tema": "dark" | "light",                    # SÓ no sólido; opcional; default light
   "nome": "Arno Alcântara",                    # nome de exibição (bold)
   "handle": "arnoalcantara",                   # @ é adicionado automaticamente
   "avatar": "/caminho/local/foto.jpg",         # opcional; embutida via base64.
                                                #   sem foto -> círculo com a inicial do nome
   "verificado": true,                          # opcional; default true (selo azul do X)
   "data": "16 de fev. de 2018",                # opcional; default ausente
+  "fundo_imagem": "/caminho/local/fundo.jpg",  # OBRIGATÓRIO se fundo=="imagem".
+                                               #   arquivo local pronto (cobre o quadro).
   "texto": "corpo do tweet (\\n\\n separa parágrafos)"
 }
+# fundo "solido": tweet tela-cheia, branco (light) ou preto (dark), texto grande.
+# fundo "imagem": card escuro flutuante sobre a imagem; mostra data + globo; texto menor.
+#   A imagem de fundo chega SEMPRE pronta (arquivo local). Quem a produz é a SKILL,
+#   no fluxo: pasta apontada pelo usuário OU geração via /invisible-image. O motor
+#   só a embute — não gera nem busca imagem.
 
 Uso:
     python3 render_html.py --roteiro roteiro.json --out-dir ./cards [--chrome "/path/Chrome"]
@@ -276,6 +286,22 @@ html,body { background:#444; }
 .tbody p { margin:0; } .tbody p + p { margin-top:0.9em; }
 
 .r11 .tbody { font-size:64px; }
+
+/* ---- sub-modo IMAGEM: card escuro flutuante sobre imagem de fundo ---- */
+.bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.box { position:absolute; left:120px; right:120px; bottom:96px;
+  background:#16181c; border-radius:36px; padding:50px;
+  box-shadow:0 30px 80px rgba(0,0,0,0.45); }
+.box .head { align-items:flex-start; gap:22px; margin-bottom:30px; }
+.box .avatar { width:78px; height:78px; flex:0 0 78px; font-size:36px; }
+.box .name { font-size:40px; color:#e7e9ea; line-height:1.1; }
+.box .badge { width:34px; height:34px; flex:0 0 34px; }
+.box .handle { font-size:34px; color:#71767b; margin-top:2px; }
+.meta { display:flex; align-items:center; gap:10px; font-size:30px; color:#71767b; margin-top:4px; }
+.globe { width:26px; height:26px; }
+.box .tbody { font-size:42px; line-height:1.32; letter-spacing:-0.3px; color:#e7e9ea; }
+.r11 .box { bottom:70px; }
+.r11 .box .tbody { font-size:40px; }
 """
 
 # selo verificado do X (badge azul com check branco)
@@ -284,23 +310,32 @@ _X_BADGE = ('<svg class="badge" viewBox="0 0 24 24" aria-label="Verificado">'
             '<path fill="#fff" d="m9.8 17.3-4.4-4.4 1.6-1.6 2.8 2.8 6.2-6.2 1.6 1.6z"/>'
             '</svg>')
 
+# ícone de globo (visibilidade pública do tweet — só no sub-modo imagem)
+_X_GLOBE = ('<svg class="globe" viewBox="0 0 24 24" fill="none" stroke="#71767b" stroke-width="2">'
+            '<circle cx="12" cy="12" r="9"/>'
+            '<path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>')
+
 # cor de fundo do avatar de fallback (sem foto), por tema
 _TWEET_FALLBACK_BG = {"light": "#536471", "dark": "#3a3b3c"}
 
 
-def _avatar_tweet(card, tema):
+def _b64_data_uri(path):
+    """Lê um arquivo de imagem local e devolve um data: URI base64 (Chrome headless
+    não carrega URL remota de forma confiável)."""
+    ext = os.path.splitext(path)[1].lstrip(".").lower() or "png"
+    if ext == "jpg":
+        ext = "jpeg"
+    with open(path, "rb") as f:
+        return f"data:image/{ext};base64," + base64.b64encode(f.read()).decode()
+
+
+def _avatar_tweet(card, fallback_bg):
     foto = card.get("avatar")
     if foto and os.path.exists(foto):
-        ext = os.path.splitext(foto)[1].lstrip(".").lower() or "png"
-        if ext == "jpg":
-            ext = "jpeg"
-        with open(foto, "rb") as f:
-            b64 = base64.b64encode(f.read()).decode()
-        return f'<img class="avatar" src="data:image/{ext};base64,{b64}">'
+        return f'<img class="avatar" src="{_b64_data_uri(foto)}">'
     nome = (card.get("nome") or "?").strip()
     inicial = nome[0].upper() if nome else "?"
-    bg = _TWEET_FALLBACK_BG.get(tema, "#536471")
-    return f'<div class="avatar" style="background:{bg}">{_html.escape(inicial)}</div>'
+    return f'<div class="avatar" style="background:{fallback_bg}">{_html.escape(inicial)}</div>'
 
 
 def _body_tweet(texto):
@@ -308,19 +343,42 @@ def _body_tweet(texto):
     return "".join("<p>" + _nl2br(p) + "</p>" for p in paras)
 
 
-def montar_html_tweet(card, ratio):
+def _montar_tweet_solido(card, rcls):
     tema = card.get("tema") or "light"
-    rcls = "r45" if ratio == "4x5" else "r11"
     badge = _X_BADGE if card.get("verificado", True) else ""
     date = f'<div class="date">{_html.escape(str(card["data"]))}</div>' if card.get("data") else ""
-    head = (f'<div class="head">{_avatar_tweet(card, tema)}'
+    head = (f'<div class="head">{_avatar_tweet(card, _TWEET_FALLBACK_BG.get(tema, "#536471"))}'
             f'<div class="idcol"><div class="nameline">'
             f'<span class="name">{_html.escape(card.get("nome",""))}</span>{badge}</div>'
             f'<div class="handle">@{_html.escape(str(card.get("handle","")).lstrip("@"))}</div>{date}</div></div>')
     body = f'<div class="tbody">{_body_tweet(card.get("texto",""))}</div>'
+    return f'<div class="card {tema} {rcls}"><div class="tweet">{head}{body}</div></div>'
+
+
+def _montar_tweet_imagem(card, rcls):
+    fundo = card.get("fundo_imagem")
+    if not fundo or not os.path.exists(fundo):
+        raise ValueError(f"sub-modo imagem requer 'fundo_imagem' (arquivo local existente); recebi: {fundo!r}")
+    bg = f'<img class="bg" src="{_b64_data_uri(fundo)}">'
+    badge = _X_BADGE if card.get("verificado", True) else ""
+    meta = ""
+    if card.get("data"):
+        meta = (f'<div class="meta"><span>{_html.escape(str(card["data"]))}</span>'
+                f'<span>·</span>{_X_GLOBE}</div>')
+    head = (f'<div class="head">{_avatar_tweet(card, _TWEET_FALLBACK_BG["dark"])}'
+            f'<div class="idcol"><div class="nameline">'
+            f'<span class="name">{_html.escape(card.get("nome",""))}</span>{badge}</div>'
+            f'<div class="handle">@{_html.escape(str(card.get("handle","")).lstrip("@"))}</div>{meta}</div></div>')
+    body = f'<div class="tbody">{_body_tweet(card.get("texto",""))}</div>'
+    return f'<div class="card {rcls}">{bg}<div class="box">{head}{body}</div></div>'
+
+
+def montar_html_tweet(card, ratio):
+    rcls = "r45" if ratio == "4x5" else "r11"
+    fundo = card.get("fundo") or "solido"
+    inner = _montar_tweet_imagem(card, rcls) if fundo == "imagem" else _montar_tweet_solido(card, rcls)
     return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
-            f'<style>{TWEET_CSS}</style></head><body>'
-            f'<div class="card {tema} {rcls}"><div class="tweet">{head}{body}</div></div></body></html>')
+            f'<style>{TWEET_CSS}</style></head><body>{inner}</body></html>')
 
 
 ESTILOS = {"notes": montar_html_notes, "tweet_card": montar_html_tweet}
@@ -398,8 +456,14 @@ def main():
 
     esperado = (1080, 1350) if ratio == "4x5" else (1080, 1080)
     for i, card in enumerate(cards, 1):
-        html_str = montar(card, ratio)
         fname = f"card-{i:02d}.png"
+        try:
+            html_str = montar(card, ratio)
+        except Exception as e:
+            out["erros"].append(f"card {i}: {e}")
+            out["cards"].append({"file": fname, "papel": card.get("papel", "-"),
+                                 "ratio": ratio, "w": None, "h": None})
+            continue
         fpath = os.path.join(args.out_dir, fname)
         ok = render_png(chrome, html_str, fpath, ratio)
         w, h = dimensoes_png(fpath) if ok else (None, None)
