@@ -22,7 +22,9 @@ Adicionar um **estilo HTML novo** = escrever uma função `montar_html_<estilo>(
 
 Estilos prontos:
 - **`notes`** (app Notas do iOS — moldura, SF Pro, bloco de seleção amarelo com carets de seleção, dark/light, 4:5 e 1:1; cores amostradas por pixel da referência).
-- **`tweet_card`** (print de tweet do X, sub-modo sólido — fundo branco/preto, cabeçalho editável `nome`/`handle`/`avatar`/`verificado`/`data`, corpo grande centralizado no eixo Y, SF Pro, dark/light, 4:5 e 1:1; cores oficiais do X amostradas por pixel da referência). Tweet é layout único: **sem `papel`**. Avatar é arquivo local embutido via base64, com fallback de círculo+inicial quando não há foto. Sub-modo `imagem` (card sobre fundo) ainda não implementado.
+- **`tweet_card`** (print de tweet do X — cabeçalho editável `nome`/`handle`/`avatar`/`verificado`/`data`, SF Pro, 4:5 e 1:1; cores oficiais do X amostradas por pixel da referência). Tweet é layout único: **sem `papel`**. Avatar é arquivo local embutido via base64, com fallback de círculo+inicial quando não há foto. Dois sub-modos pelo campo `fundo`:
+  - **`solido`** (default): tweet tela-cheia, fundo branco/preto chapado, `tema` dark/light, corpo grande centralizado.
+  - **`imagem`**: card escuro flutuante sobre uma imagem de fundo (data + globo, avatar/corpo menores). Requer `fundo_imagem` (arquivo local pronto). **O motor não gera nem busca a imagem** — ela chega pronta. Quem a produz é a SKILL no fluxo: (1) pasta apontada pelo usuário, ou (2) geração via `/invisible-image` (diretora de fotografia → prompt Nano Banana → Higgsfield CLI), pedindo o mesmo aspect ratio do card.
 
 ## 2. O `_ESTILO.md` — briefing visual congelado por pasta
 

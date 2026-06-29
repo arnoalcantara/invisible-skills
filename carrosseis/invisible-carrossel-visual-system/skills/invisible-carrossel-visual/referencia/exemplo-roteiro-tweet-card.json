@@ -16,6 +16,16 @@
       "handle": "AlexHormozi",
       "verificado": true,
       "texto": "Whatever you do, don't be the guy who gives up at the exact moment when you should be fighting with everything you have."
+    },
+    {
+      "fundo": "imagem",
+      "nome": "Olavo de Carvalho",
+      "handle": "opropriolavodecarvalho",
+      "verificado": true,
+      "data": "16 de fev. de 2018",
+      "avatar": "/caminho/local/para/foto-de-perfil.jpg",
+      "fundo_imagem": "/caminho/local/para/imagem-de-fundo.jpg",
+      "texto": "Sub-modo imagem: card escuro flutuante sobre a imagem de fundo. A fundo_imagem chega pronta (pasta do usuário ou gerada via /invisible-image), mesmo aspect ratio do card."
     }
   ]
 }

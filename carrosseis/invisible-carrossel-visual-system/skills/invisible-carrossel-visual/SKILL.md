@@ -83,17 +83,27 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
 
 - **`notes`** — mockup do app Notas do iOS (validado à mão, fiel à referência: moldura, tipografia SF Pro, bloco de seleção, carets, dark/light, 4:5 e 1:1). Campos: `papel`, `tema`, `titulo`, `destaque`, `cta`, `blocos` (ver acima).
 
-- **`tweet_card`** — print de tweet do X (Twitter), sub-modo **sólido** (fundo branco/preto chapado, estilo Hormozi). Tweet é **layout único** (sem papel capa/interno/fecho): cabeçalho editável + corpo grande centralizado no eixo Y. Cores oficiais do X, tipografia SF Pro, dark/light, 4:5 e 1:1. Campos do card:
+- **`tweet_card`** — print de tweet do X (Twitter). Tweet é **layout único** (sem papel capa/interno/fecho). Tem **dois sub-modos** pelo campo `fundo`:
+  - **`solido`** (default): tweet tela-cheia, fundo branco/preto chapado (estilo Hormozi), corpo grande centralizado, `tema` dark/light.
+  - **`imagem`**: card escuro flutuante sobre uma **imagem de fundo** (estilo "quote card" sobre ilustração); mostra data + globo; avatar e corpo menores. Requer `fundo_imagem` (arquivo local pronto).
+
+  Campos do card:
   ```json
-  { "tema": "light",
+  { "fundo": "solido",                 // "solido" (default) ou "imagem"
+    "tema": "light",                   // só no sólido (dark/light)
     "nome": "Arno Alcântara",
     "handle": "arnoalcantara",         // @ é adicionado sozinho
     "avatar": "/caminho/foto.jpg",     // opcional; sem foto → círculo com a inicial do nome
     "verificado": true,                // opcional; default true (selo azul do X)
     "data": "16 de fev. de 2018",      // opcional; default ausente
+    "fundo_imagem": "/caminho/fundo.jpg", // OBRIGATÓRIO se fundo=="imagem"; arquivo local
     "texto": "corpo do tweet (\\n\\n separa parágrafos)" }
   ```
-  > O avatar é embutido via base64 (arquivo **local**; URL remota não é confiável no headless). O sub-modo `imagem` (card flutuante sobre fundo) ainda **não** está implementado.
+  > Avatar e fundo são embutidos via base64 (arquivos **locais**; URL remota não é confiável no headless). Cores oficiais do X, SF Pro, 4:5 e 1:1.
+
+  **De onde vem a `fundo_imagem` (sub-modo `imagem`) — você orquestra no fluxo:** o motor só recebe o **arquivo pronto**; ele não gera nem busca imagem. Duas rotas, ambas decididas por você antes de chamar o `render_html.py`:
+  1. **Pasta do usuário:** o usuário aponta uma pasta com fotos baixadas. Você escolhe (ou pergunta qual) e passa o caminho em `fundo_imagem`.
+  2. **Gerar via `/invisible-image`:** invoque a skill **`invisible-image`** como diretora de fotografia — ela vira o prompt Nano Banana e renderiza no Higgsfield CLI. Peça o **mesmo aspect ratio do card** (`4:5` para card 4x5, `1:1` para card 1x1) para a imagem preencher o fundo sem faixas. Pegue o caminho local que ela devolve e use em `fundo_imagem`.
 
 > Adicionar um novo estilo HTML = adicionar uma função de montagem em `render_html.py` (dict `ESTILOS`). Estilos novos nascem de um `_ESTILO.md` com `motor: html`.
 

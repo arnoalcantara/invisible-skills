@@ -43,7 +43,7 @@ E entrega os **cards renderizados** (PNG), na estética das referências.
 
 ### Estilos com template HTML pronto
 - **`notes`** — mockup do app Notas do iOS (moldura, SF Pro, bloco de seleção amarelo com carets, dark/light, 4:5 e 1:1). Validado à mão contra referências reais.
-- **`tweet_card`** — print de tweet do X (Twitter), sub-modo sólido (fundo branco/preto). Cabeçalho editável: nome, handle, avatar (arquivo local, fallback de inicial), selo verificado opcional, data opcional. Corpo grande centralizado, SF Pro, dark/light, 4:5 e 1:1. Validado à mão contra referências reais.
+- **`tweet_card`** — print de tweet do X (Twitter). Cabeçalho editável: nome, handle, avatar (arquivo local, fallback de inicial), selo verificado opcional, data opcional. SF Pro, 4:5 e 1:1. Dois sub-modos (campo `fundo`): **`solido`** (tweet tela-cheia, fundo branco/preto, dark/light) e **`imagem`** (card escuro flutuante sobre imagem de fundo; requer `fundo_imagem` local — a skill a obtém da pasta do usuário ou gerando via `/invisible-image`). Validado à mão contra referências reais.
 
 ## Requisitos
 
@@ -70,5 +70,5 @@ A skill lê o estilo + motor, mostra o plano, gera a capa para aprovação, e en
 - **v0.1.0:** motor Higgsfield (texto-na-imagem).
 - **v0.3.0:** motor HTML (HTML/CSS → PNG) para estilos tipográficos / UI-mockup; primeiro estilo: `notes`.
 - **v0.4.0:** segundo estilo HTML: `tweet_card` (print de tweet do X, sólido).
+- **v0.5.0:** `tweet_card` sub-modo `imagem` (card flutuante sobre imagem de fundo; imagem da pasta do usuário ou gerada via `/invisible-image`).
 - **Modo notícia:** pesquisa pauta por nicho e gera o carrossel ponta a ponta.
-- **`tweet_card` sub-modo `imagem`:** card flutuante sobre fundo (ilustração/foto). Ainda não implementado.
