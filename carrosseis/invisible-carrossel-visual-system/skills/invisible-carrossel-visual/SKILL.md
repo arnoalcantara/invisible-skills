@@ -122,9 +122,16 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
            "big": false,                // big = destaque tipográfico (frase-tese gigante)
            "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
         ]},
-        {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
+        {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null,
+         "enquadramento": "cobrir-centro"},
         {"tipo": "cta", "texto": "Salva esse conteúdo 👉"} ] }] }
   ```
+  - **Enquadramento da imagem na caixa (`enquadramento`).** A caixa de imagem é uma faixa de tamanho fixo; a imagem se encaixa nela conforme o tipo — escolha o modo:
+    - **`cobrir-topo`** — retrato/pessoa. `cover` com foco no topo, para **não cortar o rosto**. (Toda foto com rosto humano usa isto.)
+    - **`inteira`** — print/screenshot/diagrama/logo. `contain`: mostra a imagem **inteira sem recorte**, fundo preenche as sobras. (Telas e capturas nunca podem ser cortadas.)
+    - **`cobrir-centro`** (default) — cena/paisagem/objeto. `cover` central.
+    - **`cobrir-base`** — variação de foco.
+    A skill **identifica o tipo da imagem e escolhe o enquadramento**: rosto → topo, print → inteira, cena → centro.
   - **Cabeçalho é DEFAULT e automático.** Foto + nome + selo + handle vêm do `perfil` (topo do roteiro; um card pode sobrescrever com `perfil` próprio) e o motor **injeta o cabeçalho em todo card**. Você **não lista** cabeçalho como bloco. Ele **só some quando o card é denso a ponto de não caber com ele**: o motor mede a altura real e, se estourar a área útil, remonta o card sem cabeçalho (vira só-texto). Cards leves → com cabeçalho; densos → só-texto. Automático, fiel às refs.
   - **Centralização vertical.** Todo card centraliza o bloco na vertical (como as refs); não há campo de alinhamento.
   - **Ênfases** (`tipo`): cor de texto → `text-amarelo` / `text-azul` / `text-vermelho`; highlight de bloco → `box-amarelo` / `box-azul` / `box-verde`. A copy marca o **trecho**; você escolhe a classe seguindo o repertório do `_ESTILO.md`.

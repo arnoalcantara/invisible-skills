@@ -82,7 +82,12 @@ ESTILO "tweet_editorial" (componível por blocos; SÓ ratio "4x5"):
            "fade": false, "big": false,           # big = corpo de destaque tipográfico
            "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
       ]},
-      {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
+      {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null,
+       "enquadramento": "cobrir-centro"},        # como a imagem se encaixa na caixa:
+                                                  #   cobrir-centro (cena, default)
+                                                  #   cobrir-topo  (retrato: não corta rosto)
+                                                  #   cobrir-base
+                                                  #   inteira      (print/diagrama: sem recorte)
                                                   # path local -> embute; ausente -> placeholder
       {"tipo": "cta", "texto": "Salva esse conteúdo 👉"}
     ]
