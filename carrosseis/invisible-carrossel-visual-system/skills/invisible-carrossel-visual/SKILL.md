@@ -1,7 +1,7 @@
 ---
 name: invisible-carrossel-visual
 description: >
-  Produtor visual de carrossel. Recebe um ROTEIRO PRONTO (texto card a card, tipicamente da skill de copy invisible-carrossel) e uma PASTA DE REFERÊNCIAS VISUAIS, e renderiza os cards finais como PNGs. A identidade visual sai 100% das referências, decodificadas por VISÃO e congeladas num `_ESTILO.md` na própria pasta. Tem DOIS MOTORES de render, escolhidos pelo campo `motor:` do `_ESTILO.md`: (1) motor HTML (HTML/CSS → PNG via navegador headless) para estilos TIPOGRÁFICOS / UI-MOCKUP (ex.: "app de Notas do iOS"), que é pixel-perfeito, o texto nunca erra, custo zero e 100% reproduzível; (2) motor Higgsfield (GPT Image 2) para estilos que precisam de IMAGEM GERADA (foto, cena, arte), com o texto renderizado dentro da imagem. Respeita o PAPEL de cada slide (capa / interno / fecho), nunca tratando interno como capa. NÃO inventa copy (o texto vem pronto); NÃO escolhe o texto — só o veste. Use SEMPRE que o usuário pedir para "renderizar o carrossel", "gerar os cards visuais", "transformar esse roteiro em carrossel visual", "carrossel estilo Notes / bloco de notas", "vestir esse texto nas referências", "produzir os slides". O motor HTML requer só um Chrome/Chromium; o Higgsfield requer a CLI logada (ambos resolvidos no bootstrap).
+  Produtor visual de carrossel. Recebe um ROTEIRO PRONTO (texto card a card, tipicamente da skill de copy invisible-carrossel) e uma PASTA DE REFERÊNCIAS VISUAIS, e renderiza os cards finais como PNGs. A identidade visual sai 100% das referências, decodificadas por VISÃO e congeladas num `_ESTILO.md` na própria pasta. Tem DOIS MOTORES de render, escolhidos pelo campo `motor:` do `_ESTILO.md`: (1) motor HTML (HTML/CSS → PNG via navegador headless) para estilos TIPOGRÁFICOS / UI-MOCKUP (ex.: "app de Notas do iOS"), que é pixel-perfeito, o texto nunca erra, custo zero e 100% reproduzível; (2) motor Higgsfield (GPT Image 2) para estilos que precisam de IMAGEM GERADA (foto, cena, arte), com o texto renderizado dentro da imagem. Respeita o PAPEL de cada slide (capa / interno / fecho), nunca tratando interno como capa. Para o estilo HTML `tweet_editorial` (sequência editorial em tweet, componível por blocos), também SUGERE e BUSCA as imagens dos cards: monta a peça toda com placeholders primeiro e, só depois de aprovada, resolve cada imagem (busca real em banco free como Unsplash/Pexels/Wikimedia/Openverse → fallback gerar via /invisible-image). NÃO inventa copy (o texto vem pronto); NÃO escolhe o texto — só o veste. Use SEMPRE que o usuário pedir para "renderizar o carrossel", "gerar os cards visuais", "transformar esse roteiro em carrossel visual", "carrossel estilo Notes / bloco de notas", "vestir esse texto nas referências", "produzir os slides". O motor HTML requer só um Chrome/Chromium; o Higgsfield requer a CLI logada (ambos resolvidos no bootstrap).
 ---
 
 # Produtor Visual de Carrossel
@@ -105,6 +105,36 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
   1. **Pasta do usuário:** o usuário aponta uma pasta com fotos baixadas. Você escolhe (ou pergunta qual) e passa o caminho em `fundo_imagem`.
   2. **Gerar via `/invisible-image`:** invoque a skill **`invisible-image`** como diretora de fotografia — ela vira o prompt Nano Banana e renderiza no Higgsfield CLI. Peça o **mesmo aspect ratio do card** (`4:5` para card 4x5, `1:1` para card 1x1) para a imagem preencher o fundo sem faixas. Pegue o caminho local que ela devolve e use em `fundo_imagem`.
 
+- **`tweet_editorial`** — sequência editorial em formato de tweet (estilo Pedro Sobral). **Componível por blocos:** cada card é uma coluna que empilha blocos opcionais; os "tipos" de card do repertório (capa breaking, texto+imagem, destaque tipográfico, balão, fecho) **emergem das combinações**. `_ESTILO.md`: `00_Recursos/REFS_VISUAIS/Tweet_Editorial_Sequence/Tweet_Editorial_ESTILO.md`. Tema `light`/`dark` por card; ênfases inline (cor de texto + highlight de bloco).
+
+  Campos do card:
+  ```json
+  { "papel": "capa",                    // capa/interno/fecho — pista de tema default
+    "tema": "light",                    // light/dark (opcional; default por papel)
+    "centralizar": false,               // opcional; força (des)centralizar vertical
+    "blocos": [                         // ORDEM = empilhamento topo→baixo
+      {"tipo": "cabecalho", "nome": "Pedro Sobral", "handle": "pedrosobral",
+       "avatar": "/caminho.jpg", "verificado": true},
+      {"tipo": "breaking", "texto": "🚨 Breaking: ..."},
+      {"tipo": "paragrafos", "corpo": [
+        {"texto": "parágrafo", "peso": "bold", "italic": false, "fade": false,
+         "big": false,                  // big = destaque tipográfico (frase-tese gigante)
+         "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
+      ]},
+      {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
+      {"tipo": "cta", "texto": "Salva esse conteúdo 👉"} ] }
+  ```
+  - **Ênfases** (`tipo`): cor de texto → `text-amarelo` / `text-azul` / `text-vermelho`; highlight de bloco → `box-amarelo` / `box-azul` / `box-verde`. A copy marca o **trecho**; você escolhe a classe seguindo o repertório do `_ESTILO.md`.
+  - **`big`** num parágrafo = card de respiro (frase-tese grande); cards só de `big`, sem imagem nem cabeçalho, centralizam vertical automaticamente.
+  - **Densidade é da copy:** o canvas 4:5 é fixo; um card com texto demais corta. Em 4:5 cabe ~10 linhas de corpo + 1 imagem. Estourou? O card tinha texto demais — quebre em dois (é o que a copy real faz). 1:1 pede cards mais curtos.
+
+  **De onde vem a imagem dos blocos `imagem` — você orquestra, em DUAS PASSADAS (regra dura):**
+  - **Passada 1 (estrutura, primeiro):** monte e renderize a peça inteira com os blocos `imagem` **sem `path`** (modo placeholder: o motor desenha uma caixa arredondada rotulada com a `descricao`). Aprove a estrutura inteira de pé, sem depender de nenhuma imagem. É o que vai ao portão da Fase 2/3.
+  - **Passada 2 (imagens, depois):** só com a estrutura aprovada, resolva cada placeholder pela **cadeia de sourcing** e re-renderize com `path` preenchido (o motor embute via base64):
+    1. **Imagem real free (prioridade):** busque na web uma foto que **ilustra o que o card conta** (o protagonista, o objeto, o lugar, a prova), em bancos que permitem uso/download free/royalty-free: **Unsplash, Pexels, Wikimedia Commons, Openverse**. Use WebSearch para achar candidatas, baixe o arquivo para a pasta do lote, e passe o caminho local em `path`. Prefira foto real e fiel ao conteúdo do card.
+    2. **Fallback — gerar via `/invisible-image`:** **só quando não há imagem real adequada**, invoque a skill `invisible-image` como diretora de fotografia, montando o brief a partir da `descricao` do placeholder. Pegue o caminho local devolvido e use em `path`.
+    - Em ambos os casos o motor só **embute** o arquivo local pronto; ele não busca nem gera. A imagem é a **última coisa** colocada na peça.
+
 > Adicionar um novo estilo HTML = adicionar uma função de montagem em `render_html.py` (dict `ESTILOS`). Estilos novos nascem de um `_ESTILO.md` com `motor: html`.
 
 ### Rodar
@@ -143,6 +173,8 @@ Gere **só o slide 1 (capa)** pelo motor do estilo:
 - **`higgsfield`:** monte o prompt (estilo + texto literal + papel capa) e rode `gerar_slide.py`.
 
 **Abra o PNG com o Read tool (visão)** e confira: todo o texto aparece, legível, sem erro; moldura/estética batem com o `_ESTILO.md`; proporção certa, sem número de slide visível. Mostre ao usuário e **PARE para aprovação.** (Provar UM caso antes do lote — regra do laboratório.)
+
+> **`tweet_editorial` — duas passadas.** Aqui a prova é da **estrutura inteira com placeholders** (passada 1): renderize todos os cards com os blocos `imagem` sem `path` (caixas rotuladas) e aprove a peça de pé, cobrindo o repertório de combinações. **Só depois** da estrutura aprovada entra a passada 2 (resolver as imagens pela cadeia real-free → `/invisible-image` e re-renderizar). A imagem é a última coisa colocada.
 
 ### Fase 3 — Lote dos demais slides
 Aprovada a capa, gere o resto, cada card no **seu papel**:

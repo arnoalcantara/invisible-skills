@@ -12,14 +12,19 @@ embutido), e o conteúdo de cada card vem de um ROTEIRO (JSON). Trocar o texto d
 roteiro troca o carrossel; a estética é a do estilo escolhido.
 
 Estilos suportados (template embutido):
-  - notes      : mockup do app Notas do iOS (validado à mão, fiel à referência).
-  - tweet_card : print de tweet do X (Twitter). Dois sub-modos pelo campo `fundo`:
-                 "solido" (default; tweet tela-cheia, fundo branco/preto) e
-                 "imagem" (card escuro flutuante sobre uma imagem de fundo).
+  - notes          : mockup do app Notas do iOS (validado à mão, fiel à referência).
+  - tweet_card     : print de tweet do X (Twitter). Dois sub-modos pelo campo `fundo`:
+                     "solido" (default; tweet tela-cheia, fundo branco/preto) e
+                     "imagem" (card escuro flutuante sobre uma imagem de fundo).
+  - tweet_editorial: sequência editorial em tweet (Pedro Sobral). COMPONÍVEL POR
+                     BLOCOS: cada card empilha blocos opcionais (cabecalho, breaking,
+                     paragrafos, imagem, cta) sobre tema light/dark, com ênfases
+                     inline (cor de texto + highlight de bloco). Os tipos de card do
+                     repertório emergem das combinações.
 
 Contrato do ROTEIRO (JSON):
 {
-  "estilo": "notes" | "tweet_card",
+  "estilo": "notes" | "tweet_card" | "tweet_editorial",
   "ratio": "4x5" | "1x1",                      # default 4x5
   "cards": [ ... ]                             # campos do card dependem do estilo
 }
@@ -60,6 +65,33 @@ ESTILO "tweet_card" (cabeçalho editável; tweet é layout único, sem papel):
 #   A imagem de fundo chega SEMPRE pronta (arquivo local). Quem a produz é a SKILL,
 #   no fluxo: pasta apontada pelo usuário OU geração via /invisible-image. O motor
 #   só a embute — não gera nem busca imagem.
+
+ESTILO "tweet_editorial" (componível por blocos):
+{
+  "papel": "capa" | "interno" | "fecho",       # pista de default de tema; não engessa
+  "tema": "light" | "dark",                     # opcional; default por papel
+  "blocos": [                                   # ordem = ordem de empilhamento (topo->baixo)
+    {"tipo": "cabecalho", "nome": "Pedro Sobral", "handle": "pedrosobral",
+     "avatar": "/caminho.jpg", "verificado": true},   # avatar opcional (fallback inicial)
+    {"tipo": "breaking", "texto": "🚨 Breaking: ...", "enfases": [...]},
+    {"tipo": "paragrafos", "corpo": [
+        {"texto": "parágrafo ...", "peso": "bold"|null, "italic": false,
+         "fade": false, "big": false,           # big = corpo de destaque tipográfico
+         "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
+    ]},
+    {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
+                                                 # path local -> embute; ausente -> placeholder
+    {"tipo": "cta", "texto": "Salva esse conteúdo 👉"}
+  ]
+}
+# Ênfases (campo "tipo"): cor de texto -> text-amarelo|text-azul|text-vermelho;
+#   highlight de bloco -> box-amarelo|box-azul|box-verde. A copy MARCA o trecho a
+#   enfatizar; a classe (cor) é decisão do render, seguindo o repertório do _ESTILO.md.
+# Imagem: dois modos. "path" preenchido (arquivo local) -> embute via base64.
+#   "path" ausente/null -> desenha PLACEHOLDER (caixa rotulada com a "descricao").
+#   ORDEM DE MONTAGEM: a peça é aprovada primeiro com placeholders (passada 1); só
+#   depois a SKILL resolve cada imagem (busca real free -> fallback /invisible-image)
+#   e re-renderiza com os arquivos (passada 2). O motor só embute o que chega pronto.
 
 Uso:
     python3 render_html.py --roteiro roteiro.json --out-dir ./cards [--chrome "/path/Chrome"]
@@ -381,7 +413,201 @@ def montar_html_tweet(card, ratio):
             f'<style>{TWEET_CSS}</style></head><body>{inner}</body></html>')
 
 
-ESTILOS = {"notes": montar_html_notes, "tweet_card": montar_html_tweet}
+# ----------------------------------------------------------------------------
+# ESTILO "tweet_editorial" — sequência editorial em formato de tweet (Pedro Sobral).
+# COMPONÍVEL POR BLOCOS: cada card é uma coluna que empilha blocos opcionais
+# (cabecalho, breaking, paragrafos, imagem, cta) sobre um tema (light/dark), com
+# ênfases inline (cor de texto + highlight de bloco). Os "tipos" de card do
+# repertório emergem das combinações. Cores amostradas das 26 refs por PIL.
+# Briefing: 00_Recursos/REFS_VISUAIS/Tweet_Editorial_Sequence/Tweet_Editorial_ESTILO.md
+# ----------------------------------------------------------------------------
+TWEET_EDITORIAL_CSS = r"""
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:#444; }
+.card { position:relative; overflow:hidden;
+  font-family:-apple-system,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; text-rendering:geometricPrecision; }
+.card.r45 { width:1080px; height:1350px; }
+.card.r11 { width:1080px; height:1080px; }
+.card.light { background:#fff; } .card.dark { background:#000; }
+
+/* coluna vertical: empilha blocos do topo. Ancorada no topo (não centraliza) para
+   que cards densos não sejam cortados nas duas pontas; o card "respira" pela
+   calibragem de fonte, não pela centralização. */
+.stack { position:absolute; left:96px; right:96px; top:0; bottom:0;
+  display:flex; flex-direction:column; justify-content:flex-start; padding:84px 0; }
+/* cards de respiro (1 bloco curto de destaque) podem centralizar via .center */
+.stack.center { justify-content:center; }
+
+/* cabeçalho do tweet (reusa a estética do tweet_card) */
+.head { display:flex; align-items:center; gap:28px; margin-bottom:40px; }
+.avatar { width:118px; height:118px; border-radius:50%; flex:0 0 118px; object-fit:cover;
+  display:flex; align-items:center; justify-content:center; font-size:52px; font-weight:600; color:#fff; }
+.idcol { display:flex; flex-direction:column; justify-content:center; min-width:0; }
+.nameline { display:flex; align-items:center; gap:12px; }
+.name { font-size:50px; font-weight:700; letter-spacing:-0.5px; line-height:1.05; }
+.light .name { color:#0f1419; } .dark .name { color:#e7e9ea; }
+.badge { width:42px; height:42px; flex:0 0 42px; }
+.handle { font-size:40px; font-weight:400; margin-top:4px; }
+.light .handle { color:#536471; } .dark .handle { color:#71767b; }
+.dots { margin-left:auto; align-self:flex-start; font-size:54px; line-height:.5; letter-spacing:2px; }
+.light .dots { color:#536471; } .dark .dots { color:#71767b; }
+
+/* breaking line (card 1) */
+.breaking { font-size:62px; font-weight:700; line-height:1.18; letter-spacing:-0.5px; margin-bottom:30px; }
+.light .breaking { color:#0f1419; } .dark .breaking { color:#fff; }
+
+/* parágrafos do corpo (denso): calibrado para caber ~10 linhas + imagem em 1350px */
+.para { font-size:50px; font-weight:400; line-height:1.26; letter-spacing:-0.3px; margin-bottom:0.7em; }
+.para:last-child { margin-bottom:0; }
+.para.bold { font-weight:700; }
+.para.italic { font-style:italic; }
+.para.fade { color:#6b7177; }
+.light .para { color:#0f1419; } .dark .para { color:#fff; }
+/* corpo de destaque tipográfico (card que respira) */
+.para.big { font-size:90px; font-weight:700; line-height:1.1; letter-spacing:-2px; }
+/* quando o destaque divide o card com outros blocos (não centralizado), é menor */
+.stack:not(.center) .para.big { font-size:74px; line-height:1.12; letter-spacing:-1.5px; }
+.r11 .para { font-size:46px; } .r11 .para.big { font-size:78px; }
+.r11 .stack:not(.center) .para.big { font-size:64px; }
+.r11 .breaking { font-size:56px; }
+
+/* ênfase: cor de texto inline */
+.hl-text-amarelo { color:#f9da4a; }
+.hl-text-azul    { color:#1d9bf0; }
+.hl-text-vermelho{ color:#d02f22; }
+/* ênfase: highlight de bloco (caixa colorida atrás do texto) */
+.hl-box-amarelo, .hl-box-azul, .hl-box-verde {
+  box-decoration-break:clone; -webkit-box-decoration-break:clone; padding:2px 14px; border-radius:6px; }
+.hl-box-amarelo { background:#f9da4a; color:#0f1419; }
+.hl-box-azul    { background:#1d9bf0; color:#fff; }
+.hl-box-verde   { background:#4eac59; color:#fff; }
+
+/* imagem embutida arredondada, no fluxo */
+.foto { display:block; width:100%; border-radius:36px; object-fit:cover; margin:40px 0; }
+/* placeholder de imagem (passada 1, antes de resolver a foto) */
+.foto-ph { display:flex; align-items:center; justify-content:center; text-align:center;
+  width:100%; min-height:420px; border-radius:36px; margin:40px 0; padding:48px;
+  font-size:40px; font-weight:600; line-height:1.3; }
+.light .foto-ph { background:#e9eef2; color:#536471; border:4px dashed #b8c2cb; }
+.dark .foto-ph  { background:#16181c; color:#8b98a5; border:4px dashed #38444d; }
+
+/* cta */
+.cta { font-size:48px; font-weight:700; margin-top:38px; }
+.light .cta { color:#0f1419; } .dark .cta { color:#fff; }
+"""
+
+# papel -> tema default (pista; o tema do card vence se vier explícito)
+_TWE_TEMA_DEFAULT = {"capa": "light", "interno": "dark", "fecho": "dark"}
+# classes de ênfase válidas (o resto é ignorado com segurança)
+_TWE_ENFASES = {"text-amarelo", "text-azul", "text-vermelho",
+                "box-amarelo", "box-azul", "box-verde"}
+
+
+def _render_enfases(texto, enfases):
+    """Escapa o texto, converte \\n em <br> e envolve cada `trecho` marcado num
+    <span class="hl-...">. As ênfases são aplicadas por substituição literal do
+    trecho já escapado (case-sensitive, primeira ocorrência)."""
+    out = _nl2br(texto)
+    for e in (enfases or []):
+        trecho = e.get("trecho")
+        tipo = e.get("tipo")
+        if not trecho or tipo not in _TWE_ENFASES:
+            continue
+        alvo = _nl2br(trecho)
+        if alvo in out:
+            span = f'<span class="hl-{tipo}">{alvo}</span>'
+            out = out.replace(alvo, span, 1)
+    return out
+
+
+def _bloco_cabecalho(card, b, tema):
+    nome = b.get("nome") or card.get("nome", "")
+    handle = str(b.get("handle") or card.get("handle", "")).lstrip("@")
+    av = {"avatar": b.get("avatar") or card.get("avatar"), "nome": nome}
+    badge = _X_BADGE if b.get("verificado", card.get("verificado", True)) else ""
+    return (f'<div class="head">{_avatar_tweet(av, _TWEET_FALLBACK_BG.get(tema, "#536471"))}'
+            f'<div class="idcol"><div class="nameline">'
+            f'<span class="name">{_html.escape(nome)}</span>{badge}</div>'
+            f'<div class="handle">@{_html.escape(handle)}</div></div>'
+            f'<div class="dots">…</div></div>')
+
+
+def _bloco_breaking(b):
+    return f'<div class="breaking">{_render_enfases(b.get("texto", ""), b.get("enfases"))}</div>'
+
+
+def _bloco_paragrafos(b):
+    parts = []
+    for p in b.get("corpo", []):
+        cls = ["para"]
+        if p.get("peso") == "bold" or p.get("bold"):
+            cls.append("bold")
+        if p.get("italic"):
+            cls.append("italic")
+        if p.get("fade"):
+            cls.append("fade")
+        if p.get("big"):
+            cls.append("big")
+        parts.append(f'<div class="{" ".join(cls)}">{_render_enfases(p.get("texto",""), p.get("enfases"))}</div>')
+    return "".join(parts)
+
+
+def _bloco_imagem(b):
+    """Dois modos: arquivo (path local presente -> embute base64) e placeholder
+    (sem path -> caixa rotulada). A imagem chega pronta; o motor só embute."""
+    path = b.get("path")
+    if path and os.path.exists(path):
+        return f'<img class="foto" src="{_b64_data_uri(path)}">'
+    rotulo = b.get("descricao") or "imagem"
+    return f'<div class="foto-ph">[imagem: {_html.escape(str(rotulo))}]</div>'
+
+
+def _bloco_cta(b):
+    return f'<div class="cta">{_render_enfases(b.get("texto", ""), b.get("enfases"))}</div>'
+
+
+_TWE_BLOCOS = {
+    "cabecalho": lambda card, b, tema: _bloco_cabecalho(card, b, tema),
+    "breaking":  lambda card, b, tema: _bloco_breaking(b),
+    "paragrafos": lambda card, b, tema: _bloco_paragrafos(b),
+    "imagem":    lambda card, b, tema: _bloco_imagem(b),
+    "cta":       lambda card, b, tema: _bloco_cta(b),
+}
+
+
+def _twe_centraliza(card):
+    """Cards de respiro centralizam verticalmente: nenhum bloco de imagem, sem
+    cabeçalho, e algum parágrafo `big` (destaque tipográfico curto). O campo
+    explícito `centralizar` vence a heurística."""
+    if "centralizar" in card:
+        return bool(card["centralizar"])
+    blocos = card.get("blocos", [])
+    tipos = [b.get("tipo") for b in blocos]
+    if "imagem" in tipos or "cabecalho" in tipos:
+        return False
+    tem_big = any(p.get("big") for b in blocos if b.get("tipo") == "paragrafos"
+                  for p in b.get("corpo", []))
+    return tem_big
+
+
+def montar_html_tweet_editorial(card, ratio):
+    papel = card.get("papel", "interno")
+    tema = card.get("tema") or _TWE_TEMA_DEFAULT.get(papel, "dark")
+    rcls = "r45" if ratio == "4x5" else "r11"
+    center = " center" if _twe_centraliza(card) else ""
+    corpo = []
+    for b in card.get("blocos", []):
+        montar = _TWE_BLOCOS.get(b.get("tipo"))
+        if montar:
+            corpo.append(montar(card, b, tema))
+    inner = f'<div class="card {tema} {rcls}"><div class="stack{center}">{"".join(corpo)}</div></div>'
+    return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
+            f'<style>{TWEET_EDITORIAL_CSS}</style></head><body>{inner}</body></html>')
+
+
+ESTILOS = {"notes": montar_html_notes, "tweet_card": montar_html_tweet,
+           "tweet_editorial": montar_html_tweet_editorial}
 
 
 # ----------------------------------------------------------------------------

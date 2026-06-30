@@ -26,7 +26,7 @@ Complementa o lado COPY (`invisible-carrossel`, no plugin `invisible-copy`): aqu
 
 ## Estilos recorrentes
 
-Cada estilo de carrossel vive como uma **pasta de referências** com um `_ESTILO.md` congelado (que declara o `motor:`). O usuário aponta a pasta; a skill lê o briefing pronto. Trocar de estilo = trocar de pasta. Estilos com template HTML pronto: **`notes`** (app Notas do iOS) e **`tweet_card`** (print de tweet do X, sub-modos `solido` e `imagem`).
+Cada estilo de carrossel vive como uma **pasta de referências** com um `_ESTILO.md` congelado (que declara o `motor:`). O usuário aponta a pasta; a skill lê o briefing pronto. Trocar de estilo = trocar de pasta. Estilos com template HTML pronto: **`notes`** (app Notas do iOS), **`tweet_card`** (print de tweet do X, sub-modos `solido` e `imagem`) e **`tweet_editorial`** (sequência editorial em tweet estilo Pedro Sobral, componível por blocos, com sourcing de imagem em duas passadas).
 
 ## Roadmap
 
@@ -34,6 +34,7 @@ Cada estilo de carrossel vive como uma **pasta de referências** com um `_ESTILO
 - **v0.3.0:** motor HTML (HTML/CSS → PNG) para estilos tipográficos / UI-mockup; primeiro estilo: `notes` (validado à mão contra referências reais). Seleção de motor pelo `_ESTILO.md`.
 - **v0.4.0:** segundo estilo HTML: `tweet_card` (print de tweet do X, sólido — cabeçalho editável nome/handle/avatar/selo/data, avatar local com fallback de inicial, dark/light, 4:5 e 1:1). Validado à mão contra referências reais.
 - **v0.5.0:** `tweet_card` ganha o sub-modo `imagem` (card escuro flutuante sobre imagem de fundo; data + globo). A imagem de fundo chega pronta ao motor; a skill a obtém da pasta do usuário ou gerando via `/invisible-image` (mesmo aspect ratio do card). Validado à mão contra referência real.
+- **v0.6.0:** terceiro estilo HTML: `tweet_editorial` (sequência editorial em tweet, estilo Pedro Sobral). **Componível por blocos** (cabecalho/breaking/paragrafos/imagem/cta sobre tema light/dark; ênfases inline cor-de-texto + highlight-de-bloco) — os tipos de card emergem das combinações. O bloco `imagem` tem modo placeholder e modo arquivo; a SKILL resolve as imagens em **duas passadas** (estrutura com placeholders primeiro; depois cadeia de sourcing: imagem real free Unsplash/Pexels/Wikimedia/Openverse → fallback `/invisible-image`). Cores das ênfases amostradas por pixel das refs; validado à mão contra 26 prints reais. Em paralelo, a copy ganha o formato `tweet-editorial` (cruzamento percepção×editorial) na `invisible-carrossel`.
 - **Modo notícia:** vocação herdada do sistema de referência (Human Academy) — pesquisa pauta por nicho, gera texto (ou delega à `invisible-carrossel`) e veste no visual.
 
 ## Convenções
