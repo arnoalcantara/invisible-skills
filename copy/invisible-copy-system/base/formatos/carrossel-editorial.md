@@ -97,6 +97,7 @@ Regras de cadência: frases com sujeito, verbo e impacto; varie curtas/médias c
 - **Figuras de retórica (`copy/figuras-de-retorica.md`):** este modo pede uma figura forte (antítese, anáfora, tricolon) no gancho ou no fecho — é onde o editorial ganha peso.
 - **Ângulos (`copy/angulos.md`):** casam Contraste, Inimigo Comum, Posicionamento contra fórmula pronta, Identidade.
 - **Níveis (`niveis-de-consciencia.md`):** funciona em vários níveis; em Nível 1 entra por identidade/verdade do mundo, sem ofertar.
+- **Reenquadre (recurso de cadência):** a manobra de pegar um fato/dado e dizer o que ele *significa de verdade*, virando a chave numa frase de peso ("o número impressiona, mas o que importa é onde ele acontece"). É cadência editorial aplicada a uma virada de leitura. Quando o carrossel parte de uma notícia/dado real e não de uma tese atemporal, o lugar dele é o formato cruzado `carrossel-tweet-editorial.md` (estrutura de percepção + esta cadência). No editorial puro, use o reenquadre com parcimônia e **sem** relaxar os banimentos do modo: emoji e CTA de salvamento continuam proibidos aqui; quem os libera é o módulo de cruzamento, não o editorial sóbrio.
 
 ---
 

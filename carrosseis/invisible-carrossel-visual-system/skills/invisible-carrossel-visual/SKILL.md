@@ -1,7 +1,7 @@
 ---
 name: invisible-carrossel-visual
 description: >
-  Produtor visual de carrossel. Recebe um ROTEIRO PRONTO (texto card a card, tipicamente da skill de copy invisible-carrossel) e uma PASTA DE REFERÊNCIAS VISUAIS, e renderiza os cards finais como PNGs. A identidade visual sai 100% das referências, decodificadas por VISÃO e congeladas num `_ESTILO.md` na própria pasta. Tem DOIS MOTORES de render, escolhidos pelo campo `motor:` do `_ESTILO.md`: (1) motor HTML (HTML/CSS → PNG via navegador headless) para estilos TIPOGRÁFICOS / UI-MOCKUP (ex.: "app de Notas do iOS"), que é pixel-perfeito, o texto nunca erra, custo zero e 100% reproduzível; (2) motor Higgsfield (GPT Image 2) para estilos que precisam de IMAGEM GERADA (foto, cena, arte), com o texto renderizado dentro da imagem. Respeita o PAPEL de cada slide (capa / interno / fecho), nunca tratando interno como capa. NÃO inventa copy (o texto vem pronto); NÃO escolhe o texto — só o veste. Use SEMPRE que o usuário pedir para "renderizar o carrossel", "gerar os cards visuais", "transformar esse roteiro em carrossel visual", "carrossel estilo Notes / bloco de notas", "vestir esse texto nas referências", "produzir os slides". O motor HTML requer só um Chrome/Chromium; o Higgsfield requer a CLI logada (ambos resolvidos no bootstrap).
+  Produtor visual de carrossel. Recebe um ROTEIRO PRONTO (texto card a card, tipicamente da skill de copy invisible-carrossel) e uma PASTA DE REFERÊNCIAS VISUAIS, e renderiza os cards finais como PNGs. A identidade visual sai 100% das referências, decodificadas por VISÃO e congeladas num `_ESTILO.md` na própria pasta. Tem DOIS MOTORES de render, escolhidos pelo campo `motor:` do `_ESTILO.md`: (1) motor HTML (HTML/CSS → PNG via navegador headless) para estilos TIPOGRÁFICOS / UI-MOCKUP (ex.: "app de Notas do iOS"), que é pixel-perfeito, o texto nunca erra, custo zero e 100% reproduzível; (2) motor Higgsfield (GPT Image 2) para estilos que precisam de IMAGEM GERADA (foto, cena, arte), com o texto renderizado dentro da imagem. Respeita o PAPEL de cada slide (capa / interno / fecho), nunca tratando interno como capa. Para o estilo HTML `tweet_editorial` (sequência editorial em tweet, componível por blocos), também SUGERE e BUSCA as imagens dos cards: monta a peça toda com placeholders primeiro e, só depois de aprovada, resolve cada imagem por uma cadeia EDITORIAL-FIRST — imagem real da web da notícia/pessoa/fato citado (imprensa, redes, Wikimedia) como prioridade; banco royalty-free (Pexels/Unsplash/Wikimedia/Openverse) só para o genérico; gerar via /invisible-image só em último recurso (ilustração/conceito que não existe para baixar). NÃO inventa copy (o texto vem pronto); NÃO escolhe o texto — só o veste. Use SEMPRE que o usuário pedir para "renderizar o carrossel", "gerar os cards visuais", "transformar esse roteiro em carrossel visual", "carrossel estilo Notes / bloco de notas", "vestir esse texto nas referências", "produzir os slides". O motor HTML requer só um Chrome/Chromium; o Higgsfield requer a CLI logada (ambos resolvidos no bootstrap).
 ---
 
 # Produtor Visual de Carrossel
@@ -105,6 +105,50 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
   1. **Pasta do usuário:** o usuário aponta uma pasta com fotos baixadas. Você escolhe (ou pergunta qual) e passa o caminho em `fundo_imagem`.
   2. **Gerar via `/invisible-image`:** invoque a skill **`invisible-image`** como diretora de fotografia — ela vira o prompt Nano Banana e renderiza no Higgsfield CLI. Peça o **mesmo aspect ratio do card** (`4:5` para card 4x5, `1:1` para card 1x1) para a imagem preencher o fundo sem faixas. Pegue o caminho local que ela devolve e use em `fundo_imagem`.
 
+- **`tweet_editorial`** — sequência editorial em formato de tweet (estilo Pedro Sobral). **Componível por blocos:** cada card é uma coluna que empilha blocos opcionais; os "tipos" de card do repertório (capa breaking, texto+imagem, destaque tipográfico, balão, fecho) **emergem das combinações**. `_ESTILO.md`: `00_Recursos/REFS_VISUAIS/Tweet_Editorial_Sequence/Tweet_Editorial_ESTILO.md`. Tema `light`/`dark` por card; ênfases inline (cor de texto + highlight de bloco).
+
+  Campos do roteiro/card:
+  ```json
+  { "estilo": "tweet_editorial", "ratio": "4x5",
+    "perfil": {"nome": "Pedro Sobral", "handle": "pedrosobral",
+               "avatar": "/caminho.jpg", "verificado": true},   // identidade do cabeçalho
+    "cards": [{
+      "papel": "capa",                  // capa/interno/fecho — pista de tema default
+      "tema": "light",                  // light/dark (opcional; default por papel)
+      "blocos": [                       // ORDEM = empilhamento topo→baixo
+        {"tipo": "breaking", "texto": "🚨 Breaking: ..."},
+        {"tipo": "paragrafos", "corpo": [
+          {"texto": "parágrafo", "peso": "bold", "italic": false, "fade": false,
+           "big": false,                // big = destaque tipográfico (frase-tese gigante)
+           "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
+        ]},
+        {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null,
+         "enquadramento": "cobrir-centro"},
+        {"tipo": "cta", "texto": "Salva esse conteúdo 👉"} ] }] }
+  ```
+  - **Enquadramento da imagem na caixa (`enquadramento`).** A caixa de imagem é uma faixa de tamanho fixo; a imagem se encaixa nela conforme o tipo — escolha o modo:
+    - **`cobrir-topo`** — retrato/pessoa. `cover` com foco no topo, para **não cortar o rosto**. (Toda foto com rosto humano usa isto.)
+    - **`inteira`** — print/screenshot/diagrama/logo. `contain`: mostra a imagem **inteira sem recorte**, fundo preenche as sobras. (Telas e capturas nunca podem ser cortadas.)
+    - **`cobrir-centro`** (default) — cena/paisagem/objeto. `cover` central.
+    - **`cobrir-base`** — variação de foco.
+    A skill **identifica o tipo da imagem e escolhe o enquadramento**: rosto → topo, print → inteira, cena → centro.
+  - **Cabeçalho é DEFAULT e automático.** Foto + nome + selo + handle vêm do `perfil` (topo do roteiro; um card pode sobrescrever com `perfil` próprio) e o motor **injeta o cabeçalho em todo card**. Você **não lista** cabeçalho como bloco. Ele **só some quando o card é denso a ponto de não caber com ele**: o motor mede a altura real e, se estourar a área útil, remonta o card sem cabeçalho (vira só-texto). Cards leves → com cabeçalho; densos → só-texto. Automático, fiel às refs.
+  - **Centralização vertical.** Todo card centraliza o bloco na vertical (como as refs); não há campo de alinhamento.
+  - **Ênfases** (`tipo`): cor de texto → `text-amarelo` / `text-azul` / `text-vermelho`; highlight de bloco → `box-amarelo` / `box-azul` / `box-verde`. A copy marca o **trecho**; você escolhe a classe seguindo o repertório do `_ESTILO.md`.
+  - **`big`** num parágrafo = frase-tese / ênfase de clímax grande (card de respiro, fecho). Não encolhe.
+  - **Só 4:5.** Este estilo **não suporta 1:1** (a densidade editorial não cabe em 1080×1080 e corta o rodapé); o motor recusa outro ratio. Sempre `ratio: "4x5"`.
+  - **Densidade é da copy:** o canvas 4:5 é fixo; um card com texto demais corta. Em 4:5 cabe ~9–10 linhas de corpo + 1 imagem, com folga de rodapé. Estourou? O card tinha texto demais — quebre em dois (é o que a copy real faz).
+
+  **De onde vem a imagem dos blocos `imagem` — você orquestra, em DUAS PASSADAS (regra dura):**
+  - **Passada 1 (estrutura, primeiro):** monte e renderize a peça inteira com os blocos `imagem` **sem `path`** (modo placeholder: o motor desenha uma caixa arredondada rotulada com a `descricao`). Aprove a estrutura inteira de pé, sem depender de nenhuma imagem. É o que vai ao portão da Fase 2/3.
+  - **Passada 2 (imagens, depois):** só com a estrutura aprovada, resolva cada placeholder pela **cadeia de sourcing EDITORIAL-FIRST** e re-renderize com `path` preenchido (o motor embute via base64). O `tweet_editorial` parte de uma notícia/fato real, então a imagem natural é a **imagem real daquilo** — não uma foto stock genérica nem uma geração. A ordem é:
+    1. **Imagem editorial real da web (PRIORIDADE ABSOLUTA), com FREIO DE DIREITO AUTORAL:** quando o card cita uma **pessoa/personagem pública, um fato, um momento, um produto ou uma tela específicos** (ex.: "Casimiro com o botão de prata", "o torcedor abraçado à taça", "o print do perfil da CazéTV"), vá atrás da **imagem real daquilo na internet**. Mas **priorize fonte de uso livre**: Wikimedia Commons, Creative Commons, domínio público, bancos de imprensa com licença aberta, página/rede oficial da própria marca/pessoa (uso autorizado). Baixe para a pasta do lote (`curl`/`WebFetch` → arquivo local) e **registre a fonte e a licença**. **Se a única versão for protegida** (Getty, agência, foto de imprensa sem licença aberta, foto de rede de terceiro): **não embuta sem o OK do usuário** — mostre a candidata, avise que é protegida e o risco de usar num post de marca, e deixe a decisão com ele. O editorial-first vale; o freio de direito autoral também.
+    2. **Banco free para o GENÉRICO:** quando o card pede algo genérico e não uma cena específica (ex.: "celular com o app do YouTube aceso", "rua decorada lotada de torcedores"), aí sim busque em banco royalty-free (**Pexels, Unsplash, Wikimedia, Openverse**), baixe e use.
+    3. **Gerar via `/invisible-image` — ÚLTIMO RECURSO:** só quando o card pede uma **ilustração/conceito que não existe para baixar** (uma composição, uma metáfora visual, uma arte). Não use geração para substituir uma imagem editorial real que existe na web; primeiro tente baixá-la.
+    - Em todos os casos o motor só **embute** o arquivo local pronto; ele não busca nem gera. A imagem é a **última coisa** colocada na peça. **Sempre mostre as candidatas baixadas ao usuário antes de cravar** (a escolha editorial é dele).
+    > A skill deve **identificar o tipo de imagem que o card pede**: cena/pessoa/fato específico → imagem real da web; objeto/ambiente genérico → banco free; ilustração/conceito → geração. O default do formato pende para o real, porque é editorial.
+    > **Busca de imagem é trabalho caso a caso, e ainda evolui.** A query certa muda por card (nome da pessoa, termo do fato, banco que indexa melhor). Itere a busca: refine os termos, troque de banco (Pexels ↔ Wikimedia ↔ Openverse), e descarte candidata que destoa do contexto (ex.: torcida de outro país onde o card pede torcida do Brasil). Mostre 1–3 candidatas ao usuário e deixe ele escolher; não crave a primeira. A qualidade do sourcing depende dessa curadoria, não de uma busca única.
+
 > Adicionar um novo estilo HTML = adicionar uma função de montagem em `render_html.py` (dict `ESTILOS`). Estilos novos nascem de um `_ESTILO.md` com `motor: html`.
 
 ### Rodar
@@ -143,6 +187,8 @@ Gere **só o slide 1 (capa)** pelo motor do estilo:
 - **`higgsfield`:** monte o prompt (estilo + texto literal + papel capa) e rode `gerar_slide.py`.
 
 **Abra o PNG com o Read tool (visão)** e confira: todo o texto aparece, legível, sem erro; moldura/estética batem com o `_ESTILO.md`; proporção certa, sem número de slide visível. Mostre ao usuário e **PARE para aprovação.** (Provar UM caso antes do lote — regra do laboratório.)
+
+> **`tweet_editorial` — duas passadas.** Aqui a prova é da **estrutura inteira com placeholders** (passada 1): renderize todos os cards com os blocos `imagem` sem `path` (caixas rotuladas) e aprove a peça de pé, cobrindo o repertório de combinações. **Só depois** da estrutura aprovada entra a passada 2 (resolver as imagens pela cadeia real-free → `/invisible-image` e re-renderizar). A imagem é a última coisa colocada.
 
 ### Fase 3 — Lote dos demais slides
 Aprovada a capa, gere o resto, cada card no **seu papel**:

@@ -70,6 +70,9 @@ Priorize fontes reconhecidas: institutos (Pew, Statista, IBGE, Ipea, Nielsen, Da
 - Enxuta: "(McKinsey, 2023)", "Segundo a Nielsen…"
 - **Nunca:** "a internet diz que…", "pesquisas afirmam que…" sem referência.
 
+### Empilhar dado escalando (momentum)
+Quando você tem mais de um número sobre o mesmo eixo, **empilhe-os em ordem crescente** para criar momentum: cada número maior que o anterior, num crescendo que torna a virada inevitável. "O recorde era 6,9 milhões. Em três dias bateu 48,4 milhões. Hoje o canal soma 32,6 milhões." Não é só listar dado; é **escalar** dado, de modo que o leitor sinta a aceleração antes de você nomear o que ela significa. Cada número ainda tem fonte real (as regras acima valem). Técnica central do formato tweet-editorial (`carrossel-tweet-editorial.md`).
+
 ### Sem dado real
 Se a pesquisa não retornar dado confiável: troque por **comportamento observável** (tipo 2) ou marque `[DADO A CONFIRMAR — não encontrei fonte]` e avise o usuário. Nunca cravar número inventado.
 

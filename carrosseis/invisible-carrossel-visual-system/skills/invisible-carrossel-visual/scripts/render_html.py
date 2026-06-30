@@ -12,14 +12,19 @@ embutido), e o conteúdo de cada card vem de um ROTEIRO (JSON). Trocar o texto d
 roteiro troca o carrossel; a estética é a do estilo escolhido.
 
 Estilos suportados (template embutido):
-  - notes      : mockup do app Notas do iOS (validado à mão, fiel à referência).
-  - tweet_card : print de tweet do X (Twitter). Dois sub-modos pelo campo `fundo`:
-                 "solido" (default; tweet tela-cheia, fundo branco/preto) e
-                 "imagem" (card escuro flutuante sobre uma imagem de fundo).
+  - notes          : mockup do app Notas do iOS (validado à mão, fiel à referência).
+  - tweet_card     : print de tweet do X (Twitter). Dois sub-modos pelo campo `fundo`:
+                     "solido" (default; tweet tela-cheia, fundo branco/preto) e
+                     "imagem" (card escuro flutuante sobre uma imagem de fundo).
+  - tweet_editorial: sequência editorial em tweet (Pedro Sobral). COMPONÍVEL POR
+                     BLOCOS: cada card empilha blocos opcionais (cabecalho, breaking,
+                     paragrafos, imagem, cta) sobre tema light/dark, com ênfases
+                     inline (cor de texto + highlight de bloco). Os tipos de card do
+                     repertório emergem das combinações.
 
 Contrato do ROTEIRO (JSON):
 {
-  "estilo": "notes" | "tweet_card",
+  "estilo": "notes" | "tweet_card" | "tweet_editorial",
   "ratio": "4x5" | "1x1",                      # default 4x5
   "cards": [ ... ]                             # campos do card dependem do estilo
 }
@@ -61,6 +66,47 @@ ESTILO "tweet_card" (cabeçalho editável; tweet é layout único, sem papel):
 #   no fluxo: pasta apontada pelo usuário OU geração via /invisible-image. O motor
 #   só a embute — não gera nem busca imagem.
 
+ESTILO "tweet_editorial" (componível por blocos; SÓ ratio "4x5"):
+{
+  "perfil": {"nome": "Pedro Sobral", "handle": "pedrosobral",
+             "avatar": "/caminho.jpg", "verificado": true},  # identidade do cabeçalho,
+                                                 #   vale p/ todos os cards (cada card pode
+                                                 #   sobrescrever via "perfil" próprio)
+  "cards": [{
+    "papel": "capa" | "interno" | "fecho",       # pista de default de tema; não engessa
+    "tema": "light" | "dark",                     # opcional; default por papel
+    "blocos": [                                   # ordem = ordem de empilhamento (topo->baixo)
+      {"tipo": "breaking", "texto": "🚨 Breaking: ...", "enfases": [...]},
+      {"tipo": "paragrafos", "corpo": [
+          {"texto": "parágrafo ...", "peso": "bold"|null, "italic": false,
+           "fade": false, "big": false,           # big = corpo de destaque tipográfico
+           "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
+      ]},
+      {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null,
+       "enquadramento": "cobrir-centro"},        # como a imagem se encaixa na caixa:
+                                                  #   cobrir-centro (cena, default)
+                                                  #   cobrir-topo  (retrato: não corta rosto)
+                                                  #   cobrir-base
+                                                  #   inteira      (print/diagrama: sem recorte)
+                                                  # path local -> embute; ausente -> placeholder
+      {"tipo": "cta", "texto": "Salva esse conteúdo 👉"}
+    ]
+  }]
+}
+# REGRA DO CABEÇALHO (foto+nome+selo+handle): é o DEFAULT — entra em TODO card
+#   automaticamente (a partir de "perfil"), no topo. NÃO se lista como bloco. Ele só
+#   some quando o card é denso a ponto de o conteúdo não caber COM ele: o motor MEDE a
+#   altura real (Chrome) e, se exceder a área útil, remonta o card sem cabeçalho (vira
+#   só-texto). Cards leves -> com cabeçalho; cards densos -> só-texto. Automático.
+# Ênfases (campo "tipo"): cor de texto -> text-amarelo|text-azul|text-vermelho;
+#   highlight de bloco -> box-amarelo|box-azul|box-verde. A copy MARCA o trecho a
+#   enfatizar; a classe (cor) é decisão do render, seguindo o repertório do _ESTILO.md.
+# Imagem: dois modos. "path" preenchido (arquivo local) -> embute via base64.
+#   "path" ausente/null -> desenha PLACEHOLDER (caixa rotulada com a "descricao").
+#   ORDEM DE MONTAGEM: a peça é aprovada primeiro com placeholders (passada 1); só
+#   depois a SKILL resolve cada imagem (busca real free -> fallback /invisible-image)
+#   e re-renderiza com os arquivos (passada 2). O motor só embute o que chega pronto.
+
 Uso:
     python3 render_html.py --roteiro roteiro.json --out-dir ./cards [--chrome "/path/Chrome"]
 
@@ -72,6 +118,7 @@ import base64
 import html as _html
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -381,7 +428,277 @@ def montar_html_tweet(card, ratio):
             f'<style>{TWEET_CSS}</style></head><body>{inner}</body></html>')
 
 
-ESTILOS = {"notes": montar_html_notes, "tweet_card": montar_html_tweet}
+# ----------------------------------------------------------------------------
+# ESTILO "tweet_editorial" — sequência editorial em formato de tweet (Pedro Sobral).
+# COMPONÍVEL POR BLOCOS: cada card é uma coluna que empilha blocos opcionais
+# (cabecalho, breaking, paragrafos, imagem, cta) sobre um tema (light/dark), com
+# ênfases inline (cor de texto + highlight de bloco). Os "tipos" de card do
+# repertório emergem das combinações. Cores amostradas das 26 refs por PIL.
+# Briefing: 00_Recursos/REFS_VISUAIS/Tweet_Editorial_Sequence/Tweet_Editorial_ESTILO.md
+# ----------------------------------------------------------------------------
+TWEET_EDITORIAL_CSS = r"""
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { background:#444; }
+.card { position:relative; overflow:hidden;
+  font-family:-apple-system,"SF Pro Text","SF Pro Display","Helvetica Neue",Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; text-rendering:geometricPrecision; }
+.card.r45 { width:1080px; height:1350px; }
+.card.r11 { width:1080px; height:1080px; }
+.card.light { background:#fff; } .card.dark { background:#000; }
+
+/* coluna vertical CENTRALIZADA na vertical, como as referências: o bloco de
+   conteúdo fica no meio do quadro, com espaço equilibrado em cima e embaixo.
+   A densidade do corpo é calibrada para o card mais pesado caber centralizado;
+   overflow:hidden é só uma rede de segurança. */
+.stack { position:absolute; left:96px; right:96px; top:0; bottom:0;
+  display:flex; flex-direction:column; justify-content:center;
+  padding:72px 0; overflow:hidden; }
+
+/* cabeçalho do tweet (reusa a estética do tweet_card) */
+.head { display:flex; align-items:center; gap:28px; margin-bottom:40px; }
+.avatar { width:118px; height:118px; border-radius:50%; flex:0 0 118px; object-fit:cover;
+  display:flex; align-items:center; justify-content:center; font-size:52px; font-weight:600; color:#fff; }
+.idcol { display:flex; flex-direction:column; justify-content:center; min-width:0; }
+.nameline { display:flex; align-items:center; gap:12px; }
+.name { font-size:50px; font-weight:700; letter-spacing:-0.5px; line-height:1.05; }
+.light .name { color:#0f1419; } .dark .name { color:#e7e9ea; }
+.badge { width:42px; height:42px; flex:0 0 42px; }
+.handle { font-size:40px; font-weight:400; margin-top:4px; }
+.light .handle { color:#536471; } .dark .handle { color:#71767b; }
+.dots { margin-left:auto; align-self:flex-start; font-size:54px; line-height:.5; letter-spacing:2px; }
+.light .dots { color:#536471; } .dark .dots { color:#71767b; }
+
+/* breaking line (card 1) */
+.breaking { font-size:62px; font-weight:700; line-height:1.18; letter-spacing:-0.5px; margin-bottom:30px; }
+.light .breaking { color:#0f1419; } .dark .breaking { color:#fff; }
+
+/* parágrafos do corpo (denso): calibrado para o card mais pesado caber CENTRALIZADO */
+.para { font-size:46px; font-weight:400; line-height:1.24; letter-spacing:-0.3px; margin-bottom:0.6em; }
+.para:last-child { margin-bottom:0; }
+.para.bold { font-weight:700; }
+.para.italic { font-style:italic; }
+.para.fade { color:#6b7177; }
+.light .para { color:#0f1419; } .dark .para { color:#fff; }
+/* corpo de destaque tipográfico (frase-tese / ênfase de clímax): SEMPRE grande,
+   é a proposta do card de respiro e do fecho. Não encolher. */
+.para.big { font-size:86px; font-weight:700; line-height:1.1; letter-spacing:-2px; }
+
+/* ênfase: cor de texto inline */
+.hl-text-amarelo { color:#f9da4a; }
+.hl-text-azul    { color:#1d9bf0; }
+.hl-text-vermelho{ color:#d02f22; }
+/* ênfase: highlight de bloco (caixa colorida atrás do texto) */
+.hl-box-amarelo, .hl-box-azul, .hl-box-verde {
+  box-decoration-break:clone; -webkit-box-decoration-break:clone; padding:2px 14px; border-radius:6px; }
+.hl-box-amarelo { background:#f9da4a; color:#0f1419; }
+.hl-box-azul    { background:#1d9bf0; color:#fff; }
+.hl-box-verde   { background:#4eac59; color:#fff; }
+
+/* CAIXA DE IMAGEM: encaixe de tamanho FIXO. A imagem real preenche exatamente a
+   mesma caixa do placeholder (mesma altura), recortada por object-fit:cover — ela
+   NUNCA dita a própria altura nem estoura o card. Placeholder e foto compartilham
+   as medidas da caixa. */
+/* Caixa = faixa paisagem, fiel às refs (razão altura/largura ~0,45 medida no card
+   torcedor: 983x453). Largura do conteúdo = 888px -> altura ~400px.
+   ENQUADRAMENTO: .foto-cover recorta para preencher (cena); .foto-contain mostra a
+   imagem INTEIRA sem recorte (print/diagrama), com fundo preenchendo as sobras. */
+.foto { display:block; width:100%; height:400px; border-radius:36px; margin:32px 0; }
+.foto-cover { object-fit:cover; object-position:center; }
+.foto-contain { object-fit:contain; }
+.light .foto-contain { background:#f0f3f5; } .dark .foto-contain { background:#16181c; }
+/* placeholder de imagem (passada 1): mesma caixa, sem arquivo */
+.foto-ph { display:flex; align-items:center; justify-content:center; text-align:center;
+  width:100%; height:400px; border-radius:36px; margin:32px 0; padding:40px;
+  font-size:36px; font-weight:600; line-height:1.3; }
+.light .foto-ph { background:#e9eef2; color:#536471; border:4px dashed #b8c2cb; }
+.dark .foto-ph  { background:#16181c; color:#8b98a5; border:4px dashed #38444d; }
+
+/* cta */
+.cta { font-size:48px; font-weight:700; margin-top:38px; }
+.light .cta { color:#0f1419; } .dark .cta { color:#fff; }
+"""
+
+# papel -> tema default (pista; o tema do card vence se vier explícito)
+_TWE_TEMA_DEFAULT = {"capa": "light", "interno": "dark", "fecho": "dark"}
+# classes de ênfase válidas (o resto é ignorado com segurança)
+_TWE_ENFASES = {"text-amarelo", "text-azul", "text-vermelho",
+                "box-amarelo", "box-azul", "box-verde"}
+
+# emojis de direção/gesto que NUNCA podem quebrar sozinhos numa linha órfã:
+# colam na última palavra da frase (non-breaking space). 👉👇👆👈 e variações.
+_TWE_EMOJI_GESTO = "\U0001F446\U0001F447\U0001F448\U0001F449"
+
+
+_NBSP = chr(0x00A0)  # espaço inquebrável
+
+
+def _colar_emoji_gesto(s):
+    """Liga um emoji de gesto (mão/seta) à palavra anterior com um NBSP, para ele não
+    cair sozinho numa linha órfã. Atua sobre o HTML já montado (depois de <br>/spans)."""
+    for emoji in _TWE_EMOJI_GESTO:
+        s = s.replace(" " + emoji, _NBSP + emoji)
+    return s
+
+
+def _render_enfases(texto, enfases):
+    """Escapa o texto, converte \\n em <br> e envolve cada `trecho` marcado num
+    <span class="hl-...">. As ênfases são aplicadas por substituição literal do
+    trecho já escapado (case-sensitive, primeira ocorrência). Emojis de gesto
+    (👉) são colados à palavra anterior para não virarem linha órfã."""
+    out = _nl2br(texto)
+    for e in (enfases or []):
+        trecho = e.get("trecho")
+        tipo = e.get("tipo")
+        if not trecho or tipo not in _TWE_ENFASES:
+            continue
+        alvo = _nl2br(trecho)
+        if alvo in out:
+            span = f'<span class="hl-{tipo}">{alvo}</span>'
+            out = out.replace(alvo, span, 1)
+    return _colar_emoji_gesto(out)
+
+
+def _bloco_cabecalho(card, b, tema):
+    nome = b.get("nome") or card.get("nome", "")
+    handle = str(b.get("handle") or card.get("handle", "")).lstrip("@")
+    av = {"avatar": b.get("avatar") or card.get("avatar"), "nome": nome}
+    badge = _X_BADGE if b.get("verificado", card.get("verificado", True)) else ""
+    return (f'<div class="head">{_avatar_tweet(av, _TWEET_FALLBACK_BG.get(tema, "#536471"))}'
+            f'<div class="idcol"><div class="nameline">'
+            f'<span class="name">{_html.escape(nome)}</span>{badge}</div>'
+            f'<div class="handle">@{_html.escape(handle)}</div></div>'
+            f'<div class="dots">…</div></div>')
+
+
+def _bloco_breaking(b):
+    return f'<div class="breaking">{_render_enfases(b.get("texto", ""), b.get("enfases"))}</div>'
+
+
+def _bloco_paragrafos(b):
+    parts = []
+    for p in b.get("corpo", []):
+        cls = ["para"]
+        if p.get("peso") == "bold" or p.get("bold"):
+            cls.append("bold")
+        if p.get("italic"):
+            cls.append("italic")
+        if p.get("fade"):
+            cls.append("fade")
+        if p.get("big"):
+            cls.append("big")
+        parts.append(f'<div class="{" ".join(cls)}">{_render_enfases(p.get("texto",""), p.get("enfases"))}</div>')
+    return "".join(parts)
+
+
+# como a imagem se encaixa na caixa (foco do enquadramento):
+#   cobrir-centro  -> cover, foco no centro (cena/paisagem genérica) [DEFAULT]
+#   cobrir-topo    -> cover, foco no TOPO (retrato/pessoa: não decapita o rosto)
+#   cobrir-base    -> cover, foco na base
+#   inteira        -> contain: mostra a imagem INTEIRA sem recorte (print/screenshot/
+#                     diagrama/logo), com o fundo preenchendo as sobras
+_TWE_ENQUADRA = {
+    "cobrir-centro": ("foto-cover", "center"),
+    "cobrir-topo":   ("foto-cover", "top"),
+    "cobrir-base":   ("foto-cover", "bottom"),
+    "inteira":       ("foto-contain", None),
+}
+
+
+def _bloco_imagem(b):
+    """Dois modos: arquivo (path local -> embute base64) e placeholder (sem path ->
+    caixa rotulada). A imagem chega pronta; o motor só embute e a ENQUADRA na caixa
+    conforme `enquadramento` (default cobrir-centro): retrato usa cobrir-topo (não
+    corta o rosto), print/diagrama usa `inteira` (sem recorte)."""
+    enq = b.get("enquadramento", "cobrir-centro")
+    cls, pos = _TWE_ENQUADRA.get(enq, _TWE_ENQUADRA["cobrir-centro"])
+    path = b.get("path")
+    if path and os.path.exists(path):
+        style = f' style="object-position:{pos}"' if pos else ""
+        return f'<img class="foto {cls}" src="{_b64_data_uri(path)}"{style}>'
+    rotulo = b.get("descricao") or "imagem"
+    enq_nota = "" if enq == "cobrir-centro" else f' · {enq}'
+    return f'<div class="foto-ph">[imagem: {_html.escape(str(rotulo))}{enq_nota}]</div>'
+
+
+def _bloco_cta(b):
+    return f'<div class="cta">{_render_enfases(b.get("texto", ""), b.get("enfases"))}</div>'
+
+
+_TWE_BLOCOS = {
+    "cabecalho": lambda card, b, tema: _bloco_cabecalho(card, b, tema),
+    "breaking":  lambda card, b, tema: _bloco_breaking(b),
+    "paragrafos": lambda card, b, tema: _bloco_paragrafos(b),
+    "imagem":    lambda card, b, tema: _bloco_imagem(b),
+    "cta":       lambda card, b, tema: _bloco_cta(b),
+}
+
+
+# altura útil do card 4:5 descontando o padding vertical do .stack (72px x2)
+_TWE_AREA_UTIL = 1350 - 72 * 2
+
+
+def _twe_corpo_blocos(card, tema, com_cabecalho):
+    """Monta os blocos do card. O cabeçalho é DEFAULT: entra sempre, a menos que
+    `com_cabecalho` seja False (decidido por medida quando o card é denso demais).
+    A identidade do cabeçalho vem do card (ou do perfil do roteiro, já mesclado)."""
+    partes = []
+    if com_cabecalho and card.get("_perfil"):
+        partes.append(_bloco_cabecalho(card, card["_perfil"], tema))
+    for b in card.get("blocos", []):
+        if b.get("tipo") == "cabecalho":
+            continue  # cabeçalho é automático; ignora se vier listado como bloco
+        montar = _TWE_BLOCOS.get(b.get("tipo"))
+        if montar:
+            partes.append(montar(card, b, tema))
+    return "".join(partes)
+
+
+def _twe_html(card, tema, rcls, com_cabecalho):
+    inner = (f'<div class="card {tema} {rcls}"><div class="stack">'
+             f'{_twe_corpo_blocos(card, tema, com_cabecalho)}</div></div>')
+    return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
+            f'<style>{TWEET_EDITORIAL_CSS}</style></head><body>{inner}</body></html>')
+
+
+def _twe_html_medicao(card, tema, com_cabecalho):
+    """Página de medição: empilha os mesmos blocos num contêiner de largura fixa
+    (888px = 1080 - 96x2) e escreve a altura natural do conteúdo no <title>, para
+    ler via Chrome --dump-dom. É a altura REAL (com o wrap real da fonte)."""
+    corpo = _twe_corpo_blocos(card, tema, com_cabecalho)
+    medidor = ('<div class="card %s r45"><div id="med" '
+               'style="position:static;width:888px;">%s</div></div>' % (tema, corpo))
+    script = ('<script>document.title="H="+'
+              'document.getElementById("med").offsetHeight;</script>')
+    return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
+            f'<style>{TWEET_EDITORIAL_CSS}</style></head><body>{medidor}{script}</body></html>')
+
+
+def montar_html_tweet_editorial(card, ratio, medir_altura=None):
+    """Monta o card. REGRA DO CABEÇALHO: o cabeçalho (foto+nome+selo+handle) é o
+    DEFAULT e aparece sempre; só some quando o card é denso a ponto de o conteúdo
+    não caber COM ele — aí vira card só-texto. A decisão é por MEDIDA real: se
+    `medir_altura(html)` for fornecido, mede a altura do conteúdo com cabeçalho e,
+    se exceder a área útil, remonta sem cabeçalho. Sem medidor (ex.: testes), usa
+    o default (com cabeçalho)."""
+    # tweet_editorial é SÓ 4:5. O 1:1 não comporta a densidade editorial (corta o
+    # rodapé); o estilo não o oferece. (Decisão do Arno, 30/06/2026.)
+    if ratio != "4x5":
+        raise ValueError("estilo 'tweet_editorial' só suporta ratio '4x5' "
+                         f"(recebi {ratio!r}); o 1:1 não comporta a densidade editorial")
+    papel = card.get("papel", "interno")
+    tema = card.get("tema") or _TWE_TEMA_DEFAULT.get(papel, "dark")
+    rcls = "r45"
+    tem_perfil = bool(card.get("_perfil"))
+    com_cabecalho = tem_perfil
+    if com_cabecalho and medir_altura is not None:
+        alt = medir_altura(_twe_html_medicao(card, tema, True))
+        if alt is not None and alt > _TWE_AREA_UTIL:
+            com_cabecalho = False  # denso demais: vira só-texto
+    return _twe_html(card, tema, rcls, com_cabecalho)
+
+
+ESTILOS = {"notes": montar_html_notes, "tweet_card": montar_html_tweet,
+           "tweet_editorial": montar_html_tweet_editorial}
 
 
 # ----------------------------------------------------------------------------
@@ -400,6 +717,25 @@ def render_png(chrome, html_str, out_png, ratio):
     finally:
         os.unlink(html_path)
     return os.path.exists(out_png)
+
+
+def medir_altura_chrome(chrome, html_str):
+    """Mede a altura natural (px) do conteúdo de medição: renderiza o HTML no
+    Chrome headless e lê o valor escrito no <title> via --dump-dom (H=<px>).
+    Devolve int ou None se não conseguir medir."""
+    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as f:
+        f.write(html_str)
+        html_path = f.name
+    try:
+        cmd = [chrome, "--headless", "--disable-gpu", "--no-sandbox",
+               "--virtual-time-budget=800", "--dump-dom", f"file://{html_path}"]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    except Exception:
+        return None
+    finally:
+        os.unlink(html_path)
+    m = re.search(r"<title>H=(\d+)</title>", r.stdout or "")
+    return int(m.group(1)) if m else None
 
 
 def dimensoes_png(path):
@@ -454,11 +790,23 @@ def main():
         out["erros"].append("roteiro sem cards")
         print(json.dumps(out, ensure_ascii=False, indent=2)); sys.exit(1)
 
+    # tweet_editorial: identidade do cabeçalho (perfil) vale para todos os cards;
+    # cada card pode sobrescrever campos. O cabeçalho é default (entra sempre, salvo
+    # quando a medida diz que não cabe). Mescla aqui, em _perfil.
+    perfil_global = roteiro.get("perfil") if estilo == "tweet_editorial" else None
+    medir = (lambda html: medir_altura_chrome(chrome, html)) if estilo == "tweet_editorial" else None
+
     esperado = (1080, 1350) if ratio == "4x5" else (1080, 1080)
     for i, card in enumerate(cards, 1):
         fname = f"card-{i:02d}.png"
+        if estilo == "tweet_editorial":
+            # perfil efetivo: card.cabecalho (bloco) > card.perfil > roteiro.perfil
+            bloco_cab = next((b for b in card.get("blocos", []) if b.get("tipo") == "cabecalho"), None)
+            perfil = {**(perfil_global or {}), **(card.get("perfil") or {}), **(bloco_cab or {})}
+            perfil.pop("tipo", None)
+            card = {**card, "_perfil": perfil if perfil else None}
         try:
-            html_str = montar(card, ratio)
+            html_str = montar(card, ratio, medir) if estilo == "tweet_editorial" else montar(card, ratio)
         except Exception as e:
             out["erros"].append(f"card {i}: {e}")
             out["cards"].append({"file": fname, "papel": card.get("papel", "-"),

@@ -1,0 +1,342 @@
+{
+  "estilo": "tweet_editorial",
+  "ratio": "4x5",
+  "perfil": {
+    "nome": "Pedro Sobral",
+    "handle": "pedrosobral",
+    "verificado": true
+  },
+  "cards": [
+    {
+      "papel": "capa",
+      "tema": "light",
+      "blocos": [
+        {
+          "tipo": "breaking",
+          "texto": "🚨 Breaking: Hoje é o segundo jogo do Brasil na Copa 2026."
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "E o primeiro já deixou um recorde que nenhuma TV do mundo nunca bateu numa transmissão de futebol."
+            }
+          ]
+        },
+        {
+          "tipo": "imagem",
+          "descricao": "Casimiro sorrindo ao lado do logo da CazéTV"
+        },
+        {
+          "tipo": "cta",
+          "texto": "Dá só uma olhada 👉"
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "dark",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "Há alguns dias, durante Brasil x Marrocos, o canal da CazéTV mais que dobrou o próprio recorde anterior de pessoas ao vivo, que era de 6,9 milhões na Copa de 2022.",
+              "peso": "bold",
+              "enfases": [
+                {
+                  "trecho": "Brasil",
+                  "tipo": "text-amarelo"
+                },
+                {
+                  "trecho": "Marrocos",
+                  "tipo": "text-vermelho"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tipo": "imagem",
+          "descricao": "Casimiro segurando o botão de prata do YouTube"
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "Em apenas três dias de torneio, já tinha alcançado 48,4 milhões de aparelhos únicos."
+            },
+            {
+              "texto": "E hoje, o canal soma 32,6 milhões de inscritos.",
+              "peso": "bold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "light",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "Legal, mas por que você, gestor de tráfego, deveria se importar com audiência de futebol num canal que não é do seu cliente?",
+              "peso": "bold",
+              "enfases": [
+                {
+                  "trecho": "não é do seu cliente?",
+                  "tipo": "box-verde"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tipo": "imagem",
+          "descricao": "print do perfil do canal CazéTV no YouTube"
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "A resposta tá no que esse número mostra: pra onde a atenção das pessoas já migrou. 👉"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "dark",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "E esse número é impressionante, só que o que realmente importa aqui é onde esse número tá acontecendo.",
+              "fade": true
+            }
+          ]
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "São 12 milhões de pessoas dentro de uma live no YouTube. Não na TV, no YOUTUBE.",
+              "big": true,
+              "enfases": [
+                {
+                  "trecho": "YOUTUBE",
+                  "tipo": "text-vermelho"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "dark",
+      "blocos": [
+        {
+          "tipo": "imagem",
+          "descricao": "celular com o logo do YouTube aceso"
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "E o YouTube, pra quem trabalha com tráfego pago, não deve ser só uma plataforma de vídeo institucional."
+            },
+            {
+              "texto": "É um canal de aquisição enorme.",
+              "peso": "bold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "dark",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "Pra que você entenda melhor, voltando um pouco no tempo, em 1970, a Copa do México foi a primeira transmitida via satélite pro mundo inteiro.",
+              "peso": "bold"
+            },
+            {
+              "texto": "Levou o torneio inteiro, semanas de jogo em sequência, pra estimar uma audiência acumulada de algumas centenas de milhões de pessoas."
+            }
+          ]
+        },
+        {
+          "tipo": "imagem",
+          "descricao": "torcedor brasileiro idoso abraçado à taça da Copa"
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "Anos depois, um canal brasileiro, sozinho, de graça, colocou 12,7 milhões de pessoas ao mesmo tempo, em uma só live.",
+              "enfases": [
+                {
+                  "trecho": "em uma só live",
+                  "tipo": "text-amarelo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "dark",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "A maioria dos gestores ainda monta público pensando: \"homem, 25-34, interesse em tal coisa\" e acredita que vai ter resultados.",
+              "enfases": [
+                {
+                  "trecho": "\"homem, 25-34, interesse em tal coisa\"",
+                  "tipo": "text-azul"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "tipo": "imagem",
+          "descricao": "executivo de costas em frente a um painel da Meta"
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "Enquanto isso, o próprio dono da plataforma tá dizendo que esse não é mais o fator que mais diz se a pessoa vai comprar ou não.",
+              "peso": "bold"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "light",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "Resumindo:"
+            },
+            {
+              "texto": "Se eu estivesse sentado na frente de um cliente hoje, eu usaria esse dado para mostrar apenas uma coisa:",
+              "peso": "bold"
+            }
+          ]
+        },
+        {
+          "tipo": "imagem",
+          "descricao": "rua decorada lotada de torcedores assistindo ao jogo"
+        },
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "A atenção das pessoas não está parada.",
+              "big": true,
+              "enfases": [
+                {
+                  "trecho": "A atenção das pessoas não está parada.",
+                  "tipo": "box-amarelo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "light",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "E naturalmente, isso muda a conversa.",
+              "fade": true
+            },
+            {
+              "texto": "Porque o gestor deixa de discutir plataforma e começa a discutir comportamento.",
+              "peso": "bold"
+            },
+            {
+              "texto": "A partir desse entendimento, a conversa com o seu cliente deixa de ser: \"Meta ou YouTube?\""
+            },
+            {
+              "texto": "E passa a ser:"
+            },
+            {
+              "texto": "\"Onde está a atenção do nosso cliente?\"",
+              "big": true,
+              "enfases": [
+                {
+                  "trecho": "\"Onde está a atenção do nosso cliente?\"",
+                  "tipo": "box-amarelo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "papel": "fecho",
+      "tema": "dark",
+      "blocos": [
+        {
+          "tipo": "paragrafos",
+          "corpo": [
+            {
+              "texto": "No final das contas, a CazéTV não é um case de futebol.",
+              "big": true,
+              "enfases": [
+                {
+                  "trecho": "a CazéTV não é um case de futebol.",
+                  "tipo": "text-amarelo"
+                }
+              ]
+            },
+            {
+              "texto": "É um case de atenção.",
+              "peso": "bold"
+            },
+            {
+              "texto": "E quem aprende a identificar para onde a atenção está indo costuma chegar antes da concorrência."
+            },
+            {
+              "texto": "Salva esse conteúdo pra você não perder ele.",
+              "peso": "bold",
+              "enfases": [
+                {
+                  "trecho": "Salva esse conteúdo",
+                  "tipo": "text-amarelo"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

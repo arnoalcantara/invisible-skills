@@ -44,6 +44,7 @@ E entrega os **cards renderizados** (PNG), na estética das referências.
 ### Estilos com template HTML pronto
 - **`notes`** — mockup do app Notas do iOS (moldura, SF Pro, bloco de seleção amarelo com carets, dark/light, 4:5 e 1:1). Validado à mão contra referências reais.
 - **`tweet_card`** — print de tweet do X (Twitter). Cabeçalho editável: nome, handle, avatar (arquivo local, fallback de inicial), selo verificado opcional, data opcional. SF Pro, 4:5 e 1:1. Dois sub-modos (campo `fundo`): **`solido`** (tweet tela-cheia, fundo branco/preto, dark/light) e **`imagem`** (card escuro flutuante sobre imagem de fundo; requer `fundo_imagem` local — a skill a obtém da pasta do usuário ou gerando via `/invisible-image`). Validado à mão contra referências reais.
+- **`tweet_editorial`** — sequência editorial em tweet (estilo Pedro Sobral). **Componível por blocos:** cada card empilha blocos opcionais (`cabecalho`, `breaking`, `paragrafos`, `imagem`, `cta`) sobre tema `light`/`dark`; os tipos de card do repertório (capa breaking, texto+imagem, destaque tipográfico, balão/highlight, fecho) emergem das combinações. Ênfases inline: cor de texto (`text-amarelo`/`azul`/`vermelho`) e highlight de bloco (`box-amarelo`/`azul`/`verde`). O bloco `imagem` tem modo **placeholder** (caixa rotulada) e **arquivo** (embute local); a skill resolve as imagens em **duas passadas** (estrutura com placeholders primeiro; depois busca imagem real free em Unsplash/Pexels/Wikimedia/Openverse → fallback gerar via `/invisible-image`). SF Pro, **só 4:5** (não suporta 1:1: a densidade editorial não cabe em 1080×1080); cores amostradas por pixel das refs. Validado à mão contra 26 prints reais.
 
 ## Requisitos
 
@@ -71,4 +72,5 @@ A skill lê o estilo + motor, mostra o plano, gera a capa para aprovação, e en
 - **v0.3.0:** motor HTML (HTML/CSS → PNG) para estilos tipográficos / UI-mockup; primeiro estilo: `notes`.
 - **v0.4.0:** segundo estilo HTML: `tweet_card` (print de tweet do X, sólido).
 - **v0.5.0:** `tweet_card` sub-modo `imagem` (card flutuante sobre imagem de fundo; imagem da pasta do usuário ou gerada via `/invisible-image`).
+- **v0.6.0:** terceiro estilo HTML: `tweet_editorial` (sequência editorial em tweet, estilo Pedro Sobral; componível por blocos; sourcing de imagem em duas passadas — estrutura com placeholders, depois imagem real free ou fallback `/invisible-image`). Em paralelo, a copy `invisible-carrossel` ganha o formato `tweet-editorial` (cruzamento percepção×editorial).
 - **Modo notícia:** pesquisa pauta por nicho e gera o carrossel ponta a ponta.
