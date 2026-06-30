@@ -493,12 +493,14 @@ html,body { background:#444; }
    mesma caixa do placeholder (mesma altura), recortada por object-fit:cover — ela
    NUNCA dita a própria altura nem estoura o card. Placeholder e foto compartilham
    as medidas da caixa. */
-.foto { display:block; width:100%; height:600px; border-radius:36px;
+/* Caixa = faixa paisagem, fiel às refs (razão altura/largura ~0,45 medida no card
+   torcedor: 983x453). Largura do conteúdo = 888px -> altura ~400px. */
+.foto { display:block; width:100%; height:400px; border-radius:36px;
   object-fit:cover; object-position:center; margin:32px 0; }
 /* placeholder de imagem (passada 1): mesma caixa, sem arquivo */
 .foto-ph { display:flex; align-items:center; justify-content:center; text-align:center;
-  width:100%; height:600px; border-radius:36px; margin:32px 0; padding:44px;
-  font-size:38px; font-weight:600; line-height:1.3; }
+  width:100%; height:400px; border-radius:36px; margin:32px 0; padding:40px;
+  font-size:36px; font-weight:600; line-height:1.3; }
 .light .foto-ph { background:#e9eef2; color:#536471; border:4px dashed #b8c2cb; }
 .dark .foto-ph  { background:#16181c; color:#8b98a5; border:4px dashed #38444d; }
 
