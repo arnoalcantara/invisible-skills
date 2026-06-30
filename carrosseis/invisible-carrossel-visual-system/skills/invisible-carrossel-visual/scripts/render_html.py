@@ -509,11 +509,27 @@ _TWE_TEMA_DEFAULT = {"capa": "light", "interno": "dark", "fecho": "dark"}
 _TWE_ENFASES = {"text-amarelo", "text-azul", "text-vermelho",
                 "box-amarelo", "box-azul", "box-verde"}
 
+# emojis de direção/gesto que NUNCA podem quebrar sozinhos numa linha órfã:
+# colam na última palavra da frase (non-breaking space). 👉👇👆👈 e variações.
+_TWE_EMOJI_GESTO = "\U0001F446\U0001F447\U0001F448\U0001F449"
+
+
+_NBSP = chr(0x00A0)  # espaço inquebrável
+
+
+def _colar_emoji_gesto(s):
+    """Liga um emoji de gesto (mão/seta) à palavra anterior com um NBSP, para ele não
+    cair sozinho numa linha órfã. Atua sobre o HTML já montado (depois de <br>/spans)."""
+    for emoji in _TWE_EMOJI_GESTO:
+        s = s.replace(" " + emoji, _NBSP + emoji)
+    return s
+
 
 def _render_enfases(texto, enfases):
     """Escapa o texto, converte \\n em <br> e envolve cada `trecho` marcado num
     <span class="hl-...">. As ênfases são aplicadas por substituição literal do
-    trecho já escapado (case-sensitive, primeira ocorrência)."""
+    trecho já escapado (case-sensitive, primeira ocorrência). Emojis de gesto
+    (👉) são colados à palavra anterior para não virarem linha órfã."""
     out = _nl2br(texto)
     for e in (enfases or []):
         trecho = e.get("trecho")
@@ -524,7 +540,7 @@ def _render_enfases(texto, enfases):
         if alvo in out:
             span = f'<span class="hl-{tipo}">{alvo}</span>'
             out = out.replace(alvo, span, 1)
-    return out
+    return _colar_emoji_gesto(out)
 
 
 def _bloco_cabecalho(card, b, tema):
