@@ -126,6 +126,27 @@ de cantos arredondados, texto preto sans-serif bold. Decisões:
 - Fonte/raio/padding/tamanho iniciais são chute educado a partir do print — **calibrados no
   still** antes do primeiro render completo.
 
+## Estilo `capsula-palavra` (variação do `capsula`)
+
+Mesma identidade do `capsula` (cápsula branca, texto preto bold, sem sombra, posição no
+terço inferior), mas mostra **uma palavra por vez**. Decisões:
+
+- **Uma palavra por página.** O preset liga `oneWordPerPage: true`; em vez de agrupar a
+  frase com `createTikTokStyleCaptions` (que respeita `combineMs`), cada `Caption` do JSON
+  (uma por palavra, vinda do `convert_captions.mjs`) vira sua própria página com um token
+  só. A tela mostra só a palavra falada naquele instante. `combineMs` deixa de valer (fica
+  no preset apenas pra fechar o tipo e dar duração à última palavra).
+- **Cápsula abraça a palavra.** Como há um token por página, a cápsula (mesmo
+  `box-decoration-break: clone` do `capsula`) envolve uma palavra de cada vez, centralizada.
+- **Duração colada na fala.** Cada palavra fica na tela do seu `startMs` até o `startMs` da
+  próxima palavra (preenche o gap entre palavras, sem buraco/flicker); a última segura por
+  ~`combineMs`. É o `oneWordPerPage` que muda o cálculo de `endFrame` no `Captions.tsx`.
+- **Sem karaokê de cor** (`highlightMode: "none"`): não há frase ao redor pra destacar; a
+  troca de palavra já é o ritmo. Fonte **maior** que o `capsula` (84 vs 58) porque cada tela
+  carrega uma palavra só — chute educado, **calibrar no still**.
+- **Opt-in, não default de formato.** Só entra via `--estilo capsula-palavra`. Não toca os
+  outros presets nem o `capsula` (frase), que segue igual.
+
 ## Formato quadrado (1:1) e default de estilo por formato
 
 A composição já se adapta à dimensão do vídeo (`parseMedia` no `calculateMetadata` lê width/height reais), então um vídeo 1080×1080 renderiza numa composição 1080×1080 sem distorção — nada a fazer ali.

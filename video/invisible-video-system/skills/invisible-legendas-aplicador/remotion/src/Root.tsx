@@ -25,7 +25,14 @@ const calcMeta = async ({ props }: { props: LegendaProps }) => {
 
 // Uma composição por preset. O id é o nome do preset — aplicar.py renderiza
 // `npx remotion render <preset>`.
-const PRESETS: PresetName[] = ["reels", "hormozi", "minimal", "classic", "capsula"];
+const PRESETS: PresetName[] = [
+  "reels",
+  "hormozi",
+  "minimal",
+  "classic",
+  "capsula",
+  "capsula-palavra",
+];
 
 export const RemotionRoot: React.FC = () => {
   return (
