@@ -494,9 +494,13 @@ html,body { background:#444; }
    NUNCA dita a própria altura nem estoura o card. Placeholder e foto compartilham
    as medidas da caixa. */
 /* Caixa = faixa paisagem, fiel às refs (razão altura/largura ~0,45 medida no card
-   torcedor: 983x453). Largura do conteúdo = 888px -> altura ~400px. */
-.foto { display:block; width:100%; height:400px; border-radius:36px;
-  object-fit:cover; object-position:center; margin:32px 0; }
+   torcedor: 983x453). Largura do conteúdo = 888px -> altura ~400px.
+   ENQUADRAMENTO: .foto-cover recorta para preencher (cena); .foto-contain mostra a
+   imagem INTEIRA sem recorte (print/diagrama), com fundo preenchendo as sobras. */
+.foto { display:block; width:100%; height:400px; border-radius:36px; margin:32px 0; }
+.foto-cover { object-fit:cover; object-position:center; }
+.foto-contain { object-fit:contain; }
+.light .foto-contain { background:#f0f3f5; } .dark .foto-contain { background:#16181c; }
 /* placeholder de imagem (passada 1): mesma caixa, sem arquivo */
 .foto-ph { display:flex; align-items:center; justify-content:center; text-align:center;
   width:100%; height:400px; border-radius:36px; margin:32px 0; padding:40px;
@@ -581,14 +585,34 @@ def _bloco_paragrafos(b):
     return "".join(parts)
 
 
+# como a imagem se encaixa na caixa (foco do enquadramento):
+#   cobrir-centro  -> cover, foco no centro (cena/paisagem genérica) [DEFAULT]
+#   cobrir-topo    -> cover, foco no TOPO (retrato/pessoa: não decapita o rosto)
+#   cobrir-base    -> cover, foco na base
+#   inteira        -> contain: mostra a imagem INTEIRA sem recorte (print/screenshot/
+#                     diagrama/logo), com o fundo preenchendo as sobras
+_TWE_ENQUADRA = {
+    "cobrir-centro": ("foto-cover", "center"),
+    "cobrir-topo":   ("foto-cover", "top"),
+    "cobrir-base":   ("foto-cover", "bottom"),
+    "inteira":       ("foto-contain", None),
+}
+
+
 def _bloco_imagem(b):
-    """Dois modos: arquivo (path local presente -> embute base64) e placeholder
-    (sem path -> caixa rotulada). A imagem chega pronta; o motor só embute."""
+    """Dois modos: arquivo (path local -> embute base64) e placeholder (sem path ->
+    caixa rotulada). A imagem chega pronta; o motor só embute e a ENQUADRA na caixa
+    conforme `enquadramento` (default cobrir-centro): retrato usa cobrir-topo (não
+    corta o rosto), print/diagrama usa `inteira` (sem recorte)."""
+    enq = b.get("enquadramento", "cobrir-centro")
+    cls, pos = _TWE_ENQUADRA.get(enq, _TWE_ENQUADRA["cobrir-centro"])
     path = b.get("path")
     if path and os.path.exists(path):
-        return f'<img class="foto" src="{_b64_data_uri(path)}">'
+        style = f' style="object-position:{pos}"' if pos else ""
+        return f'<img class="foto {cls}" src="{_b64_data_uri(path)}"{style}>'
     rotulo = b.get("descricao") or "imagem"
-    return f'<div class="foto-ph">[imagem: {_html.escape(str(rotulo))}]</div>'
+    enq_nota = "" if enq == "cobrir-centro" else f' · {enq}'
+    return f'<div class="foto-ph">[imagem: {_html.escape(str(rotulo))}{enq_nota}]</div>'
 
 
 def _bloco_cta(b):
