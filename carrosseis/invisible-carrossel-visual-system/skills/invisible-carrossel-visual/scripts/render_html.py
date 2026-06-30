@@ -489,11 +489,15 @@ html,body { background:#444; }
 .hl-box-azul    { background:#1d9bf0; color:#fff; }
 .hl-box-verde   { background:#4eac59; color:#fff; }
 
-/* imagem embutida arredondada, no fluxo */
-.foto { display:block; width:100%; border-radius:36px; object-fit:cover; margin:32px 0; }
-/* placeholder de imagem (passada 1, antes de resolver a foto) */
+/* CAIXA DE IMAGEM: encaixe de tamanho FIXO. A imagem real preenche exatamente a
+   mesma caixa do placeholder (mesma altura), recortada por object-fit:cover — ela
+   NUNCA dita a própria altura nem estoura o card. Placeholder e foto compartilham
+   as medidas da caixa. */
+.foto { display:block; width:100%; height:600px; border-radius:36px;
+  object-fit:cover; object-position:center; margin:32px 0; }
+/* placeholder de imagem (passada 1): mesma caixa, sem arquivo */
 .foto-ph { display:flex; align-items:center; justify-content:center; text-align:center;
-  width:100%; min-height:360px; border-radius:36px; margin:32px 0; padding:44px;
+  width:100%; height:600px; border-radius:36px; margin:32px 0; padding:44px;
   font-size:38px; font-weight:600; line-height:1.3; }
 .light .foto-ph { background:#e9eef2; color:#536471; border:4px dashed #b8c2cb; }
 .dark .foto-ph  { background:#16181c; color:#8b98a5; border:4px dashed #38444d; }
