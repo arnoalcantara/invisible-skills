@@ -68,22 +68,31 @@ ESTILO "tweet_card" (cabeçalho editável; tweet é layout único, sem papel):
 
 ESTILO "tweet_editorial" (componível por blocos; SÓ ratio "4x5"):
 {
-  "papel": "capa" | "interno" | "fecho",       # pista de default de tema; não engessa
-  "tema": "light" | "dark",                     # opcional; default por papel
-  "blocos": [                                   # ordem = ordem de empilhamento (topo->baixo)
-    {"tipo": "cabecalho", "nome": "Pedro Sobral", "handle": "pedrosobral",
-     "avatar": "/caminho.jpg", "verificado": true},   # avatar opcional (fallback inicial)
-    {"tipo": "breaking", "texto": "🚨 Breaking: ...", "enfases": [...]},
-    {"tipo": "paragrafos", "corpo": [
-        {"texto": "parágrafo ...", "peso": "bold"|null, "italic": false,
-         "fade": false, "big": false,           # big = corpo de destaque tipográfico
-         "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
-    ]},
-    {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
-                                                 # path local -> embute; ausente -> placeholder
-    {"tipo": "cta", "texto": "Salva esse conteúdo 👉"}
-  ]
+  "perfil": {"nome": "Pedro Sobral", "handle": "pedrosobral",
+             "avatar": "/caminho.jpg", "verificado": true},  # identidade do cabeçalho,
+                                                 #   vale p/ todos os cards (cada card pode
+                                                 #   sobrescrever via "perfil" próprio)
+  "cards": [{
+    "papel": "capa" | "interno" | "fecho",       # pista de default de tema; não engessa
+    "tema": "light" | "dark",                     # opcional; default por papel
+    "blocos": [                                   # ordem = ordem de empilhamento (topo->baixo)
+      {"tipo": "breaking", "texto": "🚨 Breaking: ...", "enfases": [...]},
+      {"tipo": "paragrafos", "corpo": [
+          {"texto": "parágrafo ...", "peso": "bold"|null, "italic": false,
+           "fade": false, "big": false,           # big = corpo de destaque tipográfico
+           "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
+      ]},
+      {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
+                                                  # path local -> embute; ausente -> placeholder
+      {"tipo": "cta", "texto": "Salva esse conteúdo 👉"}
+    ]
+  }]
 }
+# REGRA DO CABEÇALHO (foto+nome+selo+handle): é o DEFAULT — entra em TODO card
+#   automaticamente (a partir de "perfil"), no topo. NÃO se lista como bloco. Ele só
+#   some quando o card é denso a ponto de o conteúdo não caber COM ele: o motor MEDE a
+#   altura real (Chrome) e, se exceder a área útil, remonta o card sem cabeçalho (vira
+#   só-texto). Cards leves -> com cabeçalho; cards densos -> só-texto. Automático.
 # Ênfases (campo "tipo"): cor de texto -> text-amarelo|text-azul|text-vermelho;
 #   highlight de bloco -> box-amarelo|box-azul|box-verde. A copy MARCA o trecho a
 #   enfatizar; a classe (cor) é decisão do render, seguindo o repertório do _ESTILO.md.
@@ -104,6 +113,7 @@ import base64
 import html as _html
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -572,7 +582,53 @@ _TWE_BLOCOS = {
 }
 
 
-def montar_html_tweet_editorial(card, ratio):
+# altura útil do card 4:5 descontando o padding vertical do .stack (72px x2)
+_TWE_AREA_UTIL = 1350 - 72 * 2
+
+
+def _twe_corpo_blocos(card, tema, com_cabecalho):
+    """Monta os blocos do card. O cabeçalho é DEFAULT: entra sempre, a menos que
+    `com_cabecalho` seja False (decidido por medida quando o card é denso demais).
+    A identidade do cabeçalho vem do card (ou do perfil do roteiro, já mesclado)."""
+    partes = []
+    if com_cabecalho and card.get("_perfil"):
+        partes.append(_bloco_cabecalho(card, card["_perfil"], tema))
+    for b in card.get("blocos", []):
+        if b.get("tipo") == "cabecalho":
+            continue  # cabeçalho é automático; ignora se vier listado como bloco
+        montar = _TWE_BLOCOS.get(b.get("tipo"))
+        if montar:
+            partes.append(montar(card, b, tema))
+    return "".join(partes)
+
+
+def _twe_html(card, tema, rcls, com_cabecalho):
+    inner = (f'<div class="card {tema} {rcls}"><div class="stack">'
+             f'{_twe_corpo_blocos(card, tema, com_cabecalho)}</div></div>')
+    return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
+            f'<style>{TWEET_EDITORIAL_CSS}</style></head><body>{inner}</body></html>')
+
+
+def _twe_html_medicao(card, tema, com_cabecalho):
+    """Página de medição: empilha os mesmos blocos num contêiner de largura fixa
+    (888px = 1080 - 96x2) e escreve a altura natural do conteúdo no <title>, para
+    ler via Chrome --dump-dom. É a altura REAL (com o wrap real da fonte)."""
+    corpo = _twe_corpo_blocos(card, tema, com_cabecalho)
+    medidor = ('<div class="card %s r45"><div id="med" '
+               'style="position:static;width:888px;">%s</div></div>' % (tema, corpo))
+    script = ('<script>document.title="H="+'
+              'document.getElementById("med").offsetHeight;</script>')
+    return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
+            f'<style>{TWEET_EDITORIAL_CSS}</style></head><body>{medidor}{script}</body></html>')
+
+
+def montar_html_tweet_editorial(card, ratio, medir_altura=None):
+    """Monta o card. REGRA DO CABEÇALHO: o cabeçalho (foto+nome+selo+handle) é o
+    DEFAULT e aparece sempre; só some quando o card é denso a ponto de o conteúdo
+    não caber COM ele — aí vira card só-texto. A decisão é por MEDIDA real: se
+    `medir_altura(html)` for fornecido, mede a altura do conteúdo com cabeçalho e,
+    se exceder a área útil, remonta sem cabeçalho. Sem medidor (ex.: testes), usa
+    o default (com cabeçalho)."""
     # tweet_editorial é SÓ 4:5. O 1:1 não comporta a densidade editorial (corta o
     # rodapé); o estilo não o oferece. (Decisão do Arno, 30/06/2026.)
     if ratio != "4x5":
@@ -581,15 +637,13 @@ def montar_html_tweet_editorial(card, ratio):
     papel = card.get("papel", "interno")
     tema = card.get("tema") or _TWE_TEMA_DEFAULT.get(papel, "dark")
     rcls = "r45"
-    # todos os cards centralizam na vertical (como as refs); a densidade é da copy.
-    corpo = []
-    for b in card.get("blocos", []):
-        montar = _TWE_BLOCOS.get(b.get("tipo"))
-        if montar:
-            corpo.append(montar(card, b, tema))
-    inner = f'<div class="card {tema} {rcls}"><div class="stack">{"".join(corpo)}</div></div>'
-    return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
-            f'<style>{TWEET_EDITORIAL_CSS}</style></head><body>{inner}</body></html>')
+    tem_perfil = bool(card.get("_perfil"))
+    com_cabecalho = tem_perfil
+    if com_cabecalho and medir_altura is not None:
+        alt = medir_altura(_twe_html_medicao(card, tema, True))
+        if alt is not None and alt > _TWE_AREA_UTIL:
+            com_cabecalho = False  # denso demais: vira só-texto
+    return _twe_html(card, tema, rcls, com_cabecalho)
 
 
 ESTILOS = {"notes": montar_html_notes, "tweet_card": montar_html_tweet,
@@ -612,6 +666,25 @@ def render_png(chrome, html_str, out_png, ratio):
     finally:
         os.unlink(html_path)
     return os.path.exists(out_png)
+
+
+def medir_altura_chrome(chrome, html_str):
+    """Mede a altura natural (px) do conteúdo de medição: renderiza o HTML no
+    Chrome headless e lê o valor escrito no <title> via --dump-dom (H=<px>).
+    Devolve int ou None se não conseguir medir."""
+    with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as f:
+        f.write(html_str)
+        html_path = f.name
+    try:
+        cmd = [chrome, "--headless", "--disable-gpu", "--no-sandbox",
+               "--virtual-time-budget=800", "--dump-dom", f"file://{html_path}"]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    except Exception:
+        return None
+    finally:
+        os.unlink(html_path)
+    m = re.search(r"<title>H=(\d+)</title>", r.stdout or "")
+    return int(m.group(1)) if m else None
 
 
 def dimensoes_png(path):
@@ -666,11 +739,23 @@ def main():
         out["erros"].append("roteiro sem cards")
         print(json.dumps(out, ensure_ascii=False, indent=2)); sys.exit(1)
 
+    # tweet_editorial: identidade do cabeçalho (perfil) vale para todos os cards;
+    # cada card pode sobrescrever campos. O cabeçalho é default (entra sempre, salvo
+    # quando a medida diz que não cabe). Mescla aqui, em _perfil.
+    perfil_global = roteiro.get("perfil") if estilo == "tweet_editorial" else None
+    medir = (lambda html: medir_altura_chrome(chrome, html)) if estilo == "tweet_editorial" else None
+
     esperado = (1080, 1350) if ratio == "4x5" else (1080, 1080)
     for i, card in enumerate(cards, 1):
         fname = f"card-{i:02d}.png"
+        if estilo == "tweet_editorial":
+            # perfil efetivo: card.cabecalho (bloco) > card.perfil > roteiro.perfil
+            bloco_cab = next((b for b in card.get("blocos", []) if b.get("tipo") == "cabecalho"), None)
+            perfil = {**(perfil_global or {}), **(card.get("perfil") or {}), **(bloco_cab or {})}
+            perfil.pop("tipo", None)
+            card = {**card, "_perfil": perfil if perfil else None}
         try:
-            html_str = montar(card, ratio)
+            html_str = montar(card, ratio, medir) if estilo == "tweet_editorial" else montar(card, ratio)
         except Exception as e:
             out["erros"].append(f"card {i}: {e}")
             out["cards"].append({"file": fname, "papel": card.get("papel", "-"),

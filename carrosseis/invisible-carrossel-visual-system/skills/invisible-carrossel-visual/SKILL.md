@@ -107,25 +107,28 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
 
 - **`tweet_editorial`** — sequência editorial em formato de tweet (estilo Pedro Sobral). **Componível por blocos:** cada card é uma coluna que empilha blocos opcionais; os "tipos" de card do repertório (capa breaking, texto+imagem, destaque tipográfico, balão, fecho) **emergem das combinações**. `_ESTILO.md`: `00_Recursos/REFS_VISUAIS/Tweet_Editorial_Sequence/Tweet_Editorial_ESTILO.md`. Tema `light`/`dark` por card; ênfases inline (cor de texto + highlight de bloco).
 
-  Campos do card:
+  Campos do roteiro/card:
   ```json
-  { "papel": "capa",                    // capa/interno/fecho — pista de tema default
-    "tema": "light",                    // light/dark (opcional; default por papel)
-    "centralizar": false,               // opcional; força (des)centralizar vertical
-    "blocos": [                         // ORDEM = empilhamento topo→baixo
-      {"tipo": "cabecalho", "nome": "Pedro Sobral", "handle": "pedrosobral",
-       "avatar": "/caminho.jpg", "verificado": true},
-      {"tipo": "breaking", "texto": "🚨 Breaking: ..."},
-      {"tipo": "paragrafos", "corpo": [
-        {"texto": "parágrafo", "peso": "bold", "italic": false, "fade": false,
-         "big": false,                  // big = destaque tipográfico (frase-tese gigante)
-         "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
-      ]},
-      {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
-      {"tipo": "cta", "texto": "Salva esse conteúdo 👉"} ] }
+  { "estilo": "tweet_editorial", "ratio": "4x5",
+    "perfil": {"nome": "Pedro Sobral", "handle": "pedrosobral",
+               "avatar": "/caminho.jpg", "verificado": true},   // identidade do cabeçalho
+    "cards": [{
+      "papel": "capa",                  // capa/interno/fecho — pista de tema default
+      "tema": "light",                  // light/dark (opcional; default por papel)
+      "blocos": [                       // ORDEM = empilhamento topo→baixo
+        {"tipo": "breaking", "texto": "🚨 Breaking: ..."},
+        {"tipo": "paragrafos", "corpo": [
+          {"texto": "parágrafo", "peso": "bold", "italic": false, "fade": false,
+           "big": false,                // big = destaque tipográfico (frase-tese gigante)
+           "enfases": [{"trecho": "palavra", "tipo": "text-amarelo"}]}
+        ]},
+        {"tipo": "imagem", "descricao": "rótulo do placeholder", "path": null},
+        {"tipo": "cta", "texto": "Salva esse conteúdo 👉"} ] }] }
   ```
+  - **Cabeçalho é DEFAULT e automático.** Foto + nome + selo + handle vêm do `perfil` (topo do roteiro; um card pode sobrescrever com `perfil` próprio) e o motor **injeta o cabeçalho em todo card**. Você **não lista** cabeçalho como bloco. Ele **só some quando o card é denso a ponto de não caber com ele**: o motor mede a altura real e, se estourar a área útil, remonta o card sem cabeçalho (vira só-texto). Cards leves → com cabeçalho; densos → só-texto. Automático, fiel às refs.
+  - **Centralização vertical.** Todo card centraliza o bloco na vertical (como as refs); não há campo de alinhamento.
   - **Ênfases** (`tipo`): cor de texto → `text-amarelo` / `text-azul` / `text-vermelho`; highlight de bloco → `box-amarelo` / `box-azul` / `box-verde`. A copy marca o **trecho**; você escolhe a classe seguindo o repertório do `_ESTILO.md`.
-  - **`big`** num parágrafo = card de respiro (frase-tese grande); cards só de `big`, sem imagem nem cabeçalho, centralizam vertical automaticamente.
+  - **`big`** num parágrafo = frase-tese / ênfase de clímax grande (card de respiro, fecho). Não encolhe.
   - **Só 4:5.** Este estilo **não suporta 1:1** (a densidade editorial não cabe em 1080×1080 e corta o rodapé); o motor recusa outro ratio. Sempre `ratio: "4x5"`.
   - **Densidade é da copy:** o canvas 4:5 é fixo; um card com texto demais corta. Em 4:5 cabe ~9–10 linhas de corpo + 1 imagem, com folga de rodapé. Estourou? O card tinha texto demais — quebre em dois (é o que a copy real faz).
 
