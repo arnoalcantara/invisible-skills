@@ -34,7 +34,13 @@ import type { CSSProperties } from "react";
 
 type HighlightMode = "color" | "box" | "opacity" | "none";
 
-export type PresetName = "reels" | "hormozi" | "minimal" | "classic" | "capsula";
+export type PresetName =
+  | "reels"
+  | "hormozi"
+  | "minimal"
+  | "classic"
+  | "capsula"
+  | "capsula-palavra";
 
 // spring de entrada da palavra ativa (pop com overshoot)
 type PopAnim = {
@@ -80,6 +86,12 @@ type Preset = {
   capsuleRadius?: number; // raio dos cantos (px)
   capsulePadX?: number; // respiro horizontal interno (px)
   capsulePadY?: number; // respiro vertical interno (px)
+  // --- uma palavra por página (opcional) ---
+  // Quando true, cada PALAVRA falada vira sua própria página/sequência: a tela
+  // mostra só a palavra ativa, trocando palavra a palavra no tempo do WhisperX
+  // (karaokê de 1 palavra). Ignora combineMs. Combinado com capsuleBg, a cápsula
+  // abraça uma palavra de cada vez. Ausente = página de frase (comportamento atual).
+  oneWordPerPage?: boolean;
   // --- camada de animação (opcional) ---
   pop?: PopAnim;
   colorFadeFrames?: number;
@@ -199,6 +211,34 @@ export const PRESETS: Record<PresetName, Preset> = {
     capsuleRadius: 14,
     capsulePadX: 22,
     capsulePadY: 10,
+  },
+  // 6. Cápsula palavra-a-palavra — igual ao capsula (cápsula branca, texto preto
+  //    bold, sem karaokê de cor), mas mostra UMA palavra por vez: a cápsula
+  //    abraça só a palavra falada e troca palavra a palavra no tempo do WhisperX.
+  //    Tela limpa, uma cápsula centralizada. Fonte maior que o capsula (frase)
+  //    porque cada tela carrega uma palavra só — chute educado, calibrar no still.
+  "capsula-palavra": {
+    combineMs: 2000, // ignorado quando oneWordPerPage (mantido por compatibilidade do tipo)
+    fontFamily: "Helvetica, Arial, sans-serif",
+    fontSize: 84,
+    fontWeight: 700,
+    uppercase: false,
+    letterSpacing: 0,
+    lineHeight: 1.2,
+    bottomOffset: 380,
+    bottomOffsetSquare: 140,
+    paddingX: 110,
+    baseColor: "#000000",
+    activeColor: "#000000",
+    stroke: null,
+    textShadow: null,
+    highlightMode: "none",
+    scaleActive: 1.0,
+    capsuleBg: "#FFFFFF",
+    capsuleRadius: 16,
+    capsulePadX: 28,
+    capsulePadY: 12,
+    oneWordPerPage: true,
   },
 };
 
@@ -333,11 +373,24 @@ export const Captions: React.FC<{
 
   const { pages } = useMemo(() => {
     if (!captions) return { pages: [] as TikTokPage[] };
+    // Uma palavra por página: cada caption (palavra) vira uma página com um único
+    // token, então a tela mostra só a palavra falada naquele instante.
+    if (preset.oneWordPerPage) {
+      const wordPages: TikTokPage[] = captions.map((c) => ({
+        text: c.text.trim(),
+        startMs: c.startMs,
+        durationMs: c.endMs - c.startMs,
+        tokens: [
+          { text: c.text.trim(), fromMs: c.startMs, toMs: c.endMs },
+        ],
+      }));
+      return { pages: wordPages };
+    }
     return createTikTokStyleCaptions({
       captions,
       combineTokensWithinMilliseconds: preset.combineMs,
     });
-  }, [captions, preset.combineMs]);
+  }, [captions, preset.combineMs, preset.oneWordPerPage]);
 
   const { fps } = useVideoConfig();
 
@@ -350,10 +403,17 @@ export const Captions: React.FC<{
       {pages.map((page, index) => {
         const nextPage = pages[index + 1] ?? null;
         const startFrame = (page.startMs / 1000) * fps;
-        const endFrame = Math.min(
-          nextPage ? (nextPage.startMs / 1000) * fps : Infinity,
-          startFrame + (preset.combineMs / 1000) * fps,
-        );
+        // Página de frase: dura até a próxima página, no máximo combineMs.
+        // Palavra-a-palavra: dura até a próxima palavra (preenche o gap entre
+        // palavras, sem buraco na tela); a última segura por ~combineMs.
+        const endFrame = preset.oneWordPerPage
+          ? nextPage
+            ? (nextPage.startMs / 1000) * fps
+            : startFrame + (preset.combineMs / 1000) * fps
+          : Math.min(
+              nextPage ? (nextPage.startMs / 1000) * fps : Infinity,
+              startFrame + (preset.combineMs / 1000) * fps,
+            );
         const durationInFrames = endFrame - startFrame;
         if (durationInFrames <= 0) return null;
 
