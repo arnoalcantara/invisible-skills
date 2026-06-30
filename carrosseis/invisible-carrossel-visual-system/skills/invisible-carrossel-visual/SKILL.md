@@ -147,6 +147,7 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
     3. **Gerar via `/invisible-image` — ÚLTIMO RECURSO:** só quando o card pede uma **ilustração/conceito que não existe para baixar** (uma composição, uma metáfora visual, uma arte). Não use geração para substituir uma imagem editorial real que existe na web; primeiro tente baixá-la.
     - Em todos os casos o motor só **embute** o arquivo local pronto; ele não busca nem gera. A imagem é a **última coisa** colocada na peça. **Sempre mostre as candidatas baixadas ao usuário antes de cravar** (a escolha editorial é dele).
     > A skill deve **identificar o tipo de imagem que o card pede**: cena/pessoa/fato específico → imagem real da web; objeto/ambiente genérico → banco free; ilustração/conceito → geração. O default do formato pende para o real, porque é editorial.
+    > **Busca de imagem é trabalho caso a caso, e ainda evolui.** A query certa muda por card (nome da pessoa, termo do fato, banco que indexa melhor). Itere a busca: refine os termos, troque de banco (Pexels ↔ Wikimedia ↔ Openverse), e descarte candidata que destoa do contexto (ex.: torcida de outro país onde o card pede torcida do Brasil). Mostre 1–3 candidatas ao usuário e deixe ele escolher; não crave a primeira. A qualidade do sourcing depende dessa curadoria, não de uma busca única.
 
 > Adicionar um novo estilo HTML = adicionar uma função de montagem em `render_html.py` (dict `ESTILOS`). Estilos novos nascem de um `_ESTILO.md` com `motor: html`.
 
