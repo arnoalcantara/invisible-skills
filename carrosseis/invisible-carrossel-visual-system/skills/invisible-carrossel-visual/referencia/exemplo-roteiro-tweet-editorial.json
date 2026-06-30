@@ -120,18 +120,9 @@
         {"tipo": "paragrafos", "corpo": [
           {"texto": "E naturalmente, isso muda a conversa.", "fade": true},
           {"texto": "Porque o gestor deixa de discutir plataforma e começa a discutir comportamento.", "peso": "bold"},
-          {"texto": "A partir desse entendimento, a conversa com o seu cliente deixa de ser: \"Meta ou YouTube?\"", "peso": "bold"},
-          {"texto": "E passa a ser:"}
-        ]}
-      ]
-    },
-    {
-      "papel": "interno",
-      "tema": "light",
-      "blocos": [
-        {"tipo": "paragrafos", "corpo": [
+          {"texto": "A partir desse entendimento, a conversa com o seu cliente deixa de ser: \"Meta ou YouTube?\""},
+          {"texto": "E passa a ser:"},
           {"texto": "\"Onde está a atenção do nosso cliente?\"",
-           "big": true,
            "enfases": [{"trecho": "\"Onde está a atenção do nosso cliente?\"", "tipo": "box-amarelo"}]}
         ]}
       ]

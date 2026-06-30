@@ -123,7 +123,7 @@ Apresente 1–3 ângulos possíveis (`base/copy/angulos.md`, cruzados com o modo
 2–3 variações de título posicionado (gancho, `base/copy/macroestrutura.md` Seção 3.3). Sem truque, sem clichê banido pelo modo. **Se o material tem caixinha de pergunta ou print**, considere abrir citando a pergunta literal entre aspas (a dor do público, na voz do público) em vez de uma headline autoral. **PARE.**
 
 **Etapa 4 — Rascunho dos slides.**
-Esboce os slides (título + direção de conteúdo por slide) seguindo a **estrutura do modo**. Faixa **7–12, default 10**: ajuste à densidade do material, não estique à força. **PARE.**
+Esboce os slides (título + direção de conteúdo por slide) seguindo a **estrutura do modo**. **A faixa é a do modo, não um número fixo:** autoridade/percepção/editorial trabalham em 7–12; o **formato `tweet-editorial` roda mais longo (10–14, e 12–13 é perfeitamente normal)** porque precisa de espaço para escalar o dado e dar o recuo histórico. **Não comprima à força para caber em 10** nem estique à toa: o número certo é o que a sequência pede. **PARE.**
 
 **Etapa 5 — Escrita final.**
 Texto definitivo de cada slide, **na voz da fonte (ou da marca) como lente do modo**. Segure-se nas palavras do material; use frase de efeito autoral só onde a estrutura exige uma ponte que a fala não deu, e mesmo aí na voz da fonte. Rode `base/copy/portugues-natural.md` (inclui **proibição de travessão**, Regra 6). Encerramento pela biblioteca do modo, **nunca CTA genérico**. Entregue **só o texto card a card**: nada de indicação visual, layout, imagem ou ícone (isso é das skills de render). **PARE.**

@@ -66,7 +66,7 @@ ESTILO "tweet_card" (cabeçalho editável; tweet é layout único, sem papel):
 #   no fluxo: pasta apontada pelo usuário OU geração via /invisible-image. O motor
 #   só a embute — não gera nem busca imagem.
 
-ESTILO "tweet_editorial" (componível por blocos):
+ESTILO "tweet_editorial" (componível por blocos; SÓ ratio "4x5"):
 {
   "papel": "capa" | "interno" | "fecho",       # pista de default de tema; não engessa
   "tema": "light" | "dark",                     # opcional; default por papel
@@ -435,9 +435,9 @@ html,body { background:#444; }
    que cards densos não sejam cortados nas duas pontas; o card "respira" pela
    calibragem de fonte, não pela centralização. */
 .stack { position:absolute; left:96px; right:96px; top:0; bottom:0;
-  display:flex; flex-direction:column; justify-content:flex-start; padding:84px 0; }
+  display:flex; flex-direction:column; justify-content:flex-start; padding:76px 0 112px; }
 /* cards de respiro (1 bloco curto de destaque) podem centralizar via .center */
-.stack.center { justify-content:center; }
+.stack.center { justify-content:center; padding:76px 0; }
 
 /* cabeçalho do tweet (reusa a estética do tweet_card) */
 .head { display:flex; align-items:center; gap:28px; margin-bottom:40px; }
@@ -457,20 +457,17 @@ html,body { background:#444; }
 .breaking { font-size:62px; font-weight:700; line-height:1.18; letter-spacing:-0.5px; margin-bottom:30px; }
 .light .breaking { color:#0f1419; } .dark .breaking { color:#fff; }
 
-/* parágrafos do corpo (denso): calibrado para caber ~10 linhas + imagem em 1350px */
-.para { font-size:50px; font-weight:400; line-height:1.26; letter-spacing:-0.3px; margin-bottom:0.7em; }
+/* parágrafos do corpo (denso): calibrado para caber em 1350px com folga de rodapé */
+.para { font-size:48px; font-weight:400; line-height:1.25; letter-spacing:-0.3px; margin-bottom:0.65em; }
 .para:last-child { margin-bottom:0; }
 .para.bold { font-weight:700; }
 .para.italic { font-style:italic; }
 .para.fade { color:#6b7177; }
 .light .para { color:#0f1419; } .dark .para { color:#fff; }
 /* corpo de destaque tipográfico (card que respira) */
-.para.big { font-size:90px; font-weight:700; line-height:1.1; letter-spacing:-2px; }
+.para.big { font-size:88px; font-weight:700; line-height:1.1; letter-spacing:-2px; }
 /* quando o destaque divide o card com outros blocos (não centralizado), é menor */
-.stack:not(.center) .para.big { font-size:74px; line-height:1.12; letter-spacing:-1.5px; }
-.r11 .para { font-size:46px; } .r11 .para.big { font-size:78px; }
-.r11 .stack:not(.center) .para.big { font-size:64px; }
-.r11 .breaking { font-size:56px; }
+.stack:not(.center) .para.big { font-size:70px; line-height:1.12; letter-spacing:-1.5px; }
 
 /* ênfase: cor de texto inline */
 .hl-text-amarelo { color:#f9da4a; }
@@ -484,11 +481,11 @@ html,body { background:#444; }
 .hl-box-verde   { background:#4eac59; color:#fff; }
 
 /* imagem embutida arredondada, no fluxo */
-.foto { display:block; width:100%; border-radius:36px; object-fit:cover; margin:40px 0; }
+.foto { display:block; width:100%; border-radius:36px; object-fit:cover; margin:32px 0; }
 /* placeholder de imagem (passada 1, antes de resolver a foto) */
 .foto-ph { display:flex; align-items:center; justify-content:center; text-align:center;
-  width:100%; min-height:420px; border-radius:36px; margin:40px 0; padding:48px;
-  font-size:40px; font-weight:600; line-height:1.3; }
+  width:100%; min-height:360px; border-radius:36px; margin:32px 0; padding:44px;
+  font-size:38px; font-weight:600; line-height:1.3; }
 .light .foto-ph { background:#e9eef2; color:#536471; border:4px dashed #b8c2cb; }
 .dark .foto-ph  { background:#16181c; color:#8b98a5; border:4px dashed #38444d; }
 
@@ -592,9 +589,14 @@ def _twe_centraliza(card):
 
 
 def montar_html_tweet_editorial(card, ratio):
+    # tweet_editorial é SÓ 4:5. O 1:1 não comporta a densidade editorial (corta o
+    # rodapé); o estilo não o oferece. (Decisão do Arno, 30/06/2026.)
+    if ratio != "4x5":
+        raise ValueError("estilo 'tweet_editorial' só suporta ratio '4x5' "
+                         f"(recebi {ratio!r}); o 1:1 não comporta a densidade editorial")
     papel = card.get("papel", "interno")
     tema = card.get("tema") or _TWE_TEMA_DEFAULT.get(papel, "dark")
-    rcls = "r45" if ratio == "4x5" else "r11"
+    rcls = "r45"
     center = " center" if _twe_centraliza(card) else ""
     corpo = []
     for b in card.get("blocos", []):

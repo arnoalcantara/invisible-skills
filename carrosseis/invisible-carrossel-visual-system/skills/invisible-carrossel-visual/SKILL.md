@@ -126,7 +126,8 @@ O script monta o HTML do estilo (moldura fixa embutida + conteúdo do card) e re
   ```
   - **Ênfases** (`tipo`): cor de texto → `text-amarelo` / `text-azul` / `text-vermelho`; highlight de bloco → `box-amarelo` / `box-azul` / `box-verde`. A copy marca o **trecho**; você escolhe a classe seguindo o repertório do `_ESTILO.md`.
   - **`big`** num parágrafo = card de respiro (frase-tese grande); cards só de `big`, sem imagem nem cabeçalho, centralizam vertical automaticamente.
-  - **Densidade é da copy:** o canvas 4:5 é fixo; um card com texto demais corta. Em 4:5 cabe ~10 linhas de corpo + 1 imagem. Estourou? O card tinha texto demais — quebre em dois (é o que a copy real faz). 1:1 pede cards mais curtos.
+  - **Só 4:5.** Este estilo **não suporta 1:1** (a densidade editorial não cabe em 1080×1080 e corta o rodapé); o motor recusa outro ratio. Sempre `ratio: "4x5"`.
+  - **Densidade é da copy:** o canvas 4:5 é fixo; um card com texto demais corta. Em 4:5 cabe ~9–10 linhas de corpo + 1 imagem, com folga de rodapé. Estourou? O card tinha texto demais — quebre em dois (é o que a copy real faz).
 
   **De onde vem a imagem dos blocos `imagem` — você orquestra, em DUAS PASSADAS (regra dura):**
   - **Passada 1 (estrutura, primeiro):** monte e renderize a peça inteira com os blocos `imagem` **sem `path`** (modo placeholder: o motor desenha uma caixa arredondada rotulada com a `descricao`). Aprove a estrutura inteira de pé, sem depender de nenhuma imagem. É o que vai ao portão da Fase 2/3.
