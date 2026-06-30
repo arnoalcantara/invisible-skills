@@ -431,13 +431,13 @@ html,body { background:#444; }
 .card.r11 { width:1080px; height:1080px; }
 .card.light { background:#fff; } .card.dark { background:#000; }
 
-/* coluna vertical: empilha blocos do topo. Ancorada no topo (não centraliza) para
-   que cards densos não sejam cortados nas duas pontas; o card "respira" pela
-   calibragem de fonte, não pela centralização. */
+/* coluna vertical CENTRALIZADA na vertical, como as referências: o bloco de
+   conteúdo fica no meio do quadro, com espaço equilibrado em cima e embaixo.
+   A densidade do corpo é calibrada para o card mais pesado caber centralizado;
+   overflow:hidden é só uma rede de segurança. */
 .stack { position:absolute; left:96px; right:96px; top:0; bottom:0;
-  display:flex; flex-direction:column; justify-content:flex-start; padding:76px 0 112px; }
-/* cards de respiro (1 bloco curto de destaque) podem centralizar via .center */
-.stack.center { justify-content:center; padding:76px 0; }
+  display:flex; flex-direction:column; justify-content:center;
+  padding:72px 0; overflow:hidden; }
 
 /* cabeçalho do tweet (reusa a estética do tweet_card) */
 .head { display:flex; align-items:center; gap:28px; margin-bottom:40px; }
@@ -457,17 +457,16 @@ html,body { background:#444; }
 .breaking { font-size:62px; font-weight:700; line-height:1.18; letter-spacing:-0.5px; margin-bottom:30px; }
 .light .breaking { color:#0f1419; } .dark .breaking { color:#fff; }
 
-/* parágrafos do corpo (denso): calibrado para caber em 1350px com folga de rodapé */
-.para { font-size:48px; font-weight:400; line-height:1.25; letter-spacing:-0.3px; margin-bottom:0.65em; }
+/* parágrafos do corpo (denso): calibrado para o card mais pesado caber CENTRALIZADO */
+.para { font-size:46px; font-weight:400; line-height:1.24; letter-spacing:-0.3px; margin-bottom:0.6em; }
 .para:last-child { margin-bottom:0; }
 .para.bold { font-weight:700; }
 .para.italic { font-style:italic; }
 .para.fade { color:#6b7177; }
 .light .para { color:#0f1419; } .dark .para { color:#fff; }
-/* corpo de destaque tipográfico (card que respira) */
-.para.big { font-size:88px; font-weight:700; line-height:1.1; letter-spacing:-2px; }
-/* quando o destaque divide o card com outros blocos (não centralizado), é menor */
-.stack:not(.center) .para.big { font-size:70px; line-height:1.12; letter-spacing:-1.5px; }
+/* corpo de destaque tipográfico (frase-tese / ênfase de clímax): SEMPRE grande,
+   é a proposta do card de respiro e do fecho. Não encolher. */
+.para.big { font-size:86px; font-weight:700; line-height:1.1; letter-spacing:-2px; }
 
 /* ênfase: cor de texto inline */
 .hl-text-amarelo { color:#f9da4a; }
@@ -573,21 +572,6 @@ _TWE_BLOCOS = {
 }
 
 
-def _twe_centraliza(card):
-    """Cards de respiro centralizam verticalmente: nenhum bloco de imagem, sem
-    cabeçalho, e algum parágrafo `big` (destaque tipográfico curto). O campo
-    explícito `centralizar` vence a heurística."""
-    if "centralizar" in card:
-        return bool(card["centralizar"])
-    blocos = card.get("blocos", [])
-    tipos = [b.get("tipo") for b in blocos]
-    if "imagem" in tipos or "cabecalho" in tipos:
-        return False
-    tem_big = any(p.get("big") for b in blocos if b.get("tipo") == "paragrafos"
-                  for p in b.get("corpo", []))
-    return tem_big
-
-
 def montar_html_tweet_editorial(card, ratio):
     # tweet_editorial é SÓ 4:5. O 1:1 não comporta a densidade editorial (corta o
     # rodapé); o estilo não o oferece. (Decisão do Arno, 30/06/2026.)
@@ -597,13 +581,13 @@ def montar_html_tweet_editorial(card, ratio):
     papel = card.get("papel", "interno")
     tema = card.get("tema") or _TWE_TEMA_DEFAULT.get(papel, "dark")
     rcls = "r45"
-    center = " center" if _twe_centraliza(card) else ""
+    # todos os cards centralizam na vertical (como as refs); a densidade é da copy.
     corpo = []
     for b in card.get("blocos", []):
         montar = _TWE_BLOCOS.get(b.get("tipo"))
         if montar:
             corpo.append(montar(card, b, tema))
-    inner = f'<div class="card {tema} {rcls}"><div class="stack{center}">{"".join(corpo)}</div></div>'
+    inner = f'<div class="card {tema} {rcls}"><div class="stack">{"".join(corpo)}</div></div>'
     return (f'<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8">'
             f'<style>{TWEET_EDITORIAL_CSS}</style></head><body>{inner}</body></html>')
 

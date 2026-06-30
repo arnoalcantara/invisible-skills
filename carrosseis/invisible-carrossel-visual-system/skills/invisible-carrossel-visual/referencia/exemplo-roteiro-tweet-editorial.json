@@ -58,7 +58,13 @@
           {"texto": "São 12 milhões de pessoas dentro de uma live no YouTube. Não na TV, no YOUTUBE.",
            "big": true,
            "enfases": [{"trecho": "YOUTUBE", "tipo": "text-vermelho"}]}
-        ]},
+        ]}
+      ]
+    },
+    {
+      "papel": "interno",
+      "tema": "dark",
+      "blocos": [
         {"tipo": "imagem", "descricao": "celular com o logo do YouTube aceso"},
         {"tipo": "paragrafos", "corpo": [
           {"texto": "E o YouTube, pra quem trabalha com tráfego pago, não deve ser só uma plataforma de vídeo institucional."},
@@ -123,6 +129,7 @@
           {"texto": "A partir desse entendimento, a conversa com o seu cliente deixa de ser: \"Meta ou YouTube?\""},
           {"texto": "E passa a ser:"},
           {"texto": "\"Onde está a atenção do nosso cliente?\"",
+           "big": true,
            "enfases": [{"trecho": "\"Onde está a atenção do nosso cliente?\"", "tipo": "box-amarelo"}]}
         ]}
       ]
