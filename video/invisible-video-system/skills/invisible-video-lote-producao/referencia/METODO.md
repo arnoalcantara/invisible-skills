@@ -37,6 +37,7 @@ então re-rodar uma etapa parcial é seguro.
 | 4 Combinar | `04_COMBINADOS` tem combinação (nome com `__`) |
 | 5 Acelerar | `04_COMBINADOS` tem `*_ACELERADO_*` (só exigida se o plano pediu) |
 | 6 Trilha | `99_FINALIZADOS` tem `*_FINALIZADO*` |
+| 7 Nomear | `99_FINALIZADOS` tem `*_FINALIZADO*` começando com o prefixo do plano (só exigida se o plano deu prefixo) |
 
 Limitação consciente: o gate da etapa 1 não distingue "otimizado mas ainda não
 denoised". O denoiser é in-place e mantém o nome (não há marca `_DENOISER` para
@@ -48,7 +49,7 @@ marcador de denoise (sidecar), não o nome.
 
 ## A ordem e suas dependências
 
-`1 → 2 → (3.1, 3.2 em qualquer ordem) → 4 → 5 → 6`.
+`1 → 2 → (3.1, 3.2 em qualquer ordem) → 4 → 5 → 6 → 7`.
 
 - **Denoiser antes da transcrição:** transcrever áudio sujo desperdiça WhisperX e
   pode degradar o alinhamento. Por isso denoiser fecha a etapa 1, antes da 2.
@@ -61,6 +62,10 @@ marcador de denoise (sidecar), não o nome.
   lado com `_ACELERADO_`, originais lentos intactos como subproduto); a trilha
   consome **só os `_ACELERADO_`** quando houve aceleração, e as combinações normais
   quando não houve.
+- **Nomear (7) por último:** renomeia os `_FINALIZADO` de `99_FINALIZADOS` in-place,
+  prefixando `<prefixo><n>_` na ordem do plano. Preserva o sufixo `_FINALIZADO`, então
+  o gate da 6 continua válido; o gate da 7 exige que os finalizados comecem com o
+  prefixo. Só roda se o plano definiu `nome_prefixo`; senão nasce pulada.
 
 ## `.json` de combinação OFF por padrão
 

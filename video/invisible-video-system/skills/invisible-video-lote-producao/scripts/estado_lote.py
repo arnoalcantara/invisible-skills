@@ -13,6 +13,8 @@ Como cada etapa é detectada como "feita" (heurística por pasta/sufixo):
   4   Combinar          -> 04_COMBINADOS tem alguma combinação (nome com '__')
   5   Acelerar          -> 04_COMBINADOS tem algum *_ACELERADO_*.mp4 (só exigida se o plano pediu)
   6   Trilha            -> 99_FINALIZADOS tem algum *_FINALIZADO*.mp4
+  7   Nomear            -> 99_FINALIZADOS tem *_FINALIZADO* começando com o prefixo do
+                          plano (renomeação in-place; só exigida se o plano deu prefixo)
 
 Acelerar vem ANTES da trilha de propósito: acelerar depois aceleraria a música
 junto (e o atempo a tiraria do tempo). Acelerar roda em 04_COMBINADOS; a trilha
@@ -38,7 +40,7 @@ import sys
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".webm"}
 
 # ordem canônica das etapas
-ETAPAS = ["1", "2", "3.1", "3.2", "4", "5", "6"]
+ETAPAS = ["1", "2", "3.1", "3.2", "4", "5", "6", "7"]
 ROTULOS = {
     "1": "Otimizar + Denoise",
     "2": "Transcrever",
@@ -47,6 +49,7 @@ ROTULOS = {
     "4": "Combinar",
     "5": "Acelerar",
     "6": "Trilha",
+    "7": "Nomear",
 }
 
 
@@ -78,6 +81,8 @@ def parse_plan(plan_path: str) -> dict:
         "alvo_trilha": -37,
         "acelerar": False,
         "fator_aceleracao": 1.2,
+        "nome_prefixo": "",
+        "nome_inicio": 1,
     }
 
     # tabela de decisões: | Estilo de legenda | auto (...) |
@@ -108,6 +113,14 @@ def parse_plan(plan_path: str) -> dict:
         nums = re.findall(r"-?\d+", v)
         if len(nums) >= 2:
             dec["alvo_fala"], dec["alvo_trilha"] = int(nums[0]), int(nums[1])
+    # Nomeação final: | Nomeação final (prefixo / início / ordem) | `DME_VAV` a partir de 252 — ... |
+    # (rótulo literal — o linha() já faz re.escape internamente)
+    v = linha("Nomeação final (prefixo / início / ordem)")
+    if v and v.strip() != "—":
+        m = re.search(r"`([^`]+)`\s*a partir de\s*(\d+)", v)
+        if m:
+            dec["nome_prefixo"] = m.group(1)
+            dec["nome_inicio"] = int(m.group(2))
 
     # checkboxes pulados: linha da etapa marcada [x] que contém "pulada"
     pulados = set()
@@ -138,6 +151,8 @@ def main() -> int:
         pulados.add("3.2")
     if not dec["acelerar"]:
         pulados.add("5")  # acelerar é a etapa 5 (antes da trilha)
+    if not dec.get("nome_prefixo"):
+        pulados.add("7")  # nomear é a etapa 7 (última); sem prefixo, não roda
 
     d_brutas = os.path.join(lote, "01_BRUTAS")
     d_otim = os.path.join(lote, "02_OTIMIZADOS")
@@ -164,8 +179,13 @@ def main() -> int:
         "4": any("__" in f for f in comb_v),
         # 5 (acelerar) roda em 04_COMBINADOS, ANTES da trilha
         "5": any("_ACELERADO_" in f.upper() for f in comb_v),
-        # 6 (trilha) é a última, grava em 99_FINALIZADOS
+        # 6 (trilha) grava em 99_FINALIZADOS com _FINALIZADO no nome
         "6": any("_FINALIZADO" in f.upper() for f in fim_v),
+        # 7 (nomear) renomeia in-place: finalizados começam com o prefixo do plano.
+        # Sem prefixo definido, a etapa está pulada (tratada acima) e o gate não importa.
+        "7": bool(dec.get("nome_prefixo"))
+             and any(f.startswith(dec["nome_prefixo"]) for f in fim_v)
+             and any("_FINALIZADO" in f.upper() for f in fim_v),
     }
 
     etapas = []

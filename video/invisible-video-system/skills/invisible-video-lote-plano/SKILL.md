@@ -77,7 +77,19 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
 
 6. **Modo de otimização** (opcional, só se o usuário tiver preferência): silêncio
    (default `justo` −33dB/0.15s, ou `conservador` −35dB/0.3s) e respiro (default
-   `conservador` 0.10/0.25, ou `justo` 0.05/0.18).
+   `justo` 0.05/0.18, ou `conservador` 0.10/0.25). **Ambos justo por default**,
+   alinhado ao otimizador — não assuma conservador no respiro.
+
+7. **Nomeação final** (opcional). Pergunte se, ao fim do lote, os arquivos de
+   `99_FINALIZADOS` devem ser **renomeados** para um padrão de entrega. Se sim,
+   capture:
+   - **prefixo** (ex.: `DME_VAV`) — vai na frente do nome, com o separador que o
+     usuário quiser embutido (`DME_VAV` → `DME_VAV252_...`);
+   - **número inicial** (ex.: `252`) — a numeração cresce de 1 em 1;
+   - **ordem** da numeração, em prosa (ex.: "leva por leva: ganchos 1..5 base,
+     depois V2, depois V3"). A renomeação é **in-place** e **preserva o sufixo**
+     `_FINALIZADO` (o prefixo só entra na frente). Se o usuário não quiser
+     renomear, a etapa 7 nasce pulada (`nome_prefixo: ""`).
 
 Resuma as escolhas em uma frase e confirme antes de criar.
 
@@ -104,11 +116,17 @@ Escreva as decisões num JSON temporário (campos ausentes assumem o default):
   "alvo_trilha": -37,
   "acelerar": true,
   "fator_aceleracao": 1.2,
-  "modo_silencio": "conservador",
-  "modo_respiro": "conservador",
-  "observacoes": ""
+  "modo_silencio": "justo",
+  "modo_respiro": "justo",
+  "observacoes": "",
+  "nome_prefixo": "DME_VAV",
+  "nome_inicio": 252,
+  "nome_ordem": "leva por leva: ganchos 1..5 base, depois V2, depois V3"
 }
 ```
+
+> **Nomeação (etapa 7):** `nome_prefixo: ""` (default) desliga a etapa — ela nasce
+> pulada. Preencher `nome_prefixo` liga a renomeação in-place em `99_FINALIZADOS`.
 
 ```bash
 python3 scripts/criar_lote.py \
