@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
-"""quadrado.py — gera a versão QUADRADA (1:1) de vídeos verticais otimizados.
+"""quadrado.py — reenquadra vídeos verticais otimizados para um formato de feed.
 
 Roda DEPOIS do otimizar.py, sobre a pasta OTIMIZADOS/ (ou um arquivo). Para cada
-`_OTIMIZADO`, recorta um quadrado de largura cheia e o salva como `_QUADRADO` ao
-lado — o vertical e o quadrado convivem na mesma pasta e seguem em paralelo pela
-esteira.
+`_OTIMIZADO`, recorta o vídeo vertical num formato de LARGURA CHEIA e o salva ao
+lado — o vertical e o(s) formato(s) recortado(s) convivem na mesma pasta e seguem
+em paralelo pela esteira. Dois formatos, mesma lógica de âncora:
+  - `quadrado` (1:1) → lado = largura; sufixo `_QUADRADO`. É o default (histórico).
+  - `retrato` (4:5) → altura = largura × 1.25 (1080×1920 → 1080×1350); sufixo
+    `_RETRATO`. O 'portrait' clássico do feed do Instagram.
 
-POR QUE AQUI (e não na combinação): o enquadramento vertical→quadrado é uma
-decisão POR BRUTA (onde fica o rosto dentro do 1:1). Resolvida uma vez no
+POR QUE AQUI (e não na combinação): o enquadramento vertical→formato é uma
+decisão POR BRUTA (onde fica o rosto dentro do recorte). Resolvida uma vez no
 otimizado, propaga idêntica a todas as combinações. Se ficasse pro combinador,
 cada par gancho+desenvolvimento exigiria reenquadrar de novo.
 
 COMO A ÂNCORA É DECIDIDA — face detection (YuNet) ancorada nos OLHOS:
-  - O quadrado tem lado = LARGURA do vídeo (largura cheia, descarta altura). A
-    folga vertical é H - W; a âncora `y` ∈ [0, H-W] é o que se decide.
+  - O recorte tem lado horizontal = LARGURA do vídeo (largura cheia) e altura
+    conforme o formato (quadrado: = largura; retrato: 1.25×largura). A folga
+    vertical é H - altura_do_recorte; a âncora `y` ∈ [0, folga] é o que se decide.
   - Detector YuNet (cv2.FaceDetectorYN, modelo ~230KB em referencia/modelos/, sem
     torch). Além da caixa, ele devolve 5 pontos faciais — e a âncora usa os OLHOS,
     não o centro da caixa. POR QUÊ: o Haar (testado antes) centra a caixa no rosto
     inteiro e a barba branca grande puxa o centro pra baixo (pro queixo), cortando
     a coroa da cabeça no crop. Os olhos são um ponto estável, imune à barba.
   - Amostra ~8 frames, pega a MEDIANA do y dos olhos (câmera estática → quase não
-    andam) e coloca os olhos em ~30% da altura do quadrado (terço superior, com
-    respiro pra coroa): y = clamp(olhos_y - 0.30*W, 0, H-W). Default 0.30 cravado
-    de ouvido pelo Arno (olhos mais altos) sobre o material do Lote 01.
+    andam) e coloca os olhos em ~30% da altura DO RECORTE (terço superior, com
+    respiro pra coroa): y = clamp(olhos_y - 0.30*lado, 0, folga), onde lado é a
+    ALTURA do recorte (quadrado: largura; retrato: 1.25×largura). Default 0.30
+    cravado de ouvido pelo Arno (olhos mais altos) sobre o material do Lote 01.
   - Detecções implausíveis (olhos fora de [0.15, 0.75]·H) são descartadas. Sem
     rosto plausível (mão na frente, cabeça virada): fallback âncora alta segura
     y = 0.15*(H-W).
@@ -35,6 +40,7 @@ o Arno cutuca só os outliers (o Haar chuta feio de vez em quando).
 
 Uso (rodar com o PYTHON DA VENV que tem cv2 — ver bootstrap.py):
     ~/.invisible-video/wxenv/bin/python quadrado.py <arquivo_ou_pasta> \
+        [--formato quadrado|retrato] \
         [--out-dir <dir>] [--target-frac 0.45] [--ancora <fração>] \
         [--crf 20] [--preset medium] [--contato] [--frames 8]
 
@@ -58,8 +64,16 @@ except ImportError:
     sys.exit(3)
 
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".avi", ".webm"}
-EYE_FRAC_PADRAO = 0.30      # onde a linha dos OLHOS cai dentro do quadrado
+EYE_FRAC_PADRAO = 0.30      # onde a linha dos OLHOS cai dentro do recorte
 FALLBACK_FRAC = 0.15        # âncora alta segura quando não detecta rosto
+
+# Formatos de reenquadramento (largura sempre cheia; muda só a ALTURA do recorte).
+#   ratio = altura_do_recorte / largura. quadrado 1:1 → 1.0; retrato 4:5 → 1.25.
+#   token = sufixo de formato no nome de saída (o RE do aplicador/combinador conhece).
+FORMATOS = {
+    "quadrado": {"ratio": 1.0,  "token": "QUADRADO"},
+    "retrato":  {"ratio": 1.25, "token": "RETRATO"},   # 1080×1920 → 1080×1350 (4:5)
+}
 
 MODELO_YUNET = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
@@ -119,11 +133,13 @@ def _frame(video, t):
     return img
 
 
-def detectar_ancora(video, w, h, dur, eye_frac, n_frames):
-    """Acha y pela mediana do y dos OLHOS (YuNet). Devolve (y, info)."""
-    folga = h - w
+def detectar_ancora(video, w, h, lado, dur, eye_frac, n_frames):
+    """Acha y pela mediana do y dos OLHOS (YuNet). Devolve (y, info).
+
+    `lado` é a ALTURA do recorte (quadrado: = w; retrato: 1.25×w)."""
+    folga = h - lado
     if folga <= 0:
-        return 0, {"fonte": "ja_quadrado_ou_horizontal"}
+        return 0, {"fonte": "recorte_maior_que_altura"}
     if not dur:
         return round(FALLBACK_FRAC * folga), {"fonte": "fallback_sem_duracao"}
 
@@ -149,46 +165,53 @@ def detectar_ancora(video, w, h, dur, eye_frac, n_frames):
             "fonte": "fallback_sem_rosto", "deteccoes": 0}
 
     ey = statistics.median(olhos)
-    y = round(ey - eye_frac * w)
+    y = round(ey - eye_frac * lado)
     y = max(0, min(folga, y))
     return y, {"fonte": "olhos_yunet", "deteccoes": len(olhos),
                "olhos_y": round(ey)}
 
 
-def gerar_quadrado(video, out_dir, target_frac, ancora_fixa, crf, preset,
+def gerar_quadrado(video, out_dir, formato, target_frac, ancora_fixa, crf, preset,
                    n_frames):
+    spec = FORMATOS[formato]
+    token = spec["token"]
     w, h, dur = ffprobe_wh_dur(video)
     if w is None:
         return {"origem": video, "erro": "não consegui ler dimensões (ffprobe)"}
-    if w == h:
-        return {"origem": video, "saida": None,
-                "aviso": "vídeo já é quadrado; nada a fazer"}
+    # altura do recorte = ratio × largura (par, exigência do yuv420p). Ex.: retrato
+    # sobre 1080 → 1350; quadrado → 1080.
+    lado = int(round(w * spec["ratio"]))
+    lado -= lado % 2
     if w > h:
         return {"origem": video, "saida": None,
-                "aviso": "vídeo é horizontal (W>H); crop quadrado vertical não se aplica"}
+                "aviso": "vídeo é horizontal (W>H); recorte vertical não se aplica"}
+    if lado >= h:
+        return {"origem": video, "saida": None,
+                "aviso": f"altura do recorte ({lado}) ≥ altura do vídeo ({h}); "
+                         f"nada a recortar para {formato}"}
 
-    folga = h - w
+    folga = h - lado
     if ancora_fixa is not None:
         y = max(0, min(folga, round(ancora_fixa * folga)))
         info = {"fonte": "ancora_manual", "fracao": ancora_fixa}
     else:
-        y, info = detectar_ancora(video, w, h, dur, target_frac, n_frames)
+        y, info = detectar_ancora(video, w, h, lado, dur, target_frac, n_frames)
 
     raiz, ext = os.path.splitext(os.path.basename(video))
     os.makedirs(out_dir, exist_ok=True)
     # o token de formato é SEMPRE o último: a entrada é <id>_OTIMIZADO_VERTICAL,
-    # então SUBSTITUI o _VERTICAL final por _QUADRADO (não anexa). Se não houver
-    # _VERTICAL no fim (entrada avulsa), anexa _QUADRADO como fallback.
+    # então SUBSTITUI o _VERTICAL final pelo token do formato (não anexa). Se não
+    # houver _VERTICAL no fim (entrada avulsa), anexa o token como fallback.
     if re.search(r"(?i)_VERTICAL$", raiz):
-        nome_q = re.sub(r"(?i)_VERTICAL$", "_QUADRADO", raiz)
+        nome_q = re.sub(r"(?i)_VERTICAL$", f"_{token}", raiz)
     else:
-        nome_q = f"{raiz}_QUADRADO"
+        nome_q = f"{raiz}_{token}"
     saida = os.path.join(out_dir, f"{nome_q}{ext}")
 
     venc = encoder_para(codec_de(video))
-    # lado = largura cheia; recorta só a altura. Áudio idêntico ao vertical (copy).
+    # largura cheia; recorta só a altura (lado). Áudio idêntico ao vertical (copy).
     cmd = ["ffmpeg", "-y", "-i", video,
-           "-vf", f"crop={w}:{w}:0:{y}",
+           "-vf", f"crop={w}:{lado}:0:{y}",
            "-c:v", venc, "-crf", str(crf), "-preset", preset,
            "-pix_fmt", "yuv420p"]
     if venc == "libx265":
@@ -200,26 +223,35 @@ def gerar_quadrado(video, out_dir, target_frac, ancora_fixa, crf, preset,
         return {"origem": video, "erro": "ffmpeg falhou (crop)",
                 "stderr": proc.stderr[-1200:]}
 
-    # NÃO propaga sidecar .md pro quadrado: o roteiro é o MESMO da vertical (mesmo
-    # áudio). Um .md só por corte (o do vertical) — sem duplicata _QUADRADO.md.
+    # NÃO propaga sidecar .md pro recorte: o roteiro é o MESMO da vertical (mesmo
+    # áudio). Um .md só por corte (o do vertical) — sem duplicata por formato.
 
     return {"origem": video, "saida": saida,
             "nome_saida": os.path.basename(saida),
-            "dim_origem": f"{w}x{h}", "dim_saida": f"{w}x{w}",
+            "formato": formato,
+            "dim_origem": f"{w}x{h}", "dim_saida": f"{w}x{lado}",
             "ancora_y": y, "folga": folga,
             "ancora_frac": round(y / folga, 3) if folga else 0,
             "rosto": info}
 
 
-def montar_contato(resultados, out_dir, cols=3, thumb=320):
-    """Folha de contato: grade de miniaturas (1 por quadrado) com o nome embaixo."""
+def montar_contato(resultados, out_dir, token, cols=3, thumb=320):
+    """Folha de contato: grade de miniaturas (1 por recorte) com o nome embaixo."""
     quadros = [r for r in resultados if r.get("saida")]
     if not quadros:
         return None
     import math
     rows = math.ceil(len(quadros) / cols)
     legenda = 28
-    cellw, cellh = thumb, thumb + legenda
+    # a miniatura preserva o aspecto do recorte (quadrado 1:1, retrato 4:5): altura
+    # da thumb = largura × (primeira folga/lado observada). Deriva do 1º resultado.
+    r0 = quadros[0]
+    try:
+        tw, th = (int(x) for x in r0["dim_saida"].split("x"))
+        thumb_h = int(round(thumb * th / tw))
+    except (KeyError, ValueError, ZeroDivisionError):
+        thumb_h = thumb
+    cellw, cellh = thumb, thumb_h + legenda
     import numpy as np
     canvas = np.full((rows * cellh, cols * cellw, 3), 30, dtype=np.uint8)
 
@@ -228,17 +260,17 @@ def montar_contato(resultados, out_dir, cols=3, thumb=320):
         img = _frame(r["saida"], (dur or 0) / 2.0)
         if img is None:
             continue
-        img = cv2.resize(img, (thumb, thumb))
+        img = cv2.resize(img, (thumb, thumb_h))
         ri, ci = divmod(idx, cols)
         y0, x0 = ri * cellh, ci * cellw
-        canvas[y0:y0 + thumb, x0:x0 + thumb] = img
+        canvas[y0:y0 + thumb_h, x0:x0 + thumb] = img
         nome = r["nome_saida"]
         if len(nome) > 34:
             nome = nome[:31] + "..."
-        cv2.putText(canvas, nome, (x0 + 6, y0 + thumb + 19),
+        cv2.putText(canvas, nome, (x0 + 6, y0 + thumb_h + 19),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (220, 220, 220), 1,
                     cv2.LINE_AA)
-    destino = os.path.join(out_dir, "_CONTATO_QUADRADO.png")
+    destino = os.path.join(out_dir, f"_CONTATO_{token}.png")
     cv2.imwrite(destino, canvas)
     return destino
 
@@ -246,13 +278,16 @@ def montar_contato(resultados, out_dir, cols=3, thumb=320):
 def coletar(caminho):
     if os.path.isfile(caminho):
         return [caminho]
+    # nunca reenquadra uma saída de formato (recortar um recorte): pula qualquer
+    # arquivo que já carregue um token de formato recortado no nome.
+    ja_recortado = tuple(spec["token"] for spec in FORMATOS.values())
     vids = []
     for entry in sorted(os.listdir(caminho)):
         p = os.path.join(caminho, entry)
         up = entry.upper()
         if (os.path.isfile(p) and not entry.startswith(".")
                 and os.path.splitext(entry)[1].lower() in VIDEO_EXT
-                and "QUADRADO" not in up):
+                and not any(tok in up for tok in ja_recortado)):
             vids.append(p)
     return vids
 
@@ -260,9 +295,12 @@ def coletar(caminho):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("entrada", help="arquivo _OTIMIZADO OU pasta (lote, ex. OTIMIZADOS/)")
+    ap.add_argument("--formato", choices=sorted(FORMATOS), default="quadrado",
+                    help="formato de reenquadramento: quadrado (1:1, default) ou "
+                         "retrato (4:5, 1080×1350). Largura sempre cheia.")
     ap.add_argument("--out-dir", help="saída (padrão: mesma pasta da entrada)")
     ap.add_argument("--target-frac", type=float, default=EYE_FRAC_PADRAO,
-                    help="onde a linha dos olhos cai no quadrado (0=topo, 1=base)")
+                    help="onde a linha dos olhos cai no recorte (0=topo, 1=base)")
     ap.add_argument("--ancora", type=float, default=None,
                     help="sobrepõe a detecção: fração da folga (0=topo,0.5=centro,1=base). "
                          "Use pra NUDGAR um corte específico.")
@@ -271,7 +309,7 @@ def main():
     ap.add_argument("--crf", type=int, default=20)
     ap.add_argument("--preset", default="medium")
     ap.add_argument("--contato", action="store_true",
-                    help="gera a folha de contato (_CONTATO_QUADRADO.png) pra aprovação")
+                    help="gera a folha de contato (_CONTATO_<FORMATO>.png) pra aprovação")
     args = ap.parse_args()
 
     entrada = os.path.abspath(args.entrada)
@@ -281,7 +319,7 @@ def main():
 
     videos = coletar(entrada)
     if not videos:
-        print(json.dumps({"erro": "nenhum vídeo (não-quadrado) encontrado"},
+        print(json.dumps({"erro": "nenhum vídeo (não-recortado) encontrado"},
                          ensure_ascii=False))
         sys.exit(1)
 
@@ -289,16 +327,17 @@ def main():
     out_dir = os.path.abspath(args.out_dir) if args.out_dir else base
 
     resultados = [
-        gerar_quadrado(v, out_dir, args.target_frac, args.ancora,
+        gerar_quadrado(v, out_dir, args.formato, args.target_frac, args.ancora,
                        args.crf, args.preset, args.frames)
         for v in videos
     ]
 
     contato = None
     if args.contato:
-        contato = montar_contato(resultados, out_dir)
+        contato = montar_contato(resultados, out_dir, FORMATOS[args.formato]["token"])
 
-    print(json.dumps({"out_dir": out_dir, "resultados": resultados,
+    print(json.dumps({"out_dir": out_dir, "formato": args.formato,
+                      "resultados": resultados,
                       "folha_contato": contato,
                       "target_frac": args.target_frac,
                       "ancora_manual": args.ancora},

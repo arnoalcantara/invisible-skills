@@ -28,9 +28,11 @@ pula o que já está pronto. Texto e realidade nunca brigam — a realidade ganh
 ## O que o planejador decide e o que ele NÃO decide
 
 **Decide** (preferências, não dependem de ver o material):
-- estilo de legenda; quais variações de gancho (+ fonte/fundo); pasta de trilha e
-  níveis; acelerar e qual fator; modo de otimização (silêncio/respiro, ambos justo
-  por default); nomeação final (prefixo + número inicial + ordem).
+- **formatos de saída** (vertical sempre; quadrado 1:1 e/ou retrato 4:5 opcionais —
+  default histórico vertical + quadrado); estilo de legenda; quais variações de
+  gancho (+ fonte/fundo); pasta de trilha e níveis; acelerar e qual fator; modo de
+  otimização (silêncio/respiro, ambos justo por default); nomeação final (prefixo +
+  número inicial + ordem).
 
 **NÃO decide:**
 - A **matriz de combinações** (gancho VAV19 × desenvolvimento VAV57...). Isso é do

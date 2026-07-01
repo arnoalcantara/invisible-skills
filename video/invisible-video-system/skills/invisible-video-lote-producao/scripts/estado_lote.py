@@ -73,6 +73,7 @@ def parse_plan(plan_path: str) -> dict:
 
     dec = {
         "estilo_legenda": "auto",
+        "formatos": ["vertical", "quadrado"],   # histórico; lido da linha "Formatos"
         "variacoes": [],
         "var_fonte": "padrao",
         "var_fundo": "padrao",
@@ -93,6 +94,16 @@ def parse_plan(plan_path: str) -> dict:
     v = linha("Estilo de legenda")
     if v:
         dec["estilo_legenda"] = v.split()[0]  # "auto", "reels", ...
+    # Formatos: a linha lista "vertical 9:16 (...), retrato 4:5 (...)" — extrai as
+    # palavras-chave de formato. Se a linha não existir (planos antigos), mantém o
+    # default histórico vertical+quadrado. vertical entra sempre (é o canônico).
+    v = linha("Formatos")
+    if v:
+        vl = v.lower()
+        fmts = [f for f in ("vertical", "quadrado", "retrato") if f in vl]
+        if "vertical" not in fmts:
+            fmts.insert(0, "vertical")
+        dec["formatos"] = fmts
     v = linha("Variações de gancho")
     if v and v.lower() != "nenhuma":
         dec["variacoes"] = [int(n) for n in re.findall(r"VAR(\d+)", v)]
@@ -165,10 +176,11 @@ def main() -> int:
     comb_v = videos(d_comb)
     fim_v = videos(d_fim)
 
-    # nº de BASES de vídeo em 02 (strip de _VERTICAL/_QUADRADO p/ contar segmentos únicos)
+    # nº de BASES de vídeo em 02 (strip do token de formato — VERTICAL/QUADRADO/
+    # RETRATO — p/ contar segmentos únicos; um segmento vira 1..3 arquivos de formato)
     bases = set()
     for f in otim_v:
-        b = re.sub(r"_(VERTICAL|QUADRADO)", "", os.path.splitext(f)[0])
+        b = re.sub(r"_(VERTICAL|QUADRADO|RETRATO)", "", os.path.splitext(f)[0])
         bases.add(b)
 
     gates = {

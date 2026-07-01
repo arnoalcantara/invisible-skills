@@ -41,9 +41,9 @@ EXTS_VIDEO = {".mp4", ".mov", ".mkv", ".webm", ".m4v"}
 ESTILOS = ["reels", "minimal", "classic", "hormozi", "capsula", "capsula-palavra"]
 
 # o .json (da invisible-legenda-arquivos) é nomeado pela BASE, sem formato nem VAR.
-# pra achá-lo a partir do clipe (que tem _VERTICAL/_QUADRADO no fim), removemos
-# esses tokens do stem antes de procurar o irmão na mesma pasta.
-RE_FORMATO = re.compile(r"(?i)_(VERTICAL|QUADRADO|HORIZONTAL)$")
+# pra achá-lo a partir do clipe (que tem _VERTICAL/_QUADRADO/_RETRATO no fim),
+# removemos esses tokens do stem antes de procurar o irmão na mesma pasta.
+RE_FORMATO = re.compile(r"(?i)_(VERTICAL|QUADRADO|RETRATO|HORIZONTAL)$")
 RE_VAR = re.compile(r"(?i)_VAR\d+")
 
 
@@ -65,12 +65,15 @@ def dims_video(video):
 
 
 def estilo_default(video):
-    """Default por formato: QUADRADO (1:1) → classic; vertical/outros → reels.
+    """Default por formato de FEED → classic; vertical (Reels/Stories) → reels.
 
-    No feed quadrado o estilo clássico (bloco no rodapé) é o que o Arno cravou
-    como padrão; no vertical (Reels/Stories) o padrão segue sendo o reels."""
+    QUADRADO (1:1) e RETRATO (4:5, 1080×1350) são formatos de feed e usam o bloco
+    clássico no rodapé — o que o Arno cravou como padrão de feed. O vertical 9:16
+    (Reels/Stories) segue no reels. A decisão é pela PROPORÇÃO medida: qualquer
+    vídeo cuja altura ≤ 1.34×largura (cobre 1:1 e 4:5) é feed → classic; acima
+    disso é vertical → reels."""
     w, h = dims_video(video)
-    if w and h and w == h:
+    if w and h and h <= 1.34 * w:      # 1:1 (1.0) e 4:5 (1.25); 9:16 ≈ 1.78 fica de fora
         return "classic"
     return "reels"
 
@@ -106,7 +109,8 @@ def main():
     ap.add_argument("alvos", nargs="+", help="vídeo(s) ou pasta")
     ap.add_argument("--estilo", default=None, choices=ESTILOS,
                     help="força um estilo pra todos. Sem isto, o default é por "
-                         "formato: quadrado→classic, vertical→reels.")
+                         "formato: feed (quadrado 1:1 / retrato 4:5)→classic, "
+                         "vertical 9:16→reels.")
     ap.add_argument("--projeto-dir", default=PROJETO_CENTRAL_PADRAO)
     ap.add_argument("--out-dir", default=None, help="default: <pasta>/LEGENDADOS")
     ap.add_argument(
@@ -226,7 +230,7 @@ def main():
 
     ok = sum(1 for r in resultados if r.get("ok"))
     print(json.dumps(
-        {"estilo": args.estilo or "default-por-formato (quadrado→classic, vertical→reels)",
+        {"estilo": args.estilo or "default-por-formato (feed 1:1/4:5→classic, vertical 9:16→reels)",
          "total": len(resultados), "ok": ok, "resultados": resultados},
         ensure_ascii=False, indent=2,
     ))

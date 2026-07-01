@@ -1,7 +1,7 @@
 ---
 name: invisible-video-combinador
 description: >
-  Combina segmentos de roteiro JÁ PRONTOS (legendados/variados, vindos de 03_PREPARADOS) para gerar peças novas — anúncios, VSLs — concatenando um corte de cada segmento numa cadeia ordenada, SEM re-legendar (as peças já chegam legendadas). Os segmentos são de nomes LIVRES (padrão Invisible: GANCHO, DESENVOLVIMENTO, CTA; mas pode ser LEAD, HISTORIA, OFERTA, FECHAMENTO), lidos pelo rótulo no nome (modo mesma-pasta, flat). O usuário dirige o esquema: quais segmentos entram, em que ordem, quais VARIAM (cruzam) e quais ficam FIXOS (a peça nativa de cada origem). A análise da matriz é feita SÓ sobre os clipes VERTICAIS não-VAR (um por segmento+código) — o áudio/texto é idêntico entre formatos e variações, então a matriz vale pra todos. A skill transcreve esses representantes (com cache), julga o encaixe retórico par-a-par, monta a matriz justificada (✅/⚠️/❌) e SALVA a MATRIZ.md em 04_COMBINADOS ANTES de gerar qualquer vídeo, pede aprovação, normaliza e concatena. Na hora de combinar, EXPANDE cada par aprovado pelo produto cartesiano das variantes por segmento (clipe base + cada VAR) e por formato (VERTICAL×VERTICAL, QUADRADO×QUADRADO), nunca cruzando formatos. Ex.: GANCHO com base+VAR1 e DESENV só base → 2 peças por formato. Use quando o usuário pedir "combina os cortes", "cruza gancho × desenvolvimento", "monta os anúncios", "gera as combinações", "monta as VSLs". Saída em 04_COMBINADOS (vertical 1080×1920 + quadrado 1080×1080). Requer ffmpeg e WhisperX (faz bootstrap).
+  Combina segmentos de roteiro JÁ PRONTOS (legendados/variados, vindos de 03_PREPARADOS) para gerar peças novas — anúncios, VSLs — concatenando um corte de cada segmento numa cadeia ordenada, SEM re-legendar (as peças já chegam legendadas). Os segmentos são de nomes LIVRES (padrão Invisible: GANCHO, DESENVOLVIMENTO, CTA; mas pode ser LEAD, HISTORIA, OFERTA, FECHAMENTO), lidos pelo rótulo no nome (modo mesma-pasta, flat). O usuário dirige o esquema: quais segmentos entram, em que ordem, quais VARIAM (cruzam) e quais ficam FIXOS (a peça nativa de cada origem). A análise da matriz é feita SÓ sobre os clipes VERTICAIS não-VAR (um por segmento+código) — o áudio/texto é idêntico entre formatos e variações, então a matriz vale pra todos. A skill transcreve esses representantes (com cache), julga o encaixe retórico par-a-par, monta a matriz justificada (✅/⚠️/❌) e SALVA a MATRIZ.md em 04_COMBINADOS ANTES de gerar qualquer vídeo, pede aprovação, normaliza e concatena. Na hora de combinar, EXPANDE cada par aprovado pelo produto cartesiano das variantes por segmento (clipe base + cada VAR) e por formato (VERTICAL×VERTICAL, QUADRADO×QUADRADO, RETRATO×RETRATO — cada formato reportado pelo descobrir_cortes.py), nunca cruzando formatos. Ex.: GANCHO com base+VAR1 e DESENV só base → 2 peças por formato. Use quando o usuário pedir "combina os cortes", "cruza gancho × desenvolvimento", "monta os anúncios", "gera as combinações", "monta as VSLs". Saída em 04_COMBINADOS (vertical 1080×1920, quadrado 1080×1080, retrato 1080×1350). Requer ffmpeg e WhisperX (faz bootstrap).
 ---
 
 # Combinador de Vídeo (cadeia de segmentos)
@@ -29,12 +29,13 @@ O `descobrir_cortes.py` agrupa, por segmento+código, **todas as variantes do me
 GANCHO / VAV19:
   VERTICAL: { base: <path>, vars: {1: <path>, 2: <path>} }
   QUADRADO: { base: <path>, vars: {1: <path>} }
+  RETRATO:  { base: <path>, vars: {} }
 ```
 
-Nem o formato (`_VERTICAL`/`_QUADRADO`) nem a variação (`_VAR<n>`) é um corte retórico novo — são variantes do mesmo corte. Daí duas regras:
+Nem o formato (`_VERTICAL`/`_QUADRADO`/`_RETRATO`) nem a variação (`_VAR<n>`) é um corte retórico novo — são variantes do mesmo corte. Os formatos de feed recortados são o quadrado (1:1, `_QUADRADO`) e o retrato (4:5, 1080×1350, `_RETRATO`); o vertical (9:16) é o canônico. Daí duas regras:
 
 - **A matriz é julgada UMA vez**, sobre o `VERTICAL` `base` (não-VAR) de cada segmento+código. Vale pra todos os formatos e VARs.
-- **A expansão acontece só ao combinar** (produto cartesiano formato × VAR por segmento) — ver Fase 6. **Nunca cruza formato** (vertical só com vertical, quadrado só com quadrado). Se um formato falta em algum segmento da cadeia, pula esse formato e avisa.
+- **A expansão acontece só ao combinar** (produto cartesiano formato × VAR por segmento) — ver Fase 6. **Nunca cruza formato** (vertical só com vertical, quadrado só com quadrado, retrato só com retrato). Itere sobre os formatos que o `descobrir_cortes.py` reportar — não assuma um conjunto fixo. Se um formato falta em algum segmento da cadeia, pula esse formato e avisa.
 
 ## Princípio crítico de julgamento (não esquecer)
 
@@ -99,21 +100,22 @@ Crie a pasta `04_COMBINADOS` se não existir e grave o `.md` lá. Então diga: "
 
 ### Fase 6 — Config de saída
 Pergunte, oferecendo o default entre colchetes:
-- **[Full HD vertical 1080×1920, 30fps, HEVC/x265 CRF20, AAC 48k stereo, .mp4]** ← padrão (e quadrado 1080×1080).
+- **[Full HD vertical 1080×1920, 30fps, HEVC/x265 CRF20, AAC 48k stereo, .mp4]** ← padrão (quadrado 1080×1080, retrato 1080×1350).
 - Alternativas: **4K** (2160×3840), **MOV**, **resolução nativa** (a maior entre os cortes da cadeia, sem rebaixar), **H.264/x264**.
 
 ### Fase 7 — Expandir, normalizar e montar
 A matriz aprovada é sobre **códigos**. Aqui ela vira peças concretas pela **expansão cartesiana**. Para cada par aprovado (segA/codX × segB/codY na ordem da cadeia):
 
-1. **Para cada formato F ∈ {VERTICAL, QUADRADO}** em que **todos** os segmentos da cadeia têm clipe (`formatos[F]` com `base` ou `vars`):
+1. **Para cada formato F reportado pelo `descobrir_cortes.py`** (VERTICAL, QUADRADO, RETRATO — o conjunto é dinâmico, não fixo) em que **todos** os segmentos da cadeia têm clipe (`formatos[F]` com `base` ou `vars`):
 2. **Produto cartesiano das variantes por segmento.** Para cada segmento, o conjunto de variantes é `{base} ∪ {cada VAR}` daquele formato. Combine uma variante de cada segmento — todas as combinações.
    - Ex.: GANCHO/VAV19 tem `base`+`VAR1` em VERTICAL; DESENV/VAV57 só `base` → **2 peças verticais**: `GANCHO_VAV19__DESENV_VAV57` (base×base) e `GANCHO_VAV19_VAR1__DESENV_VAV57` (VAR1×base).
    - Se um segmento tem `base`+`VAR1`+`VAR2` e o outro `base`+`VAR1` → 3×2 = 6 peças naquele formato.
 3. **Nunca cruze formato** (vertical só com vertical). Se F falta em algum segmento da cadeia, pule F e avise.
 
 Para cada peça (uma escolha de variante por segmento, num formato):
-- **Normalize** cada corte que ainda não bate o alvo (rede de segurança; as peças de `03_PREPARADOS` já costumam vir no alvo — cheque specs com ffprobe e pule quem bate). Quadrado é 1080×1080.
+- **Normalize** cada corte que ainda não bate o alvo (rede de segurança; as peças de `03_PREPARADOS` já costumam vir no alvo — cheque specs com ffprobe e pule quem bate). A altura do alvo é **por formato**: vertical 1920, quadrado 1080, retrato 1350 (largura 1080 sempre). Como as peças já vêm reenquadradas do otimizado, o normalize aqui não deve reescalar — só reencoda specs de áudio/fps se destoarem.
 ```bash
+# vertical (ajuste --altura ao formato da peça: 1920 vertical / 1080 quadrado / 1350 retrato):
 python3 scripts/normalizar.py "<corte>" --out "<tmp>/<corte>.mp4" \
     --largura 1080 --altura 1920 --fps 30 --vcodec libx265 --crf 20 \
     --sample-rate 48000 --canais 2

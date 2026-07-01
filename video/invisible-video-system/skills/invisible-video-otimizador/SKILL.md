@@ -1,7 +1,7 @@
 ---
 name: invisible-video-otimizador
 description: >
-  Pega um vídeo gravado e o deixa pronto: APARA AS PONTAS pela fala (transcreve a bruta com WhisperX e usa a 1ª e a última palavra pra cortar tudo que vem antes/depois da fala — suspiro, estalo de boca, barulho de cadeira no fim; o silencedetect sozinho não pega isso porque ruído não é silêncio), escolhe a melhor TAKE quando há várias tentativas da mesma fala (agrupa as repetições e fica com a última), remove os silêncios internos sem comer palavra, e SEMPRE NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo (alvo default FHD vertical 1080x1920/30fps/HEVC/AAC; trocável por flags), entregando o corte pronto pra concatenar. A transcrição da bruta é efêmera (só pra achar a borda da fala) e NÃO serve pra legenda — a legenda usa outro .json, gerado depois sobre o otimizado. Dois eixos de modo independentes, ambos justo por default: modo de silêncio (o que conta como silêncio — default justo -33dB/0.15s, ou conservador -35dB/0.3s) e modo de respiro (margem nas bordas — default justo 0.05/0.18, ou conservador 0.10/0.25, sempre assimétrico). Corte ao frame exato. Gera também, na mesma pasta, a versão QUADRADA (1:1) de cada otimizado (sufixo _QUADRADO), reenquadrando o vertical por detecção de rosto (YuNet) ancorada nos olhos — para o feed do Instagram, em paralelo ao vertical pela esteira. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corta o barulho do fim", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); o quadrado troca `_VERTICAL` por `_QUADRADO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg e WhisperX (o aparo de pontas transcreve sempre); o quadrado requer OpenCV (faz bootstrap).
+  Pega um vídeo gravado e o deixa pronto: APARA AS PONTAS pela fala (transcreve a bruta com WhisperX e usa a 1ª e a última palavra pra cortar tudo que vem antes/depois da fala — suspiro, estalo de boca, barulho de cadeira no fim; o silencedetect sozinho não pega isso porque ruído não é silêncio), escolhe a melhor TAKE quando há várias tentativas da mesma fala (agrupa as repetições e fica com a última), remove os silêncios internos sem comer palavra, e SEMPRE NORMALIZA o formato (resolução/fps/códec/áudio) no mesmo passo (alvo default FHD vertical 1080x1920/30fps/HEVC/AAC; trocável por flags), entregando o corte pronto pra concatenar. A transcrição da bruta é efêmera (só pra achar a borda da fala) e NÃO serve pra legenda — a legenda usa outro .json, gerado depois sobre o otimizado. Dois eixos de modo independentes, ambos justo por default: modo de silêncio (o que conta como silêncio — default justo -33dB/0.15s, ou conservador -35dB/0.3s) e modo de respiro (margem nas bordas — default justo 0.05/0.18, ou conservador 0.10/0.25, sempre assimétrico). Corte ao frame exato. Gera também, na mesma pasta, recortes de FEED de cada otimizado por detecção de rosto (YuNet) ancorada nos olhos, em paralelo ao vertical pela esteira: QUADRADO (1:1, sufixo _QUADRADO) e RETRATO (4:5, 1080×1350, sufixo _RETRATO) — o `quadrado.py` escolhe o formato por `--formato quadrado|retrato`. Aceita um arquivo único OU uma pasta inteira (lote). Use quando o usuário pedir "otimiza o vídeo", "tira os silêncios", "enxuga o ritmo", "remove as pausas", "corta o barulho do fim", "corte mais justo/seco", "escolhe a melhor take", "esse gancho tem várias tentativas", "limpa as repetições", "otimiza essa pasta de vídeos", "padroniza esses vídeos", "faz a versão quadrada", "faz a versão 4:5 / retrato". O vídeo otimizado é o vertical e sai como `<id>_OTIMIZADO_VERTICAL` (o token de formato é sempre o último); os recortes trocam `_VERTICAL` por `_QUADRADO`/`_RETRATO`. Saída na pasta-irmã `02_OTIMIZADOS/` (primeira etapa da linha de produção, irmã da fonte `01_Brutas`). Requer ffmpeg e WhisperX (o aparo de pontas transcreve sempre); os recortes requerem OpenCV (faz bootstrap).
 ---
 
 # Otimizador de Vídeo (aparo de pontas + takes + silêncios + normalização)
@@ -119,29 +119,34 @@ Defaults já embutidos: `--modo-silencio justo` (-33dB / 0.15s), `--modo-respiro
 
 `--descartar` vale **só para arquivo único**; em lote o script o ignora e avisa. O aparo de pontas, o descarte de take, o corte de silêncio e a normalização acontecem no **mesmo reencode** — sem geração extra.
 
-### Fase 3.7 — Versão quadrada (1:1) para o feed
-Depois de gerar os `_OTIMIZADO_VERTICAL` (verticais), produza a versão **quadrada** de cada um, na **mesma pasta** `02_OTIMIZADOS/`. O quadrado caminha em paralelo ao vertical por toda a esteira (combinador, legendas, gancho-escrito, trilha) e sai junto no fim. O nome **substitui** `_VERTICAL` por `_QUADRADO` (formato sempre o último token): `<id>_OTIMIZADO_VERTICAL.mp4` → `<id>_OTIMIZADO_QUADRADO.mp4`.
+### Fase 3.7 — Recortes de feed (quadrado 1:1 e retrato 4:5)
+Depois de gerar os `_OTIMIZADO_VERTICAL` (verticais), produza os **recortes de feed** de cada um, na **mesma pasta** `02_OTIMIZADOS/`. Cada recorte caminha em paralelo ao vertical por toda a esteira (combinador, legendas, gancho-escrito, trilha) e sai junto no fim. O `quadrado.py` faz dois formatos, escolhidos por `--formato`:
+- `--formato quadrado` (default) → **1:1**, `1080×1920` vira `1080×1080`, sufixo `_QUADRADO`.
+- `--formato retrato` → **4:5**, `1080×1920` vira `1080×1350`, sufixo `_RETRATO` (o "portrait" clássico do feed do Instagram).
 
-Rode com o **python da venv** (o que tem o OpenCV — campo `python_cv2` do bootstrap), apontando a pasta `02_OTIMIZADOS/`:
+O nome **substitui** `_VERTICAL` pelo token do formato (sempre o último token): `<id>_OTIMIZADO_VERTICAL.mp4` → `<id>_OTIMIZADO_QUADRADO.mp4` (ou `_RETRATO.mp4`).
+
+Rode com o **python da venv** (o que tem o OpenCV — campo `python_cv2` do bootstrap), apontando a pasta `02_OTIMIZADOS/`. Rode uma vez por formato desejado:
 ```bash
-<python_cv2> scripts/quadrado.py "<.../02_OTIMIZADOS>" --contato
+<python_cv2> scripts/quadrado.py "<.../02_OTIMIZADOS>" --formato quadrado --contato
+<python_cv2> scripts/quadrado.py "<.../02_OTIMIZADOS>" --formato retrato --contato   # se quiser o 4:5
 ```
 
 O que ele faz, por arquivo:
-- Recorta um quadrado de **largura cheia** (lado = largura do vídeo; descarta só altura). O 1080×1920 vira 1080×1080.
-- **Onde cortar é decidido por detecção de rosto (YuNet) ancorada nos OLHOS:** amostra ~8 frames, pega a mediana do y dos olhos e os põe a ~30% da altura do quadrado (respiro pra coroa da cabeça). Ancorar nos olhos (não no centro da caixa) é o que evita a barba puxar o crop pra baixo e cortar a cabeça.
+- Recorta de **largura cheia** (largura = a do vídeo; descarta só altura). Quadrado: altura = largura. Retrato: altura = 1.25×largura.
+- **Onde cortar é decidido por detecção de rosto (YuNet) ancorada nos OLHOS:** amostra ~8 frames, pega a mediana do y dos olhos e os põe a ~30% da altura do recorte (respiro pra coroa da cabeça). Ancorar nos olhos (não no centro da caixa) é o que evita a barba puxar o crop pra baixo e cortar a cabeça.
 - Sem rosto plausível → fallback de âncora alta segura (15% da folga).
 - Áudio **idêntico** ao vertical (`-c:a copy`); só o vídeo é recortado/reencodado.
-- **Não** gera `.md` pro quadrado: o roteiro é o mesmo da vertical (mesmo áudio) → um `.md` só por corte, o do vertical.
+- **Não** gera `.md` pro recorte: o roteiro é o mesmo da vertical (mesmo áudio) → um `.md` só por corte, o do vertical.
 
-**Aprovação (folha de contato):** `--contato` gera `_CONTATO_QUADRADO.png` na pasta — uma grade com a miniatura de cada quadrado e o nome. Mostre ao usuário: o auto acerta a maioria; ele aprova em bloco e aponta os que ficaram tortos (o detector erra de vez em quando — mão na frente do rosto, cabeça muito virada).
+**Aprovação (folha de contato):** `--contato` gera `_CONTATO_<FORMATO>.png` na pasta (ex.: `_CONTATO_QUADRADO.png`, `_CONTATO_RETRATO.png`) — uma grade com a miniatura de cada recorte e o nome. Mostre ao usuário: o auto acerta a maioria; ele aprova em bloco e aponta os que ficaram tortos (o detector erra de vez em quando — mão na frente do rosto, cabeça muito virada).
 
-**Nudge de um corte específico:** quando o usuário disser que um quadrado ficou alto/baixo demais, refaça **só aquele** com âncora manual (fração da folga, 0=topo, 0.5=centro, 1=base):
+**Nudge de um corte específico:** quando o usuário disser que um recorte ficou alto/baixo demais, refaça **só aquele** com âncora manual (fração da folga, 0=topo, 0.5=centro, 1=base):
 ```bash
-<python_cv2> scripts/quadrado.py "<.../02_OTIMIZADOS/DME_VAV19_GANCHO_OTIMIZADO_VERTICAL.mp4>" --ancora 0.45
+<python_cv2> scripts/quadrado.py "<.../02_OTIMIZADOS/DME_VAV19_GANCHO_OTIMIZADO_VERTICAL.mp4>" --formato retrato --ancora 0.45
 ```
 
-Pule esta fase só se o usuário disser explicitamente que **não** quer o quadrado (o padrão é sempre gerar os dois).
+**Qual formato gerar:** o padrão avulso é **quadrado** (histórico). Gere o **retrato** quando o usuário pedir o 4:5, ou quando o plano do lote listar `retrato` em "Formatos". Pule os recortes só se o usuário disser explicitamente que quer **só o vertical**.
 
 ### Fase 4 — Ler a verificação
 Cada resultado traz `verificacao`, `fala`, `normalizado` e `takes_descartadas`:
@@ -162,7 +167,7 @@ Liste cada vídeo: nome de saída (`nome_saida`, já limpo — identificação p
 
   Separadores repetidos viram underscore único. A `<ext>` segue o `--container` quando normaliza. O campo `nome_saida` no JSON mostra o nome final de cada vídeo.
 - **Sidecar de roteiro:** se houver um `<video>.md` ao lado da entrada (vindo do desmembrador), ele é **propagado** para a saída **sem token de formato** (`<id>_OTIMIZADO.md`) — um sidecar serve vertical e quadrado (mesmo áudio/texto). O otimizador **não transcreve** pra isso, só carrega o roteiro adiante. O JSON traz `sidecar_propagado: true/false`.
-- **Versão quadrada:** ao lado de cada `_OTIMIZADO_VERTICAL.<ext>`, sai um `_OTIMIZADO_QUADRADO.<ext>` (1:1, largura cheia) — o token `_VERTICAL` é **substituído** por `_QUADRADO` (formato sempre o último token) — e, com `--contato`, um `_CONTATO_QUADRADO.png` pra aprovação. O quadrado **não** ganha `.md` próprio — o roteiro é o mesmo do vertical, um `.md` só por corte.
+- **Recortes de feed:** ao lado de cada `_OTIMIZADO_VERTICAL.<ext>`, sai um `_OTIMIZADO_QUADRADO.<ext>` (1:1) e/ou `_OTIMIZADO_RETRATO.<ext>` (4:5, 1080×1350) — largura cheia, o token `_VERTICAL` é **substituído** pelo do formato (sempre o último token) — e, com `--contato`, um `_CONTATO_<FORMATO>.png` pra aprovação. O recorte **não** ganha `.md` próprio — o roteiro é o mesmo do vertical, um `.md` só por corte.
 
 ## Lugar na linha de produção (etapa 02)
 
