@@ -79,19 +79,33 @@ reporta o caminho em `skills_dir`). Monte os comandos a partir de
 `<skills_dir>/<nome-da-skill>/scripts/...`. Os parâmetros vêm das `decisoes` do
 `estado_lote.py`.
 
-### Etapa 1 — Otimizar + Denoise `[01_BRUTAS → 02_OTIMIZADOS]`
-Dois passos, uma etapa. Primeiro o otimizador, depois o denoiser por cima.
+### Etapa 1 — Otimizar + Denoise (+ recortes de feed) `[01_BRUTAS → 02_OTIMIZADOS]`
+Três passos, uma etapa: otimizador (gera o **vertical**), depois os **recortes de
+feed** que o plano pediu (quadrado/retrato), depois o denoiser por cima de tudo.
 ```bash
+# 1) otimizador — gera SÓ o vertical (_OTIMIZADO_VERTICAL) + .md
 python3 "<skills_dir>/invisible-video-otimizador/scripts/otimizar.py" "<lote>/01_BRUTAS" \
   --modo-silencio <modo_silencio> --modo-respiro <modo_respiro>
+# 2) recortes de feed — UM por formato de feed do plano (`formatos` menos "vertical").
+#    quadrado.py ancora no rosto (YuNet). Só rode os formatos que o plano listou;
+#    se o plano é "só vertical", PULE este passo inteiro.
+python3 "<skills_dir>/invisible-video-otimizador/scripts/quadrado.py" "<lote>/02_OTIMIZADOS" \
+  --formato quadrado          # gera _OTIMIZADO_QUADRADO (1080×1080)
+python3 "<skills_dir>/invisible-video-otimizador/scripts/quadrado.py" "<lote>/02_OTIMIZADOS" \
+  --formato retrato           # gera _OTIMIZADO_RETRATO (1080×1350) — só se o plano pediu
+# 3) denoiser — sobre TODOS os arquivos de 02 (vertical + recortes), in-place
 python3 "<skills_dir>/invisible-denoiser/scripts/denoiser.py" "<lote>/02_OTIMIZADOS"
 ```
-- O otimizador gera vertical + quadrado + `.md` em `02_OTIMIZADOS` (portão: folha de
-  contato do quadrado, se houver dúvida de enquadramento — siga o SKILL.md dele).
+- **Quais recortes rodar vem do plano** (linha "Formatos" / `formatos` no
+  `estado_lote.py`): rode `quadrado.py --formato <f>` para cada `f` em `formatos`
+  exceto `vertical`. Plano "só vertical" → nenhum recorte. `quadrado.py` deve rodar
+  com o **python da venv** (tem cv2) — ver o bootstrap do otimizador.
+- Portão de enquadramento: `quadrado.py --contato` gera a folha de contato
+  (`_CONTATO_<FORMATO>.png`) pra aprovar os cortes em bloco, se houver dúvida.
 - O denoiser **sobrescreve in-place mantendo o mesmo nome** (`-c:v copy`) — roda
-  **depois** do otimizador e **antes** da transcrição, pra não transcrever áudio sujo.
-  Como não muda o nome, os `_OTIMIZADO_VERTICAL`/`_QUADRADO` ficam intactos e a
-  transcrição (etapa 2) acha o `.json` por base normalmente. Ele recusa rodar em
+  **depois** dos recortes e **antes** da transcrição, pra não transcrever áudio sujo.
+  Como não muda o nome, os `_OTIMIZADO_VERTICAL`/`_QUADRADO`/`_RETRATO` ficam intactos
+  e a transcrição (etapa 2) acha o `.json` por base normalmente. Ele recusa rodar em
   `BRUTAS`; aqui roda em `02_OTIMIZADOS`, então segue normal. Sem marca no nome, o
   executor não deve re-rodar o denoiser na mesma pasta (reaplicaria o filtro).
 
@@ -108,7 +122,7 @@ Um `.json` por **segmento** (dedup por base). Sem portão.
 python3 "<skills_dir>/invisible-legendas-aplicador/scripts/aplicar.py" "<lote>/02_OTIMIZADOS" \
   [--estilo <estilo se não for "auto">]
 ```
-- Default `auto`: a skill escolhe por formato (vertical→`reels`, quadrado→`classic`).
+- Default `auto`: a skill escolhe por formato (vertical→`reels`, feed 1:1/4:5→`classic`).
   Se o plano fixou um estilo, passe `--estilo`.
 - Pula os `_VAR`. Inspeção opcional: `aplicar.py … --still <frame>` gera uma prova
   `.png` na pasta de trabalho (não no projeto central) — mostre ao usuário antes do lote.
@@ -148,7 +162,7 @@ nos finalizados.
 python3 "<skills_dir>/invisible-video-acelerador/scripts/acelerar.py" "<lote>/04_COMBINADOS" \
   --fator <fator_aceleracao>
 ```
-Acelera **tudo** em `04_COMBINADOS` (vertical + quadrado); grava ao lado com
+Acelera **tudo** em `04_COMBINADOS` (todos os formatos do lote); grava ao lado com
 `_ACELERADO_<FATOR>`, originais intactos. Pula o que já tem `_ACELERADO`. Os
 originais lentos ficam em `04_COMBINADOS` como subproduto — a trilha (etapa 6) vai
 ignorá-los e processar **só** os `_ACELERADO_`.

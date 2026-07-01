@@ -43,12 +43,22 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
 1. **Nome do lote.** Convenção: `Lote NN - <projeto>` (ex.: `Lote 02 - Gurgel DME`).
    Olhe a raiz do laboratório para sugerir o próximo número (`Lote 01...` já existe).
 
-2. **Estilo de legenda.** Default **auto** (vertical → `reels`, quadrado → `classic`).
-   Ofereça trocar para um estilo fixo: `reels` (palavra acende amarelo),
+2. **Formatos de saída.** Quais proporções o lote vai produzir. Opções:
+   - **vertical** (9:16, 1080×1920) — o canônico da esteira, **sempre incluído**;
+   - **quadrado** (1:1, 1080×1080) — feed;
+   - **retrato** (4:5, 1080×1350) — feed do Instagram, o "portrait" clássico.
+   Default histórico: **vertical + quadrado**. Ofereça acrescentar/remover formatos
+   (ex.: "vertical + retrato", "só vertical", "os três"). Grave a lista em
+   `formatos` (ex.: `["vertical", "retrato"]`). Os recortes de feed (quadrado/
+   retrato) saem do `quadrado.py` ancorado no rosto, na etapa 1. O default de
+   legenda de feed (1:1 e 4:5) é `classic`; do vertical, `reels`.
+
+3. **Estilo de legenda.** Default **auto** (vertical → `reels`, feed 1:1/4:5 →
+   `classic`). Ofereça trocar para um estilo fixo: `reels` (palavra acende amarelo),
    `minimal` (branco, futuro esmaecido) ou `classic` (bloco no rodapé). Não ofereça
    `hormozi` (experimental).
 
-3. **Variações de gancho.** Pergunte se o lote terá gancho escrito (tipografia
+4. **Variações de gancho.** Pergunte se o lote terá gancho escrito (tipografia
    animada). Hoje existe **VAR1**; o número é do usuário (pode haver VAR2, VAR3...
    no futuro). Se sim:
    - quais VARs (lista, ex.: `[1]`);
@@ -56,7 +66,7 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
      customizados, anote a descrição que o usuário der.
    Se não houver variação, a etapa 3.2 nasce já marcada como pulada.
 
-4. **Pasta de trilha.** **Liste o que existe** (do `trilhas` do bootstrap) e deixe a
+5. **Pasta de trilha.** **Liste o que existe** (do `trilhas` do bootstrap) e deixe a
    **raiz `00_Recursos/Trilhas` como default**. Apresente assim:
    - a raiz como opção padrão (com `audios_na_raiz`, se houver áudios soltos lá);
    - cada subpasta de `subpastas[]` numerada, com `nome` e `audios`
@@ -68,19 +78,19 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
    Níveis de loudness são os defaults da trilha-aplicador (fala −14, trilha −37 LUFS)
    — só pergunte se o usuário quiser trilha mais presente/discreta.
 
-5. **Aceleração.** Pergunte se os vídeos serão acelerados. Default da skill de
+6. **Aceleração.** Pergunte se os vídeos serão acelerados. Default da skill de
    aceleração é **1.2x**; ofereça 1.5x ou 2x. Se sim, a aceleração roda **antes da
    trilha** (etapa 5, em `04_COMBINADOS`) — porque acelerar depois aceleraria a
    música junto e a tiraria do tempo — e a trilha (etapa 6) entra por cima do ritmo
-   final, consumindo só os `_ACELERADO_`. Acelera **tudo** (vertical + quadrado). Se
+   final, consumindo só os `_ACELERADO_`. Acelera **tudo** (todos os formatos). Se
    não, a etapa 5 nasce pulada e a trilha lê as combinações normais.
 
-6. **Modo de otimização** (opcional, só se o usuário tiver preferência): silêncio
+7. **Modo de otimização** (opcional, só se o usuário tiver preferência): silêncio
    (default `justo` −33dB/0.15s, ou `conservador` −35dB/0.3s) e respiro (default
    `justo` 0.05/0.18, ou `conservador` 0.10/0.25). **Ambos justo por default**,
    alinhado ao otimizador — não assuma conservador no respiro.
 
-7. **Nomeação final** (opcional). Pergunte se, ao fim do lote, os arquivos de
+8. **Nomeação final** (opcional). Pergunte se, ao fim do lote, os arquivos de
    `99_FINALIZADOS` devem ser **renomeados** para um padrão de entrega. Se sim,
    capture:
    - **prefixo** (ex.: `DME_VAV`) — vai na frente do nome, com o separador que o
@@ -108,6 +118,7 @@ Escreva as decisões num JSON temporário (campos ausentes assumem o default):
 ```json
 {
   "estilo_legenda": "auto",
+  "formatos": ["vertical", "quadrado"],
   "variacoes": [1],
   "var_fonte": "padrao",
   "var_fundo": "padrao",

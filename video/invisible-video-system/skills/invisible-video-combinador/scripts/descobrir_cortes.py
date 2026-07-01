@@ -83,19 +83,23 @@ RE_CODIGO = re.compile(r"[A-Z]{2,5}\d{1,4}", re.IGNORECASE)
 # falha entre "_" e dígito porque "_" conta como caractere de palavra.
 RE_NUM = re.compile(r"(?<!\d)(\d{1,4})(?!\d)")
 # sufixos de processamento que não são rótulo de segmento.
-RUIDO = {"OTIMIZADO", "VERTICAL", "HORIZONTAL", "FINAL", "RAW", "QUADRADO", "LEGENDADO"}
+RUIDO = {"OTIMIZADO", "VERTICAL", "HORIZONTAL", "FINAL", "RAW", "QUADRADO",
+         "RETRATO", "LEGENDADO"}
 
 RE_VAR = re.compile(r"(?i)VAR(\d+)")
 
 
 def formato_de(base):
-    """Token de formato do corte: 'QUADRADO', 'VERTICAL' ou 'VERTICAL' (default).
+    """Token de formato do corte: 'QUADRADO', 'RETRATO' ou 'VERTICAL' (default).
 
     O contrato da linha põe o formato como último token. Na ausência de token,
-    assume VERTICAL (o formato canônico)."""
+    assume VERTICAL (o formato canônico). Formatos de feed recortados (quadrado
+    1:1, retrato 4:5) são reconhecidos pelo próprio token."""
     toks = [t.upper() for t in tokens(base)]
     if "QUADRADO" in toks:
         return "QUADRADO"
+    if "RETRATO" in toks:
+        return "RETRATO"
     return "VERTICAL"
 
 

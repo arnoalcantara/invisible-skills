@@ -14,6 +14,10 @@ A fonte da verdade do progresso são as PASTAS — o checkbox é o resumo legív
 As preferências chegam por um JSON (--decisoes), não por dezenas de flags:
     {
       "estilo_legenda": "auto",        # auto | reels | minimal | classic
+      "formatos": ["vertical", "quadrado"],  # quais formatos o lote produz;
+                                        # opções: vertical (9:16), quadrado (1:1),
+                                        # retrato (4:5, 1080×1350). vertical é sempre
+                                        # incluído (é o canônico da esteira).
       "variacoes": [1],                 # lista de VARs de gancho; [] = nenhuma
       "var_fonte": "padrao",           # "padrao" ou descrição da fonte custom
       "var_fundo": "padrao",           # "padrao" ou descrição do fundo custom
@@ -48,6 +52,7 @@ PASTAS = ["01_BRUTAS", "02_OTIMIZADOS", "03_PREPARADOS", "04_COMBINADOS", "99_FI
 
 DEFAULTS = {
     "estilo_legenda": "auto",
+    "formatos": ["vertical", "quadrado"],   # histórico: vertical + quadrado
     "variacoes": [],
     "var_fonte": "padrao",
     "var_fundo": "padrao",
@@ -72,11 +77,43 @@ def fator_token(fator: float) -> str:
     return {"1.2": "12X", "1.5": "15X", "2.0": "2X"}.get(chave, f"{fator:g}".replace(".", "") + "X")
 
 
+# mapa formato → (rótulo humano, token de arquivo, dimensão). vertical é o
+# canônico (gerado pelo otimizador); quadrado/retrato são recortes (quadrado.py).
+FORMATOS_LOTE = {
+    "vertical": ("vertical 9:16", "VERTICAL", "1080×1920"),
+    "quadrado": ("quadrado 1:1", "QUADRADO", "1080×1080"),
+    "retrato":  ("retrato 4:5", "RETRATO", "1080×1350"),
+}
+
+
+def normalizar_formatos(formatos) -> list[str]:
+    """Higieniza a lista de formatos do plano: só os conhecidos, vertical sempre
+    presente (é o canônico), ordem canônica vertical→quadrado→retrato."""
+    pedidos = {str(f).strip().lower() for f in (formatos or [])}
+    pedidos.add("vertical")
+    return [f for f in ("vertical", "quadrado", "retrato") if f in pedidos]
+
+
 def render_plan(nome: str, data: str, d: dict) -> str:
     estilo = d["estilo_legenda"]
     estilo_desc = (
-        "auto (vertical→reels, quadrado→classic)" if estilo == "auto" else estilo
+        "auto (vertical→reels, feed 1:1/4:5→classic)" if estilo == "auto" else estilo
     )
+    formatos = normalizar_formatos(d.get("formatos"))
+    formatos_desc = ", ".join(
+        f"{FORMATOS_LOTE[f][0]} ({FORMATOS_LOTE[f][2]})" for f in formatos
+    )
+    # recortes = formatos além do vertical (o que o quadrado.py gera na etapa 1).
+    recortes = [f for f in formatos if f != "vertical"]
+    if recortes:
+        recorte_desc = " + ".join(FORMATOS_LOTE[f][0] for f in recortes)
+        recorte_flag = "{" + "|".join(recortes) + "}"
+        et1_formato = (
+            f" Gera também os recortes de feed ({recorte_desc}) via "
+            f"`quadrado.py --formato {recorte_flag}` ancorado no rosto."
+        )
+    else:
+        et1_formato = " **Só VERTICAL neste lote: não rodar `quadrado.py`.**"
     vars_ = d["variacoes"]
     if vars_:
         vars_desc = ", ".join(f"VAR{n}" for n in vars_)
@@ -150,6 +187,7 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 | Decisão | Valor |
 |---|---|
 | Estilo de legenda | {estilo_desc} |
+| Formatos | {formatos_desc} |
 | Variações de gancho | {vars_desc} |
 | Estilo do gancho escrito | {fonte} |
 | Pasta de trilha | `{d['trilha_pasta']}` |
@@ -168,7 +206,7 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 > Ao fim de cada etapa o executor PARA e pede autorização.
 > A 3.2, a 5 e a 7 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
 
-- [ ] **1. Otimizar + Denoise** — `invisible-video-otimizador` então `invisible-denoiser` (01_BRUTAS → 02_OTIMIZADOS; denoiser sobrescreve in-place) — modo {d['modo_silencio']}/{d['modo_respiro']}
+- [ ] **1. Otimizar + Denoise** — `invisible-video-otimizador` então `invisible-denoiser` (01_BRUTAS → 02_OTIMIZADOS; denoiser sobrescreve in-place) — modo {d['modo_silencio']}/{d['modo_respiro']}.{et1_formato}
 - [ ] **2. Transcrever** — `invisible-legenda-arquivos` (02_OTIMIZADOS → .json por segmento)
 - [ ] **3.1 Legendar** — `invisible-legendas-aplicador` (02_OTIMIZADOS → 03_PREPARADOS) — estilo {estilo_desc}
 {et_32}
