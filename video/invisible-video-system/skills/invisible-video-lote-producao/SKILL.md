@@ -30,6 +30,34 @@ O `estado_lote.py` lê o `PLAN_LOTE.md` (as decisões) e **reconcilia com o disc
 executa **a próxima etapa não-feita** — nada antes. Se o usuário não disser qual
 lote, procure os `Lote NN - .../PLAN_LOTE.md` na raiz do laboratório e confirme.
 
+## Portão de entrada — nomes das brutas (antes da etapa 1)
+
+**Só quando a `proxima_etapa` for a `1`** (o lote está começando; não faça isso ao
+retomar no meio), olhe os nomes em `01_BRUTAS` **antes** de otimizar. As brutas
+seguem o padrão `SECAO_N[_Vn]_BRUTA.mp4`, tudo MAIÚSCULO, com underscore separando
+seção, número e take (ex.: `GANCHO_1_BRUTA`, `GANCHO_2_V3_BRUTA`,
+`DESENVOLVIMENTO_1_BRUTA`). O otimizador e as etapas seguintes leem a seção pelo
+nome — bruta torta contamina o lote inteiro.
+
+**Dispara só se houver bruta fora do padrão.** Se todas já batem o padrão, **não
+incomode** — siga direto pra etapa 1.
+
+Quando houver nomes tortos:
+1. **Infira o padrão dos próprios arquivos do lote** que já estão corretos (o lote
+   dita o padrão; não há padrão canônico do sistema). Se nenhum estiver claro, ou a
+   leitura for ambígua, **pergunte** ao usuário qual é o padrão / o que cada arquivo
+   é. A leitura ambígua é dele — ex.: `Gancho2` (sem `_v`) é o take base do gancho 2?
+   `gancho_1_v2` é a segunda take do gancho 1? Não adivinhe: confirme.
+2. **Monte o mapa de→para** e mostre a tabela completa (`atual → novo`).
+3. **Sempre peça OK** — mesmo no trivial (só caixa/espaço). **Nunca renomeie às
+   cegas.** Aprovado, renomeie com `mv` (é `git`-free, trabalho trivial; não há
+   script — o julgamento é o trabalho, o renomear é um `mv`).
+4. Só então prossiga para a etapa 1.
+
+> Isto **não é uma etapa numerada** (não entra no `estado_lote.py` nem tem checkbox):
+> é um portão de higiene na entrada. Se o usuário jogar uma bruta nova torta no meio
+> do lote, normalize-a do mesmo jeito antes da próxima etapa que a consumir.
+
 ## O fluxo em cada etapa (pausa B+C)
 
 Para a `proxima_etapa`:
