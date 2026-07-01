@@ -17,9 +17,9 @@ Mora na raiz do lote. Tem duas partes que o executor consome:
 1. **Decisões do lote** — os parâmetros que cada etapa vai usar (estilo de legenda,
    quais VARs e com qual fonte/fundo, pasta de trilha, alvos de loudness, fator de
    aceleração, modo de otimização).
-2. **Checkboxes das etapas** — um por etapa da esteira (1, 2, 3.1, 3.2, 4, 5, 6). As
-   etapas condicionais (3.2 sem VAR, 6 sem aceleração) já nascem marcadas como
-   puladas.
+2. **Checkboxes das etapas** — um por etapa da esteira (1, 2, 3.1, 3.2, 4, 5, 6, 7).
+   As etapas condicionais (3.2 sem VAR, 5 sem aceleração, 7 sem prefixo de nome) já
+   nascem marcadas como puladas.
 
 **Regra de ouro:** o checkbox é o resumo legível pra humano; **a fonte da verdade do
 progresso são as pastas**. O executor reconcilia com o disco antes de cada etapa e
@@ -29,7 +29,8 @@ pula o que já está pronto. Texto e realidade nunca brigam — a realidade ganh
 
 **Decide** (preferências, não dependem de ver o material):
 - estilo de legenda; quais variações de gancho (+ fonte/fundo); pasta de trilha e
-  níveis; acelerar e qual fator; modo de otimização.
+  níveis; acelerar e qual fator; modo de otimização (silêncio/respiro, ambos justo
+  por default); nomeação final (prefixo + número inicial + ordem).
 
 **NÃO decide:**
 - A **matriz de combinações** (gancho VAV19 × desenvolvimento VAV57...). Isso é do
@@ -55,8 +56,9 @@ material (a matriz) está lá na frente, no combinador.
 | 4. Combinar | combinador | 03_PREPARADOS → 04_COMBINADOS | MATRIZ.md (obrigatório) |
 | 5. Acelerar | acelerador | 04_COMBINADOS → 04_COMBINADOS | — |
 | 6. Trilha | trilha-aplicador | 04_COMBINADOS → 99_FINALIZADOS | amostra (recomendado) |
+| 7. Nomear | lote-producao (nomear.py) | 99_FINALIZADOS → 99_FINALIZADOS (in-place) | — |
 
-Dependências: `2 → (3.1, 3.2) → 4 → 5 → 6`. O denoiser roda **antes** da
+Dependências: `2 → (3.1, 3.2) → 4 → 5 → 6 → 7`. O denoiser roda **antes** da
 transcrição (não transcrever áudio sujo). **Acelerar (5) vem ANTES da trilha (6)**:
 acelerar depois aceleraria a música junto (o `atempo` a tiraria do tempo) — então
 acelera-se a combinação e a trilha entra por cima do ritmo final, consumindo só os

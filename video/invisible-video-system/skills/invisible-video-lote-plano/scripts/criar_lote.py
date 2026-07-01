@@ -23,8 +23,11 @@ As preferências chegam por um JSON (--decisoes), não por dezenas de flags:
       "acelerar": true,
       "fator_aceleracao": 1.2,
       "modo_silencio": "justo",        # justo (default do otimizador) | conservador
-      "modo_respiro": "conservador",   # conservador (default do otimizador) | justo
-      "observacoes": ""
+      "modo_respiro": "justo",         # justo (default do otimizador) | conservador
+      "observacoes": "",
+      "nome_prefixo": "DME_VAV",       # etapa 7: prefixo dos nomes finais; "" = sem nomeação
+      "nome_inicio": 252,               # primeiro número da sequência crescente
+      "nome_ordem": "leva por leva..."  # descrição da ordem de numeração
     }
 Campos ausentes assumem o default. `data` é passada de fora (--data AAAA-MM-DD)
 porque o script não tem relógio confiável.
@@ -53,9 +56,14 @@ DEFAULTS = {
     "alvo_trilha": -37,
     "acelerar": False,
     "fator_aceleracao": 1.2,
-    "modo_silencio": "justo",        # alinhado ao default do otimizador (v2.8.1)
-    "modo_respiro": "conservador",
+    "modo_silencio": "justo",        # ambos alinhados ao default do otimizador: justo/justo
+    "modo_respiro": "justo",
     "observacoes": "",
+    # Nomeação final (etapa 7): renomeia os _FINALIZADO em 99_FINALIZADOS in-place,
+    # prefixando <prefixo><contador> em ordem crescente. "" desliga a etapa (fica pulada).
+    "nome_prefixo": "",              # ex.: "DME_VAV" (com separador embutido, se quiser)
+    "nome_inicio": 1,                # primeiro número da sequência (ex.: 252)
+    "nome_ordem": "",               # descrição em prosa da ordem de numeração (do plano)
 }
 
 
@@ -105,6 +113,21 @@ def render_plan(nome: str, data: str, d: dict) -> str:
         f"- [ ] **6. Trilha** — `invisible-trilha-aplicador` ({trilha_entrada} → 99_FINALIZADOS) — "
         f"trilha `{d['trilha_pasta']}`, fala {d['alvo_fala']}/trilha {d['alvo_trilha']} LUFS"
     )
+    # Etapa 7 (Nomear): última etapa. Renomeia os _FINALIZADO em 99_FINALIZADOS
+    # in-place, prefixando <prefixo><contador> em ordem crescente. Só roda se o
+    # plano definiu um prefixo (nome_prefixo != "").
+    prefixo = str(d.get("nome_prefixo", "")).strip()
+    if prefixo:
+        inicio = int(d.get("nome_inicio", 1))
+        ordem = str(d.get("nome_ordem", "")).strip() or "ordem definida no plano"
+        et_7 = (
+            f"- [ ] **7. Nomear** — `invisible-video-lote-producao` (renomeia 99_FINALIZADOS "
+            f"in-place) — prefixo `{prefixo}`, começando em {inicio}, crescente. Ordem: {ordem}"
+        )
+        nome_desc = f"`{prefixo}` a partir de {inicio} — {ordem}"
+    else:
+        et_7 = "- [x] **7. Nomear** — _(pulada: o plano não pediu renomeação final)_"
+        nome_desc = "—"
 
     obs = d["observacoes"].strip()
     obs_bloco = f"\n## Observações\n\n{obs}\n" if obs else ""
@@ -133,15 +156,17 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 | Alvo de loudness — fala / trilha | {d['alvo_fala']} LUFS / {d['alvo_trilha']} LUFS |
 | Aceleração | {acel} |
 | Modo de otimização (silêncio / respiro) | {d['modo_silencio']} / {d['modo_respiro']} |
+| Nomeação final (prefixo / início / ordem) | {nome_desc} |
 
 ---
 
 ## Etapas (ordem da esteira)
 
-> Dependências: 2 → (3.1, 3.2 em qualquer ordem) → 4 → 5 → 6.
+> Dependências: 2 → (3.1, 3.2 em qualquer ordem) → 4 → 5 → 6 → 7.
 > **Acelerar (5) vem ANTES da trilha (6)** — senão a trilha aceleraria junto e
-> sairia fora de tempo. Ao fim de cada etapa o executor PARA e pede autorização.
-> A 3.2 e a 5 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
+> sairia fora de tempo. **Nomear (7) é a ÚLTIMA** — renomeia os finalizados prontos.
+> Ao fim de cada etapa o executor PARA e pede autorização.
+> A 3.2, a 5 e a 7 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
 
 - [ ] **1. Otimizar + Denoise** — `invisible-video-otimizador` então `invisible-denoiser` (01_BRUTAS → 02_OTIMIZADOS; denoiser sobrescreve in-place) — modo {d['modo_silencio']}/{d['modo_respiro']}
 - [ ] **2. Transcrever** — `invisible-legenda-arquivos` (02_OTIMIZADOS → .json por segmento)
@@ -150,6 +175,7 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 - [ ] **4. Combinar** — `invisible-video-combinador` (03_PREPARADOS → 04_COMBINADOS; salva MATRIZ.md e pede OK; .json de combinação OFF por padrão)
 {et_5}
 {et_6}
+{et_7}
 
 ---
 

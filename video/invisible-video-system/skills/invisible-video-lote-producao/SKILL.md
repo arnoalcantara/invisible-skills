@@ -126,7 +126,7 @@ originais lentos ficam em `04_COMBINADOS` como subproduto — a trilha (etapa 6)
 ignorá-los e processar **só** os `_ACELERADO_`.
 
 ### Etapa 6 — Trilha `[04_COMBINADOS → 99_FINALIZADOS]`
-Última etapa. **Se houve aceleração (etapa 5), passe à trilha só os `_ACELERADO_`**
+**Se houve aceleração (etapa 5), passe à trilha só os `_ACELERADO_`**
 — não os originais lentos (senão você finaliza as duas versões). Sem aceleração,
 processa as combinações normais.
 ```bash
@@ -138,6 +138,24 @@ python3 "<skills_dir>/invisible-trilha-aplicador/scripts/aplicar.py" "<lote>/04_
 absoluta. Recomendado validar uma amostra (um vídeo) antes do lote. Se a
 trilha-aplicador não tiver filtro por sufixo, rode-a sobre os `_ACELERADO_` um a um
 (ou mova os lentos pra um canto antes) — confira o SKILL.md dela.
+
+### Etapa 7 — Nomear `[99_FINALIZADOS → 99_FINALIZADOS]` (só se o plano deu prefixo)
+Última etapa. Renomeia os `*_FINALIZADO.mp4` **in-place**, prefixando
+`<prefixo><contador>_` em ordem crescente a partir de `nome_inicio`. O sufixo
+`_FINALIZADO` é **preservado** (o prefixo só entra na frente).
+
+A **ordem** da numeração é a que o plano definiu (leva por leva, etc.) — o script
+NÃO adivinha. **Você** monta a lista ordenada dos finalizados lendo a ordem do
+`PLAN_LOTE.md` e a passa em `--arquivos` (um nome por linha) ou `--ordem-json`. Sem
+isso, o script cai na ordem alfabética (fallback burro). Monte a ordem explícita
+sempre que o plano especificar uma.
+```bash
+# monte a ordem num txt (um basename por linha, na ordem do plano), então:
+python3 "<skills_dir>/invisible-video-lote-producao/scripts/nomear.py" "<lote>/99_FINALIZADOS" \
+  --prefixo "<nome_prefixo>" --inicio <nome_inicio> --arquivos ordem.txt
+```
+Idempotente: um arquivo que já começa com o prefixo é pulado (não re-prefixa). Rode
+`--dry-run` primeiro pra conferir o mapa de→para antes de renomear de verdade.
 
 ## Fechamento do lote
 Quando a `proxima_etapa` for nula (`concluido: true`), resuma o lote (contagem de
