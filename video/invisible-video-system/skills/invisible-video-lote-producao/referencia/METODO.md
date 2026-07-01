@@ -19,6 +19,24 @@ Por que Forma A e não subagentes (Forma B): os portões de aprovação são o c
 pedido ("sempre autorizadas pelo usuário"). Num subagente isolado, pausar pra
 perguntar ao usuário é desajeitado. Na mesma conversa, o portão é natural.
 
+## Portão de entrada: nomes das brutas (antes da etapa 1)
+
+Antes de otimizar, o maestro higieniza os nomes de `01_BRUTAS`. As etapas leem a
+seção pelo nome do arquivo (`GANCHO_1_BRUTA`, `DESENVOLVIMENTO_2_BRUTA`...), então
+uma bruta torta (`Gancho2`, `gancho_1_v2_BRUTA`) contamina o lote inteiro.
+
+Decisões de design:
+- **Não é etapa numerada.** Não entra no `estado_lote.py`, não tem checkbox, não tem
+  script. É um portão de higiene na entrada, só quando `proxima_etapa == 1`.
+- **Dispara só se achar nome fora do padrão.** Lote já limpo não incomoda o usuário.
+- **O padrão vem do lote, não do sistema.** O maestro infere o padrão dos arquivos
+  que já estão corretos; se não der (ou for ambíguo), pergunta. Não há padrão
+  canônico imposto — o Arno escolheu flexibilidade por lote (input do usuário
+  quando preciso). Por isso não virou script com heurística fixa: a leitura ambígua
+  (`Gancho2` é o take base?) é julgamento humano, e um script erraria em lote.
+- **Sempre pede OK.** Zero renomeação às cegas, mesmo no trivial. O renomear é um
+  `mv` (trivial); o trabalho de verdade é a leitura correta, que o usuário confirma.
+
 ## A fonte da verdade são as pastas
 
 O `PLAN_LOTE.md` tem checkboxes, mas eles são **resumo legível**. O estado real vem
