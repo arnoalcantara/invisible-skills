@@ -93,8 +93,11 @@ def ffprobe_wh_dur(video):
               "-show_entries", "stream=width,height", "-of", "csv=p=0", video])
     dur = run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
                "-of", "csv=p=0", video])
+    # algumas versões do ffprobe emitem um campo vazio no fim do CSV
+    # ("1080,1920," → 3 campos), o que estouraria o unpack de 2. Filtra vazios.
+    campos = [c for c in wh.split(",") if c.strip()]
     try:
-        w, h = (int(float(x)) for x in wh.split(","))
+        w, h = int(float(campos[0])), int(float(campos[1]))
     except (ValueError, IndexError):
         return None, None, None
     try:
