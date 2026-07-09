@@ -56,6 +56,7 @@ então re-rodar uma etapa parcial é seguro.
 | 5 Acelerar | `04_COMBINADOS` tem `*_ACELERADO_*` (só exigida se o plano pediu) |
 | 6 Trilha | `99_FINALIZADOS` tem `*_FINALIZADO*` |
 | 7 Nomear | `99_FINALIZADOS` tem `*_FINALIZADO*` começando com o prefixo do plano (só exigida se o plano deu prefixo) |
+| 8 Notificar | checkbox `[x]` no plano — roda depois do upload; sem artefato local, é marcada pelo maestro (só exigida se o plano deu destino) |
 
 Limitação consciente: o gate da etapa 1 não distingue "otimizado mas ainda não
 denoised". O denoiser é in-place e mantém o nome (não há marca `_DENOISER` para
@@ -84,6 +85,11 @@ marcador de denoise (sidecar), não o nome.
   prefixando `<prefixo><n>_` na ordem do plano. Preserva o sufixo `_FINALIZADO`, então
   o gate da 6 continua válido; o gate da 7 exige que os finalizados comecem com o
   prefixo. Só roda se o plano definiu `nome_prefixo`; senão nasce pulada.
+- **Notificar (8) depois do upload:** manda os links via Office Boy (WhatsApp HUB)
+  para `notificar_destino`. Ordem: trilha → nomear → upload → notificar. Sem artefato
+  local que prove o envio, o gate lê o checkbox — o maestro marca a etapa após
+  disparar. A régua de risco do HUB decide se pede confirmação (não force). Só roda se
+  o plano deu um destino; senão nasce pulada.
 
 ## `.json` de combinação OFF por padrão
 
