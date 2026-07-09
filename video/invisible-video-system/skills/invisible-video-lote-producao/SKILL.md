@@ -1,7 +1,7 @@
 ---
 name: invisible-video-lote-producao
 description: >
-  Executa a produção de um lote de vídeo lendo o PLAN_LOTE.md que a invisible-video-lote-plano criou. É um MAESTRO: não reimplementa nenhuma etapa — invoca as skills da esteira v2.6.0 (otimizador, denoiser, legenda-arquivos, legendas-aplicador, var-gancho-escrito, combinador, acelerador, trilha-aplicador) na ordem certa, com os parâmetros que o plano definiu. Quando há aceleração, ela vem ANTES da trilha (senão a música aceleraria junto e sairia fora de tempo). Roda UMA etapa por vez e DEVOLVE o controle ao usuário ao fim de cada, sempre pedindo autorização antes da próxima. As pastas do lote são a fonte da verdade do progresso: ao retomar, lê o PLAN_LOTE.md e reconcilia com o disco para saber onde parou — é totalmente retomável entre sessões. Respeita os portões internos de cada skill filha (a prova do primeiro gancho na var-gancho, a aprovação da MATRIZ.md no combinador). Por padrão NÃO gera .json de combinação (os .json por segmento já existem). Use quando o usuário pedir "produzir o lote", "executar o lote", "rodar a esteira", "continuar a produção do lote X", "tocar o lote do bruto ao finalizado", "retomar o lote". Requer as skills da esteira instaladas e ffmpeg (faz bootstrap).
+  Executa a produção de um lote de vídeo lendo o PLAN_LOTE.md que a invisible-video-lote-plano criou. É um MAESTRO: não reimplementa nenhuma etapa — invoca as skills da esteira v2.6.0 (otimizador, denoiser, legenda-arquivos, legendas-aplicador, var-gancho-escrito, combinador, acelerador, trilha-aplicador) na ordem certa, com os parâmetros que o plano definiu. Quando há aceleração, ela vem ANTES da trilha (senão a música aceleraria junto e sairia fora de tempo). Roda UMA etapa por vez e DEVOLVE o controle ao usuário ao fim de cada, sempre pedindo autorização antes da próxima. As pastas do lote são a fonte da verdade do progresso: ao retomar, lê o PLAN_LOTE.md e reconcilia com o disco para saber onde parou — é totalmente retomável entre sessões. Respeita os portões internos de cada skill filha (a prova do primeiro gancho na var-gancho, a aprovação da MATRIZ.md no combinador). Por padrão NÃO gera .json de combinação (os .json por segmento já existem). Quando o plano pede, a última etapa (notificar) envia os links dos criativos via Office Boy (WhatsApp HUB) a um contato/grupo da Invisible DEPOIS do upload ao Drive, deixando a régua de risco do HUB decidir se pede confirmação. Use quando o usuário pedir "produzir o lote", "executar o lote", "rodar a esteira", "continuar a produção do lote X", "tocar o lote do bruto ao finalizado", "retomar o lote". Requer as skills da esteira instaladas e ffmpeg (faz bootstrap).
 ---
 
 # Maestro de Produção de Lote
@@ -199,10 +199,33 @@ python3 "<skills_dir>/invisible-video-lote-producao/scripts/nomear.py" "<lote>/9
 Idempotente: um arquivo que já começa com o prefixo é pulado (não re-prefixa). Rode
 `--dry-run` primeiro pra conferir o mapa de→para antes de renomear de verdade.
 
+### Etapa 8 — Notificar `[depois do upload]` (só se o plano deu destino)
+Última etapa, **depois** do upload ao Drive. Envia os links dos criativos ao destino
+do plano (`notificar_destino`) via **Office Boy** (WhatsApp HUB). Ordem obrigatória:
+**Trilha → Nomear → upload (`/invisible-upload`) → Notificar**. Não notifique antes de
+os arquivos estarem no Drive — o link é o produto da mensagem.
+
+1. **Suba primeiro.** Rode/sugira `/invisible-upload`; capture os **links das pastas
+   de destino** (a própria skill de upload devolve o link clicável no relatório).
+2. **Monte a mensagem** com o contexto do lote (nome, nº de criativos, formatos) e os
+   links. Uma linha por range/pasta, como no relatório do upload.
+3. **Dispare pelo Office Boy** com a ferramenta do WhatsApp HUB
+   (`mcp__whatsapp-hub__enviar_mensagem`), passando **`instancia: "office_boy"`** e o
+   `destinatario` = `notificar_destino` do plano. A **régua de risco do HUB decide**
+   se pede confirmação (texto longo, links...) — se retornar `confirmacao_necessaria`,
+   mostre a prévia e reenvie com `confirmado: true`. Não force confirmação você mesmo;
+   confie na régua.
+4. **Marque** a etapa: `python3 scripts/marcar_etapa.py "<lote>" 8`. Essa etapa não
+   tem artefato local, então o gate lê o checkbox — marcá-la é o que a conclui.
+
+> Se o contato/grupo não resolver no HUB (`desambiguacao_necessaria`), confirme com o
+> usuário qual é o destino certo antes de reenviar.
+
 ## Fechamento do lote
 Quando a `proxima_etapa` for nula (`concluido: true`), resuma o lote (contagem de
-finalizados e acelerados) e **sugira** `/invisible-upload` pra subir ao Drive — sem
-rodar sozinho.
+finalizados e acelerados). Se a etapa 8 (Notificar) **não** estava no plano, **sugira**
+`/invisible-upload` pra subir ao Drive — sem rodar sozinho. Se estava, a etapa 8 já
+cobre upload + notificação.
 
 ## Anti-padrões (não faça)
 - **Reimplementar uma etapa.** Você invoca a skill filha; o método mora nela.

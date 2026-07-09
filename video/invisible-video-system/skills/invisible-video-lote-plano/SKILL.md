@@ -1,7 +1,7 @@
 ---
 name: invisible-video-lote-plano
 description: >
-  Planeja um novo lote de produção de vídeo e monta o esqueleto dele. Conduz uma conversa curta com o usuário para capturar as PREFERÊNCIAS do lote — estilo de legenda, quais variações de gancho usar (e se com fonte/fundo customizados), qual pasta de trilha, e se os finalizados serão acelerados e em qual velocidade —, então cria a pasta do lote na raiz do laboratório com a estrutura de pastas da esteira v2.6.0 (01_BRUTAS, 02_OTIMIZADOS, 03_PREPARADOS, 04_COMBINADOS, 99_FINALIZADOS) e grava um PLAN_LOTE.md com as decisões e os checkboxes de cada etapa. NÃO decide a matriz de combinações (isso é do combinador, na execução) nem processa qualquer mídia — só planeja e cria a estrutura vazia. A pasta nasce VAZIA: ao fim, instrui o usuário a jogar as brutas em 01_BRUTAS e rodar a invisible-video-lote-producao. O PLAN_LOTE.md é o contrato lido pela invisible-video-lote-producao. Use quando o usuário pedir "planejar um lote novo", "criar um lote de vídeo", "começar um lote", "montar a estrutura de um lote", "novo lote do Gurgel/Filhos do Trovão...". Não requer ffmpeg nem nada — só cria pastas e um documento.
+  Planeja um novo lote de produção de vídeo e monta o esqueleto dele. Conduz uma conversa curta com o usuário para capturar as PREFERÊNCIAS do lote — estilo de legenda, quais variações de gancho usar (e se com fonte/fundo customizados), qual pasta de trilha, se os finalizados serão acelerados e em qual velocidade, e se ao fim os links dos criativos serão enviados a alguém/um grupo da Invisible via Office Boy (default de destino Sandro Coelho) —, então cria a pasta do lote na raiz do laboratório com a estrutura de pastas da esteira v2.6.0 (01_BRUTAS, 02_OTIMIZADOS, 03_PREPARADOS, 04_COMBINADOS, 99_FINALIZADOS) e grava um PLAN_LOTE.md com as decisões e os checkboxes de cada etapa. NÃO decide a matriz de combinações (isso é do combinador, na execução) nem processa qualquer mídia — só planeja e cria a estrutura vazia. A pasta nasce VAZIA: ao fim, instrui o usuário a jogar as brutas em 01_BRUTAS e rodar a invisible-video-lote-producao. O PLAN_LOTE.md é o contrato lido pela invisible-video-lote-producao. Use quando o usuário pedir "planejar um lote novo", "criar um lote de vídeo", "começar um lote", "montar a estrutura de um lote", "novo lote do Gurgel/Filhos do Trovão...". Não requer ffmpeg nem nada — só cria pastas e um documento.
 ---
 
 # Planejador de Lote de Vídeo
@@ -101,6 +101,14 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
      `_FINALIZADO` (o prefixo só entra na frente). Se o usuário não quiser
      renomear, a etapa 7 nasce pulada (`nome_prefixo: ""`).
 
+9. **Notificação final** (opcional). Pergunte se, **depois do upload ao Drive**, os
+   links dos criativos devem ser enviados a alguém (ou a um grupo) da Invisible via
+   **Office Boy** (WhatsApp HUB). O **default de destino é `Sandro Coelho`** — ofereça
+   ele e deixe trocar por outra pessoa ou grupo. Capture o **destino** (nome do
+   contato ou do grupo) em `notificar_destino`. Se o usuário não quiser notificar, a
+   etapa 8 nasce pulada (`notificar_destino: ""`). O envio em si é da
+   `invisible-video-lote-producao`; aqui você só captura o destino.
+
 Resuma as escolhas em uma frase e confirme antes de criar.
 
 ## Criar a estrutura
@@ -132,12 +140,17 @@ Escreva as decisões num JSON temporário (campos ausentes assumem o default):
   "observacoes": "",
   "nome_prefixo": "DME_VAV",
   "nome_inicio": 252,
-  "nome_ordem": "leva por leva: ganchos 1..5 base, depois V2, depois V3"
+  "nome_ordem": "leva por leva: ganchos 1..5 base, depois V2, depois V3",
+  "notificar_destino": "Sandro Coelho"
 }
 ```
 
 > **Nomeação (etapa 7):** `nome_prefixo: ""` (default) desliga a etapa — ela nasce
 > pulada. Preencher `nome_prefixo` liga a renomeação in-place em `99_FINALIZADOS`.
+>
+> **Notificação (etapa 8):** `notificar_destino: ""` (default) desliga a etapa — ela
+> nasce pulada. Preencher com um contato/grupo (ex.: `Sandro Coelho`) liga o envio
+> dos links via Office Boy depois do upload.
 
 ```bash
 python3 scripts/criar_lote.py \

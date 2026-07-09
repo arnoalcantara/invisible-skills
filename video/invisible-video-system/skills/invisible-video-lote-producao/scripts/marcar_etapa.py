@@ -16,7 +16,7 @@ import os
 import re
 import sys
 
-ETAPAS_VALIDAS = {"1", "2", "3.1", "3.2", "4", "5", "6"}
+ETAPAS_VALIDAS = {"1", "2", "3.1", "3.2", "4", "5", "6", "7", "8"}
 
 
 def main() -> int:

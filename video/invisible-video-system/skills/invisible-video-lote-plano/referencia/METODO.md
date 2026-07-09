@@ -59,8 +59,9 @@ material (a matriz) está lá na frente, no combinador.
 | 5. Acelerar | acelerador | 04_COMBINADOS → 04_COMBINADOS | — |
 | 6. Trilha | trilha-aplicador | 04_COMBINADOS → 99_FINALIZADOS | amostra (recomendado) |
 | 7. Nomear | lote-producao (nomear.py) | 99_FINALIZADOS → 99_FINALIZADOS (in-place) | — |
+| 8. Notificar | lote-producao (Office Boy / WhatsApp HUB) | 99_FINALIZADOS + Drive → mensagem | régua do HUB |
 
-Dependências: `2 → (3.1, 3.2) → 4 → 5 → 6 → 7`. O denoiser roda **antes** da
+Dependências: `2 → (3.1, 3.2) → 4 → 5 → 6 → 7 → (upload) → 8`. O denoiser roda **antes** da
 transcrição (não transcrever áudio sujo). **Acelerar (5) vem ANTES da trilha (6)**:
 acelerar depois aceleraria a música junto (o `atempo` a tiraria do tempo) — então
 acelera-se a combinação e a trilha entra por cima do ritmo final, consumindo só os

@@ -69,6 +69,10 @@ DEFAULTS = {
     "nome_prefixo": "",              # ex.: "DME_VAV" (com separador embutido, se quiser)
     "nome_inicio": 1,                # primeiro número da sequência (ex.: 252)
     "nome_ordem": "",               # descrição em prosa da ordem de numeração (do plano)
+    # Notificação final (etapa 8): depois do upload, manda os links via Office Boy
+    # (WhatsApp HUB) para alguém/um grupo da Invisible. "" desliga a etapa (fica
+    # pulada). Default de destino é "Sandro Coelho" quando o plano pede notificação.
+    "notificar_destino": "",         # ex.: "Sandro Coelho" ou nome de um grupo
 }
 
 
@@ -166,6 +170,21 @@ def render_plan(nome: str, data: str, d: dict) -> str:
         et_7 = "- [x] **7. Nomear** — _(pulada: o plano não pediu renomeação final)_"
         nome_desc = "—"
 
+    # Etapa 8 (Notificar): última etapa, DEPOIS do upload ao Drive. Manda os links
+    # via Office Boy (WhatsApp HUB) para o destino do plano. Só roda se o plano deu
+    # um destino (notificar_destino != "").
+    destino = str(d.get("notificar_destino", "")).strip()
+    if destino:
+        et_8 = (
+            f"- [ ] **8. Notificar** — `invisible-video-lote-producao` (depois do upload) — "
+            f"envia os links dos criativos via Office Boy (WhatsApp HUB) para **{destino}**. "
+            f"A régua de risco do HUB decide se pede confirmação."
+        )
+        notif_desc = destino
+    else:
+        et_8 = "- [x] **8. Notificar** — _(pulada: o plano não pediu notificação)_"
+        notif_desc = "—"
+
     obs = d["observacoes"].strip()
     obs_bloco = f"\n## Observações\n\n{obs}\n" if obs else ""
 
@@ -195,16 +214,18 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 | Aceleração | {acel} |
 | Modo de otimização (silêncio / respiro) | {d['modo_silencio']} / {d['modo_respiro']} |
 | Nomeação final (prefixo / início / ordem) | {nome_desc} |
+| Notificação final (Office Boy) | {notif_desc} |
 
 ---
 
 ## Etapas (ordem da esteira)
 
-> Dependências: 2 → (3.1, 3.2 em qualquer ordem) → 4 → 5 → 6 → 7.
+> Dependências: 2 → (3.1, 3.2 em qualquer ordem) → 4 → 5 → 6 → 7 → (upload) → 8.
 > **Acelerar (5) vem ANTES da trilha (6)** — senão a trilha aceleraria junto e
-> sairia fora de tempo. **Nomear (7) é a ÚLTIMA** — renomeia os finalizados prontos.
+> sairia fora de tempo. **Nomear (7)** renomeia os finalizados prontos. **Notificar
+> (8) é a ÚLTIMA**, depois do upload ao Drive — manda os links via Office Boy.
 > Ao fim de cada etapa o executor PARA e pede autorização.
-> A 3.2, a 5 e a 7 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
+> A 3.2, a 5, a 7 e a 8 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
 
 - [ ] **1. Otimizar + Denoise** — `invisible-video-otimizador` então `invisible-denoiser` (01_BRUTAS → 02_OTIMIZADOS; denoiser sobrescreve in-place) — modo {d['modo_silencio']}/{d['modo_respiro']}.{et1_formato}
 - [ ] **2. Transcrever** — `invisible-legenda-arquivos` (02_OTIMIZADOS → .json por segmento)
@@ -214,6 +235,7 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 {et_5}
 {et_6}
 {et_7}
+{et_8}
 
 ---
 

@@ -15,6 +15,9 @@ Como cada etapa é detectada como "feita" (heurística por pasta/sufixo):
   6   Trilha            -> 99_FINALIZADOS tem algum *_FINALIZADO*.mp4
   7   Nomear            -> 99_FINALIZADOS tem *_FINALIZADO* começando com o prefixo do
                           plano (renomeação in-place; só exigida se o plano deu prefixo)
+  8   Notificar         -> checkbox [x] no plano (roda DEPOIS do upload; não há artefato
+                          local que prove o envio, então é marcada pelo maestro; só
+                          exigida se o plano deu um destino de notificação)
 
 Acelerar vem ANTES da trilha de propósito: acelerar depois aceleraria a música
 junto (e o atempo a tiraria do tempo). Acelerar roda em 04_COMBINADOS; a trilha
@@ -40,7 +43,7 @@ import sys
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".webm"}
 
 # ordem canônica das etapas
-ETAPAS = ["1", "2", "3.1", "3.2", "4", "5", "6", "7"]
+ETAPAS = ["1", "2", "3.1", "3.2", "4", "5", "6", "7", "8"]
 ROTULOS = {
     "1": "Otimizar + Denoise",
     "2": "Transcrever",
@@ -50,6 +53,7 @@ ROTULOS = {
     "5": "Acelerar",
     "6": "Trilha",
     "7": "Nomear",
+    "8": "Notificar",
 }
 
 
@@ -84,6 +88,7 @@ def parse_plan(plan_path: str) -> dict:
         "fator_aceleracao": 1.2,
         "nome_prefixo": "",
         "nome_inicio": 1,
+        "notificar_destino": "",
     }
 
     # tabela de decisões: | Estilo de legenda | auto (...) |
@@ -132,16 +137,27 @@ def parse_plan(plan_path: str) -> dict:
         if m:
             dec["nome_prefixo"] = m.group(1)
             dec["nome_inicio"] = int(m.group(2))
+    # Notificação final: | Notificação final (Office Boy) | Sandro Coelho |
+    v = linha("Notificação final (Office Boy)")
+    if v and v.strip() != "—":
+        dec["notificar_destino"] = v.strip()
 
-    # checkboxes pulados: linha da etapa marcada [x] que contém "pulada"
+    # checkboxes pulados: linha da etapa marcada [x] que contém "pulada".
+    # marcados: etapa com [x] que NÃO é "pulada" (concluída manualmente pelo maestro).
     pulados = set()
+    marcados = set()
     for et in ETAPAS:
-        # uma etapa está pulada se sua linha tem [x] e o texto "pulada"
         m = re.search(rf"- \[(x| )\] \*\*{re.escape(et)}[ .].*", txt)
-        if m and "pulada" in m.group(0):
+        if not m:
+            continue
+        linha_et = m.group(0)
+        marcado = m.group(1) == "x"
+        if marcado and "pulada" in linha_et:
             pulados.add(et)
+        elif marcado:
+            marcados.add(et)
 
-    return {"decisoes": dec, "pulados": sorted(pulados)}
+    return {"decisoes": dec, "pulados": sorted(pulados), "marcados": sorted(marcados)}
 
 
 def main() -> int:
@@ -157,6 +173,7 @@ def main() -> int:
     parsed = parse_plan(plan_path)
     dec = parsed["decisoes"]
     pulados = set(parsed["pulados"])
+    marcados = set(parsed.get("marcados", []))
     # uma etapa também é "pulada" pela lógica do plano (sem VAR / sem acelerar)
     if not dec["variacoes"]:
         pulados.add("3.2")
@@ -164,6 +181,8 @@ def main() -> int:
         pulados.add("5")  # acelerar é a etapa 5 (antes da trilha)
     if not dec.get("nome_prefixo"):
         pulados.add("7")  # nomear é a etapa 7 (última); sem prefixo, não roda
+    if not dec.get("notificar_destino"):
+        pulados.add("8")  # notificar é a etapa 8 (última); sem destino, não roda
 
     d_brutas = os.path.join(lote, "01_BRUTAS")
     d_otim = os.path.join(lote, "02_OTIMIZADOS")
@@ -198,6 +217,10 @@ def main() -> int:
         "7": bool(dec.get("nome_prefixo"))
              and any(f.startswith(dec["nome_prefixo"]) for f in fim_v)
              and any("_FINALIZADO" in f.upper() for f in fim_v),
+        # 8 (notificar) roda DEPOIS do upload ao Drive — não há artefato local que
+        # prove o envio, então o gate lê o checkbox: a etapa é "feita" quando o
+        # maestro a marca ([x] sem "pulada") após disparar a mensagem no Office Boy.
+        "8": "8" in marcados,
     }
 
     etapas = []
