@@ -90,6 +90,17 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
    `justo` 0.05/0.18, ou `conservador` 0.10/0.25). **Ambos justo por default**,
    alinhado ao otimizador — não assuma conservador no respiro.
 
+   **7b. Respiro de entrada POR GANCHO** (opcional). O modo justo apara a bruta pela
+   1ª palavra falada. Quando um gancho abre com uma **movimentação SEM fala** que é
+   parte do gancho visual (a pessoa pega o celular, ajeita objetos na mesa, levanta a
+   mão), o justo comeria essa abertura. Pergunte se **algum gancho** precisa de um
+   respiro de entrada maior. Se sim, capture **quais ganchos e quantos segundos**
+   (ex.: "ganchos 1, 3 e 5 com ~1s"). Grave em `respiro_ganchos` como
+   `{"1": 1.0, "3": 1.0, "5": 1.0}` (número do gancho → segundos). Vazio (default) =
+   todos os ganchos no modo de respiro padrão. Avise que **1s é experimental** — na
+   produção o Arno confere o otimizado antes de seguir. Isso vale só para GANCHOS
+   (a movimentação de abertura é deles); desenvolvimentos vão sempre no padrão.
+
 8. **Nomeação final** (opcional). Pergunte se, ao fim do lote, os arquivos de
    `99_FINALIZADOS` devem ser **renomeados** para um padrão de entrega. Se sim,
    capture:
@@ -137,6 +148,7 @@ Escreva as decisões num JSON temporário (campos ausentes assumem o default):
   "fator_aceleracao": 1.2,
   "modo_silencio": "justo",
   "modo_respiro": "justo",
+  "respiro_ganchos": {"1": 1.0, "3": 1.0, "5": 1.0},
   "observacoes": "",
   "nome_prefixo": "DME_VAV",
   "nome_inicio": 252,

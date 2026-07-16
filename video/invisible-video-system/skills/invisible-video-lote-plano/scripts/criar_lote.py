@@ -28,6 +28,11 @@ As preferências chegam por um JSON (--decisoes), não por dezenas de flags:
       "fator_aceleracao": 1.2,
       "modo_silencio": "justo",        # justo (default do otimizador) | conservador
       "modo_respiro": "justo",         # justo (default do otimizador) | conservador
+      "respiro_ganchos": {"1": 1.0, "3": 1.0},  # respiro de ENTRADA custom por gancho
+                                        # (segundos antes da 1ª palavra). {} = todos
+                                        # no modo_respiro padrão. Use quando um gancho
+                                        # abre com movimentação SEM fala (gancho visual)
+                                        # que o justo apararia.
       "observacoes": "",
       "nome_prefixo": "DME_VAV",       # etapa 7: prefixo dos nomes finais; "" = sem nomeação
       "nome_inicio": 252,               # primeiro número da sequência crescente
@@ -63,6 +68,11 @@ DEFAULTS = {
     "fator_aceleracao": 1.2,
     "modo_silencio": "justo",        # ambos alinhados ao default do otimizador: justo/justo
     "modo_respiro": "justo",
+    # Respiro de entrada custom POR GANCHO: {"<n>": <segundos>}. {} (default) = todos
+    # os ganchos no modo_respiro padrão. Use quando um gancho abre com movimentação
+    # SEM fala (gancho visual proposital) que o modo justo apararia — a produção roda
+    # esse gancho isolado com --respiro-entrada <segundos>.
+    "respiro_ganchos": {},
     "observacoes": "",
     # Nomeação final (etapa 7): renomeia os _FINALIZADO em 99_FINALIZADOS in-place,
     # prefixando <prefixo><contador> em ordem crescente. "" desliga a etapa (fica pulada).
@@ -185,6 +195,29 @@ def render_plan(nome: str, data: str, d: dict) -> str:
         et_8 = "- [x] **8. Notificar** — _(pulada: o plano não pediu notificação)_"
         notif_desc = "—"
 
+    # Respiro de entrada custom por gancho (etapa 1). Dict {"<n>": <segundos>}.
+    # Vazio = todos no modo_respiro padrão. Ordena por número do gancho pra ficar
+    # legível e determinístico.
+    respiro_g = d.get("respiro_ganchos") or {}
+    if respiro_g:
+        try:
+            itens = sorted(((str(k), float(v)) for k, v in respiro_g.items()),
+                           key=lambda kv: int(kv[0]))
+        except (ValueError, TypeError):
+            itens = sorted((str(k), float(v)) for k, v in respiro_g.items())
+        pares = ", ".join(f"GANCHO_{k} → {v:g}s" for k, v in itens)
+        respiro_desc = pares
+        et1_respiro = (
+            f" **EXCEÇÃO de respiro de entrada por gancho:** {pares}. "
+            f"Esses ganchos abrem com movimentação SEM fala (gancho visual proposital) "
+            f"que o modo {d['modo_respiro']} apararia — otimizar cada um SEPARADAMENTE com "
+            f"`--respiro-entrada <segundos>` (arquivo único). Os demais segmentos vão no "
+            f"lote {d['modo_silencio']}/{d['modo_respiro']} padrão."
+        )
+    else:
+        respiro_desc = "—"
+        et1_respiro = ""
+
     obs = d["observacoes"].strip()
     obs_bloco = f"\n## Observações\n\n{obs}\n" if obs else ""
 
@@ -213,6 +246,7 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 | Alvo de loudness — fala / trilha | {d['alvo_fala']} LUFS / {d['alvo_trilha']} LUFS |
 | Aceleração | {acel} |
 | Modo de otimização (silêncio / respiro) | {d['modo_silencio']} / {d['modo_respiro']} |
+| Respiro de entrada por gancho | {respiro_desc} |
 | Nomeação final (prefixo / início / ordem) | {nome_desc} |
 | Notificação final (Office Boy) | {notif_desc} |
 
@@ -227,7 +261,7 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 > Ao fim de cada etapa o executor PARA e pede autorização.
 > A 3.2, a 5, a 7 e a 8 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
 
-- [ ] **1. Otimizar + Denoise** — `invisible-video-otimizador` então `invisible-denoiser` (01_BRUTAS → 02_OTIMIZADOS; denoiser sobrescreve in-place) — modo {d['modo_silencio']}/{d['modo_respiro']}.{et1_formato}
+- [ ] **1. Otimizar + Denoise** — `invisible-video-otimizador` então `invisible-denoiser` (01_BRUTAS → 02_OTIMIZADOS; denoiser sobrescreve in-place) — modo {d['modo_silencio']}/{d['modo_respiro']}.{et1_respiro}{et1_formato}
 - [ ] **2. Transcrever** — `invisible-legenda-arquivos` (02_OTIMIZADOS → .json por segmento)
 - [ ] **3.1 Legendar** — `invisible-legendas-aplicador` (02_OTIMIZADOS → 03_PREPARADOS) — estilo {estilo_desc}
 {et_32}

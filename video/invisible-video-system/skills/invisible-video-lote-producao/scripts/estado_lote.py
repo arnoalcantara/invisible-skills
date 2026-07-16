@@ -86,6 +86,7 @@ def parse_plan(plan_path: str) -> dict:
         "alvo_trilha": -37,
         "acelerar": False,
         "fator_aceleracao": 1.2,
+        "respiro_ganchos": {},   # {"<n>": <segundos>} — respiro de entrada custom por gancho
         "nome_prefixo": "",
         "nome_inicio": 1,
         "notificar_destino": "",
@@ -137,6 +138,13 @@ def parse_plan(plan_path: str) -> dict:
         if m:
             dec["nome_prefixo"] = m.group(1)
             dec["nome_inicio"] = int(m.group(2))
+    # Respiro de entrada por gancho: | Respiro de entrada por gancho | GANCHO_1 → 1s, GANCHO_3 → 1s |
+    # Vira {"1": 1.0, "3": 1.0}. "—" = nenhum (todos no modo_respiro padrão).
+    v = linha("Respiro de entrada por gancho")
+    if v and v.strip() != "—":
+        pares = re.findall(r"GANCHO_(\d+)\s*→\s*([\d.]+)\s*s", v)
+        if pares:
+            dec["respiro_ganchos"] = {n: float(seg) for n, seg in pares}
     # Notificação final: | Notificação final (Office Boy) | Sandro Coelho |
     v = linha("Notificação final (Office Boy)")
     if v and v.strip() != "—":

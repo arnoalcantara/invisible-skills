@@ -86,6 +86,15 @@ feed** que o plano pediu (quadrado/retrato), depois o denoiser por cima de tudo.
 # 1) otimizador — gera SÓ o vertical (_OTIMIZADO_VERTICAL) + .md
 python3 "<skills_dir>/invisible-video-otimizador/scripts/otimizar.py" "<lote>/01_BRUTAS" \
   --modo-silencio <modo_silencio> --modo-respiro <modo_respiro>
+# 1b) SE o plano tem `respiro_ganchos` (ex.: {"1":1.0,"3":1.0}): NÃO rode a pasta
+#     inteira de uma vez. Rode os ganchos marcados ISOLADOS com --respiro-entrada, e
+#     os DEMAIS arquivos (ganchos não-marcados + todos os desenvolvimentos/CTAs) no
+#     lote padrão. O otimizador aceita arquivo único (aponte o .mov da bruta):
+python3 "<skills_dir>/invisible-video-otimizador/scripts/otimizar.py" \
+  "<lote>/01_BRUTAS/GANCHO_1_BRUTA.mov" --out-dir "<lote>/02_OTIMIZADOS" \
+  --modo-silencio <modo_silencio> --modo-respiro <modo_respiro> --respiro-entrada 1.0
+#     (repita por gancho marcado, com o valor em segundos que o plano deu; os demais
+#      arquivos você processa em lote ou um a um, sem --respiro-entrada.)
 # 2) recortes de feed — UM por formato de feed do plano (`formatos` menos "vertical").
 #    quadrado.py ancora no rosto (YuNet). Só rode os formatos que o plano listou;
 #    se o plano é "só vertical", PULE este passo inteiro.
@@ -96,6 +105,14 @@ python3 "<skills_dir>/invisible-video-otimizador/scripts/quadrado.py" "<lote>/02
 # 3) denoiser — sobre TODOS os arquivos de 02 (vertical + recortes), in-place
 python3 "<skills_dir>/invisible-denoiser/scripts/denoiser.py" "<lote>/02_OTIMIZADOS"
 ```
+- **Respiro de entrada por gancho vem do plano** (`respiro_ganchos` no
+  `estado_lote.py`, ex.: `{"1": 1.0, "3": 1.0}`). Vazio → todos no `modo_respiro`
+  padrão (rode a pasta inteira de uma vez, sem `--respiro-entrada`). Preenchido → os
+  ganchos listados abrem com movimentação SEM fala (gancho visual) que o justo
+  apararia; rode **cada um isolado** com `--respiro-entrada <segundos>` e os demais no
+  padrão. **A folga é experimental** — depois de otimizar, confira o início desses
+  ganchos (ex.: meça o silêncio inicial com `silencedetect`, ou mostre um still/trecho)
+  e valide com o usuário antes de seguir pra transcrição. Vale só para GANCHOS.
 - **Quais recortes rodar vem do plano** (linha "Formatos" / `formatos` no
   `estado_lote.py`): rode `quadrado.py --formato <f>` para cada `f` em `formatos`
   exceto `vertical`. Plano "só vertical" → nenhum recorte. `quadrado.py` deve rodar
