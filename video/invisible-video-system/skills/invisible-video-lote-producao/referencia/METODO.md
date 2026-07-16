@@ -48,7 +48,7 @@ então re-rodar uma etapa parcial é seguro.
 ### Heurística de "etapa feita" (gates em estado_lote.py)
 | Etapa | Feita quando |
 |---|---|
-| 1 Otimizar+Denoise | `02_OTIMIZADOS` tem `*_OTIMIZADO_*.mp4` |
+| 1 Otimizar+Denoise | `02_OTIMIZADOS` tem `*_OTIMIZADO_*.mp4` (¹) |
 | 2 Transcrever | nº de `.json` em `02_OTIMIZADOS` ≥ nº de bases de vídeo |
 | 3.1 Legendar | `03_PREPARADOS` tem `*_LEGENDADO_*` |
 | 3.2 Variações | `03_PREPARADOS` tem `*_VAR<n>_*` (só exigida se o plano pediu) |
@@ -57,6 +57,13 @@ então re-rodar uma etapa parcial é seguro.
 | 6 Trilha | `99_FINALIZADOS` tem `*_FINALIZADO*` |
 | 7 Nomear | `99_FINALIZADOS` tem `*_FINALIZADO*` começando com o prefixo do plano (só exigida se o plano deu prefixo) |
 | 8 Notificar | checkbox `[x]` no plano — roda depois do upload; sem artefato local, é marcada pelo maestro (só exigida se o plano deu destino) |
+
+(¹) **Respiro de entrada por gancho** (`respiro_ganchos` do plano): quando preenchido
+(ex.: `{"1": 1.0, "3": 1.0}`), a etapa 1 NÃO roda a pasta inteira de uma vez — os
+ganchos marcados são otimizados isolados com `--respiro-entrada <segundos>` (preservam
+a movimentação sem fala da abertura, que é gancho visual) e os demais vão no lote
+padrão. A folga é experimental: validar o início desses ganchos antes de seguir. Ver
+a Etapa 1 no SKILL.md.
 
 Limitação consciente: o gate da etapa 1 não distingue "otimizado mas ainda não
 denoised". O denoiser é in-place e mantém o nome (não há marca `_DENOISER` para
