@@ -1,7 +1,7 @@
 ---
 name: invisible-video-lote-producao
 description: >
-  Executa a produção de um lote de vídeo lendo o PLAN_LOTE.md que a invisible-video-lote-plano criou. É um MAESTRO: não reimplementa nenhuma etapa — invoca as skills da esteira v2.6.0 (otimizador, denoiser, legenda-arquivos, legendas-aplicador, var-gancho-escrito, combinador, acelerador, trilha-aplicador) na ordem certa, com os parâmetros que o plano definiu. Quando há aceleração, ela vem ANTES da trilha (senão a música aceleraria junto e sairia fora de tempo). Roda UMA etapa por vez e DEVOLVE o controle ao usuário ao fim de cada, sempre pedindo autorização antes da próxima. As pastas do lote são a fonte da verdade do progresso: ao retomar, lê o PLAN_LOTE.md e reconcilia com o disco para saber onde parou — é totalmente retomável entre sessões. Respeita os portões internos de cada skill filha (a prova do primeiro gancho na var-gancho, a aprovação da MATRIZ.md no combinador). Por padrão NÃO gera .json de combinação (os .json por segmento já existem). Quando o plano pede, a última etapa (notificar) envia os links dos criativos via Office Boy (WhatsApp HUB) a um contato/grupo da Invisible DEPOIS do upload ao Drive, deixando a régua de risco do HUB decidir se pede confirmação. Use quando o usuário pedir "produzir o lote", "executar o lote", "rodar a esteira", "continuar a produção do lote X", "tocar o lote do bruto ao finalizado", "retomar o lote". Requer as skills da esteira instaladas e ffmpeg (faz bootstrap).
+  Executa a produção de um lote de vídeo lendo o PLAN_LOTE.md que a invisible-video-lote-plano criou. É um MAESTRO: não reimplementa nenhuma etapa — invoca as skills da esteira v2.6.0 (otimizador, denoiser, legenda-arquivos, legendas-aplicador, var-gancho-escrito, combinador, acelerador, trilha-aplicador) na ordem certa, com os parâmetros que o plano definiu. Quando há aceleração, ela vem ANTES da trilha (senão a música aceleraria junto e sairia fora de tempo). Roda UMA etapa por vez e DEVOLVE o controle ao usuário ao fim de cada, sempre pedindo autorização antes da próxima — ESSE é o modo passo-a-passo (default). O plano pode pedir `modo_execucao: automatico`, e então o maestro roda do início ao fim SEM pausar (upload ao Drive e notificação inclusos), parando só se algo falhar. Uma etapa opcional (3.3, título/gancho visual, via invisible-video-titulo-gancho) sobrepõe um título em cápsula + emoji no início de cada gancho legendado quando o plano dá `titulo_ganchos`. As pastas do lote são a fonte da verdade do progresso: ao retomar, lê o PLAN_LOTE.md e reconcilia com o disco para saber onde parou — é totalmente retomável entre sessões. Respeita os portões internos de cada skill filha (a prova do primeiro gancho na var-gancho, a aprovação da MATRIZ.md no combinador). Por padrão NÃO gera .json de combinação (os .json por segmento já existem). Quando o plano pede, a última etapa (notificar) envia os links dos criativos via Office Boy (WhatsApp HUB) a um contato/grupo da Invisible DEPOIS do upload ao Drive, deixando a régua de risco do HUB decidir se pede confirmação. Use quando o usuário pedir "produzir o lote", "executar o lote", "rodar a esteira", "continuar a produção do lote X", "tocar o lote do bruto ao finalizado", "retomar o lote". Requer as skills da esteira instaladas e ffmpeg (faz bootstrap).
 ---
 
 # Maestro de Produção de Lote
@@ -11,10 +11,27 @@ gravou na raiz do lote. Você é um **maestro**, não um executor de baixo níve
 **não reimplementa** otimização, legenda, combinação, trilha. Você **invoca a skill
 de cada etapa** com os parâmetros do plano, na ordem certa, pausando a cada etapa.
 
-> **Regra mãe:** uma etapa por vez. Ao fim de CADA etapa, você devolve o controle ao
-> usuário com um resumo e pede autorização antes de seguir. Nunca encadeie duas
-> etapas sem o OK dele. (Exceção: dentro da etapa 1, otimizador→denoiser são dois
-> passos de uma etapa só.)
+> **Regra mãe (modo passo-a-passo, o DEFAULT):** uma etapa por vez. Ao fim de CADA
+> etapa, você devolve o controle ao usuário com um resumo e pede autorização antes de
+> seguir. Nunca encadeie duas etapas sem o OK dele. (Exceção: dentro da etapa 1,
+> otimizador→denoiser são dois passos de uma etapa só.)
+
+> **MODO DE EXECUÇÃO — leia o plano ANTES de começar.** O `estado_lote.py` devolve
+> `decisoes.modo_execucao`. Há dois modos, e você **respeita o do plano**:
+>
+> - **`passo-a-passo`** (default): a Regra mãe acima. Pausa a cada etapa, pede OK,
+>   respeita todos os portões internos das filhas (prova do gancho, MATRIZ.md).
+> - **`automatico`**: o usuário pediu rodar do início ao fim SEM parar. Você executa
+>   TODAS as etapas em sequência — incluindo o upload ao Drive (`/invisible-upload`) e
+>   a etapa 8 (notificar o grupo) — **sem pedir autorização entre elas e sem parar nos
+>   portões**. Onde uma filha tem portão interno (MATRIZ.md do combinador, prova do
+>   primeiro gancho da var-gancho, prova de still), você **aprova por conta própria** e
+>   segue (no modelo DS intra-VAV a matriz é mecânica; gere-a e prossiga). Na etapa 8,
+>   ao chamar o Office Boy, passe **`confirmado: true`** de saída (a régua do HUB ainda
+>   pode barrar, mas você não adiciona uma parada sua). **Só rode assim se o plano diz
+>   `automatico`** — nunca decida isso sozinho. Ao terminar, entregue o resumo completo
+>   de uma vez. Se QUALQUER etapa falhar (erro de skill, contagem errada, exit≠0),
+>   **pare imediatamente** e reporte — modo automático não significa ignorar erro.
 
 ## Como você sabe onde parou (retomável)
 
@@ -60,13 +77,17 @@ Quando houver nomes tortos:
 
 ## O fluxo em cada etapa (pausa B+C)
 
-Para a `proxima_etapa`:
+Para a `proxima_etapa` (fluxo do modo **passo-a-passo**):
 1. **Anuncie** o que vai fazer (qual skill, com quais parâmetros do plano).
 2. **Execute** seguindo o método da skill filha (ver tabela abaixo). Onde a filha tem
    portão interno, **respeite-o** — a aprovação é do usuário, ali na conversa.
 3. **Resuma** o que saiu (quantos arquivos, nomes-chave, qualquer aviso).
 4. **Marque** o checkbox: `python3 scripts/marcar_etapa.py "<lote>" <etapa>`.
 5. **Pare** e pergunte: "Etapa X concluída. Autoriza a etapa Y?". Espere o OK.
+
+**No modo `automatico`:** faça 1–4 de cada etapa e **pule o passo 5** — não pare, não
+pergunte, siga direto pra próxima `proxima_etapa`, incluindo upload e notificação, até
+`concluido: true`. Aprove os portões internos por conta própria. Pare só se algo falhar.
 
 A inspeção visual acontece onde a filha já a oferece (folha-contato do quadrado,
 prova do gancho, MATRIZ.md) — não invente inspeção onde não há o que ver (um `.json`
@@ -158,6 +179,22 @@ python3 "<skills_dir>/invisible-legendas-aplicador/scripts/aplicar.py" "<lote>/0
 3. **Portão obrigatório:** a skill gera a prova do **primeiro** gancho e pede OK. É o
    usuário que aprova, na conversa. Só depois ela renderiza o lote.
 
+### Etapa 3.3 — Título (gancho visual) `[03_PREPARADOS → 03_PREPARADOS]` (só se o plano pediu título)
+Sobrepõe um título em cápsula + emoji nos ~3s iniciais de CADA gancho legendado. O
+mapa texto/emoji por gancho está no **`titulos.json`** ao lado do PLAN (a lote-plano o
+gravou). Roda in-place em `03_PREPARADOS`, só nos ganchos; o combinador (etapa 4) usa
+o gancho-com-título.
+```bash
+python3 "<skills_dir>/invisible-video-titulo-gancho/scripts/bootstrap.py" --check-only
+python3 "<skills_dir>/invisible-video-titulo-gancho/scripts/aplicar.py" "<lote>/03_PREPARADOS" \
+  --titulos "<lote>/titulos.json" --substituir
+```
+- **Portão (modo passo-a-passo):** gere um still de um gancho (ex.: frase longa) com
+  ffmpeg e mostre ao usuário antes de aplicar no lote — confira quebra/emoji/posição.
+  No **modo automático**, pule o still e aplique direto.
+- **Timebase:** o `aplicar.py` já força `-video_track_timescale 90000` (senão a etapa 4
+  concatena com PTS quebrado e a duração estoura). Não remova.
+
 ### Etapa 4 — Combinar `[03_PREPARADOS → 04_COMBINADOS]`
 1. Você **julga o encaixe retórico** par-a-par (só nos verticais não-VAR), seguindo o
    método do combinador, e ele **salva a `MATRIZ.md`** em `04_COMBINADOS`.
@@ -230,8 +267,11 @@ os arquivos estarem no Drive — o link é o produto da mensagem.
    (`mcp__whatsapp-hub__enviar_mensagem`), passando **`instancia: "office_boy"`** e o
    `destinatario` = `notificar_destino` do plano. A **régua de risco do HUB decide**
    se pede confirmação (texto longo, links...) — se retornar `confirmacao_necessaria`,
-   mostre a prévia e reenvie com `confirmado: true`. Não force confirmação você mesmo;
-   confie na régua.
+   mostre a prévia e reenvie com `confirmado: true`. No modo **passo-a-passo**, mostre a
+   prévia ao usuário antes de reenviar; no modo **automatico**, reenvie com
+   `confirmado: true` de imediato (o usuário já autorizou o envio ao pedir o modo
+   automático — foi exatamente o ponto: não deixar a mensagem travada num gate de
+   madrugada). Não force confirmação no passo-a-passo; confie na régua.
 4. **Marque** a etapa: `python3 scripts/marcar_etapa.py "<lote>" 8`. Essa etapa não
    tem artefato local, então o gate lê o checkbox — marcá-la é o que a conclui.
 
@@ -240,17 +280,24 @@ os arquivos estarem no Drive — o link é o produto da mensagem.
 
 ## Fechamento do lote
 Quando a `proxima_etapa` for nula (`concluido: true`), resuma o lote (contagem de
-finalizados e acelerados). Se a etapa 8 (Notificar) **não** estava no plano, **sugira**
-`/invisible-upload` pra subir ao Drive — sem rodar sozinho. Se estava, a etapa 8 já
-cobre upload + notificação.
+finalizados e acelerados). Se a etapa 8 (Notificar) **não** estava no plano:
+- modo **passo-a-passo**: **sugira** `/invisible-upload` pra subir ao Drive — sem rodar
+  sozinho;
+- modo **automatico**: **rode** o upload você mesmo (o usuário optou por autonomia
+  total). Se a 8 estava no plano, ela já cobre upload + notificação nos dois modos.
 
 ## Anti-padrões (não faça)
 - **Reimplementar uma etapa.** Você invoca a skill filha; o método mora nela.
-- **Encadear etapas sem autorização.** Uma por vez, sempre pausando.
+- **Encadear etapas sem autorização — NO MODO PASSO-A-PASSO.** Uma por vez, pausando.
+  No modo `automatico` (só quando o plano diz), o inverso vale: encadeie sem parar.
+- **Decidir o modo automático sozinho.** O modo vem do plano (`modo_execucao`). Se o
+  plano diz passo-a-passo, pause; nunca "adiante" por conta própria.
 - **Confiar no checkbox contra o disco.** A pasta manda; reconcilie com `estado_lote.py`.
-- **Pular um portão interno** (prova do gancho, MATRIZ.md). A aprovação é do usuário.
+- **Pular um portão interno** (prova do gancho, MATRIZ.md) **no passo-a-passo**. A
+  aprovação é do usuário. No automático, você aprova por conta e segue.
 - **Gerar `.json` de combinação** por padrão (os de segmento já bastam).
-- **Rodar `/invisible-upload` sozinho** no fim — só sugira.
+- **Rodar `/invisible-upload` sozinho no passo-a-passo** — só sugira. No automático, rode.
+- **Ignorar um erro no modo automático.** Autonomia não é cegueira: falhou, PARE e reporte.
 - **Transcrever áudio antes do denoiser.** Ordem: otimizar → denoiser → transcrever.
 
 ## Referência

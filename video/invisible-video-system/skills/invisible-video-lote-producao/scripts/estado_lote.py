@@ -43,12 +43,13 @@ import sys
 VIDEO_EXT = {".mp4", ".mov", ".mkv", ".m4v", ".webm"}
 
 # ordem canônica das etapas
-ETAPAS = ["1", "2", "3.1", "3.2", "4", "5", "6", "7", "8"]
+ETAPAS = ["1", "2", "3.1", "3.2", "3.3", "4", "5", "6", "7", "8"]
 ROTULOS = {
     "1": "Otimizar + Denoise",
     "2": "Transcrever",
     "3.1": "Legendar",
     "3.2": "Variações de gancho",
+    "3.3": "Título (gancho visual)",
     "4": "Combinar",
     "5": "Acelerar",
     "6": "Trilha",
@@ -149,6 +150,14 @@ def parse_plan(plan_path: str) -> dict:
     v = linha("Notificação final (Office Boy)")
     if v and v.strip() != "—":
         dec["notificar_destino"] = v.strip()
+    # Título / gancho visual: | Título / gancho visual | 2 gancho(s) com título |
+    # O mapa completo (texto+emoji) vem do titulos.json ao lado do PLAN; aqui só
+    # detectamos se a etapa 3.3 está ligada (≠ "—").
+    v = linha("Título / gancho visual")
+    dec["tem_titulo"] = bool(v and v.strip() != "—")
+    # Modo de execução: | Modo de execução | AUTOMÁTICO (...) | ou passo-a-passo (...)
+    v = linha("Modo de execução")
+    dec["modo_execucao"] = "automatico" if (v and "automátic" in v.lower()) else "passo-a-passo"
 
     # checkboxes pulados: linha da etapa marcada [x] que contém "pulada".
     # marcados: etapa com [x] que NÃO é "pulada" (concluída manualmente pelo maestro).
@@ -187,6 +196,8 @@ def main() -> int:
         pulados.add("3.2")
     if not dec["acelerar"]:
         pulados.add("5")  # acelerar é a etapa 5 (antes da trilha)
+    if not dec.get("tem_titulo"):
+        pulados.add("3.3")  # título (gancho visual); sem títulos no plano, não roda
     if not dec.get("nome_prefixo"):
         pulados.add("7")  # nomear é a etapa 7 (última); sem prefixo, não roda
     if not dec.get("notificar_destino"):
@@ -215,7 +226,12 @@ def main() -> int:
         "2": len(jsons(d_otim)) >= len(bases) and len(bases) > 0,
         "3.1": any("_LEGENDADO" in f.upper() for f in prep_v),
         "3.2": any(re.search(r"_VAR\d+", f.upper()) for f in prep_v),
-        "4": any("__" in f for f in comb_v),
+        # 3.3 (título): 03_PREPARADOS tem algum gancho com _TITULO_ no nome
+        "3.3": any("_TITULO" in f.upper() for f in prep_v),
+        # 4 (combinar): 04_COMBINADOS tem alguma combinação. O sufixo real é
+        # _COMBINADO_ (underscore simples); casá-lo — exigir '__' (duplo) nunca casa
+        # nos lotes DS e reportava a etapa como não-feita (bug cosmético corrigido).
+        "4": any("_COMBINADO" in f.upper() or "__" in f for f in comb_v),
         # 5 (acelerar) roda em 04_COMBINADOS, ANTES da trilha
         "5": any("_ACELERADO_" in f.upper() for f in comb_v),
         # 6 (trilha) grava em 99_FINALIZADOS com _FINALIZADO no nome

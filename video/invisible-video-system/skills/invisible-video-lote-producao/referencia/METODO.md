@@ -52,7 +52,8 @@ então re-rodar uma etapa parcial é seguro.
 | 2 Transcrever | nº de `.json` em `02_OTIMIZADOS` ≥ nº de bases de vídeo |
 | 3.1 Legendar | `03_PREPARADOS` tem `*_LEGENDADO_*` |
 | 3.2 Variações | `03_PREPARADOS` tem `*_VAR<n>_*` (só exigida se o plano pediu) |
-| 4 Combinar | `04_COMBINADOS` tem combinação (nome com `__`) |
+| 3.3 Título (gancho visual) | `03_PREPARADOS` tem `*_TITULO_*` (só exigida se o plano deu títulos) |
+| 4 Combinar | `04_COMBINADOS` tem combinação (nome com `_COMBINADO_` ou `__`) |
 | 5 Acelerar | `04_COMBINADOS` tem `*_ACELERADO_*` (só exigida se o plano pediu) |
 | 6 Trilha | `99_FINALIZADOS` tem `*_FINALIZADO*` |
 | 7 Nomear | `99_FINALIZADOS` tem `*_FINALIZADO*` começando com o prefixo do plano (só exigida se o plano deu prefixo) |
@@ -75,7 +76,10 @@ marcador de denoise (sidecar), não o nome.
 
 ## A ordem e suas dependências
 
-`1 → 2 → (3.1, 3.2 em qualquer ordem) → 4 → 5 → 6 → 7`.
+`1 → 2 → (3.1, 3.2 em qualquer ordem) → 3.3 → 4 → 5 → 6 → 7 → (upload) → 8`.
+(3.3 Título depende da 3.1 — sobrepõe no gancho já legendado. **Modo de execução:** o
+plano define `modo_execucao` (`passo-a-passo` default ou `automatico`); no automático o
+maestro roda tudo sem pausar, upload e notificação inclusos, parando só em erro.)
 
 - **Denoiser antes da transcrição:** transcrever áudio sujo desperdiça WhisperX e
   pode degradar o alinhamento. Por isso denoiser fecha a etapa 1, antes da 2.

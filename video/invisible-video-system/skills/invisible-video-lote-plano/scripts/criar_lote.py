@@ -83,6 +83,18 @@ DEFAULTS = {
     # (WhatsApp HUB) para alguém/um grupo da Invisible. "" desliga a etapa (fica
     # pulada). Default de destino é "Sandro Coelho" quando o plano pede notificação.
     "notificar_destino": "",         # ex.: "Sandro Coelho" ou nome de um grupo
+    # Título / gancho visual (etapa 3.3): sobrepõe um título em cápsula + emoji nos
+    # ~3s iniciais de CADA gancho legendado (invisible-video-titulo-gancho). Mapa
+    # base-do-gancho → {texto, emoji}. {} (default) desliga a etapa (fica pulada).
+    # Ex.: {"DS_VAV138_GANCHO_1": {"texto": "NÃO tem filhos entre 2 e 6 anos?", "emoji": "👀"}}
+    "titulo_ganchos": {},
+    # Modo de execução do maestro (invisible-video-lote-producao):
+    #   "passo-a-passo" (default) — pausa a cada etapa e pede autorização;
+    #   "automatico" — roda do otimizar ao notificar SEM parar em nada (inclui upload
+    #     e o envio da mensagem ao grupo). Escolha do usuário no plano; a produção
+    #     RESPEITA. Use só em lote de padrão já validado — erro no meio vai inteiro
+    #     pro Drive e pro grupo antes de revisão.
+    "modo_execucao": "passo-a-passo",
 }
 
 
@@ -218,6 +230,37 @@ def render_plan(nome: str, data: str, d: dict) -> str:
         respiro_desc = "—"
         et1_respiro = ""
 
+    # Título / gancho visual (etapa 3.3). Mapa base→{texto,emoji}; vazio = pulada.
+    titulo_g = d.get("titulo_ganchos") or {}
+    if titulo_g:
+        n_tit = len(titulo_g)
+        titulo_desc = f"{n_tit} gancho(s) com título"
+        et_33 = (
+            f"- [ ] **3.3 Título (gancho visual)** — `invisible-video-titulo-gancho` "
+            f"(03_PREPARADOS → 03_PREPARADOS, in-place) — sobrepõe título em cápsula + "
+            f"emoji nos ~3s iniciais de {n_tit} gancho(s) legendado(s); texto/emoji por "
+            f"gancho no `titulos.json` (gravado ao lado do PLAN). Gera `_TITULO` antes do "
+            f"formato; substitui o legendado sem título. Só nos ganchos."
+        )
+    else:
+        titulo_desc = "—"
+        et_33 = "- [x] **3.3 Título (gancho visual)** — _(pulada: o plano não pediu título)_"
+
+    # Modo de execução do maestro.
+    modo = str(d.get("modo_execucao", "passo-a-passo")).strip().lower()
+    if modo == "automatico":
+        modo_desc = "**AUTOMÁTICO** (roda do início ao fim sem pedir autorização, inclui upload e notificação)"
+        aviso_gate = (
+            "> **MODO AUTOMÁTICO:** o executor roda TODAS as etapas em sequência SEM "
+            "parar para autorização — incluindo o upload ao Drive e o envio da mensagem "
+            "ao grupo. Não há portões (matriz, prova, notificação). Só use em lote de "
+            "padrão validado."
+        )
+    else:
+        modo = "passo-a-passo"
+        modo_desc = "passo-a-passo (pausa a cada etapa e pede autorização)"
+        aviso_gate = "> Ao fim de cada etapa o executor PARA e pede autorização."
+
     obs = d["observacoes"].strip()
     obs_bloco = f"\n## Observações\n\n{obs}\n" if obs else ""
 
@@ -247,8 +290,10 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 | Aceleração | {acel} |
 | Modo de otimização (silêncio / respiro) | {d['modo_silencio']} / {d['modo_respiro']} |
 | Respiro de entrada por gancho | {respiro_desc} |
+| Título / gancho visual | {titulo_desc} |
 | Nomeação final (prefixo / início / ordem) | {nome_desc} |
 | Notificação final (Office Boy) | {notif_desc} |
+| Modo de execução | {modo_desc} |
 
 ---
 
@@ -258,13 +303,14 @@ def render_plan(nome: str, data: str, d: dict) -> str:
 > **Acelerar (5) vem ANTES da trilha (6)** — senão a trilha aceleraria junto e
 > sairia fora de tempo. **Nomear (7)** renomeia os finalizados prontos. **Notificar
 > (8) é a ÚLTIMA**, depois do upload ao Drive — manda os links via Office Boy.
-> Ao fim de cada etapa o executor PARA e pede autorização.
-> A 3.2, a 5, a 7 e a 8 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
+{aviso_gate}
+> A 3.2, a 3.3, a 5, a 7 e a 8 só rodam se o plano pediu (já vêm marcadas como puladas quando não).
 
 - [ ] **1. Otimizar + Denoise** — `invisible-video-otimizador` então `invisible-denoiser` (01_BRUTAS → 02_OTIMIZADOS; denoiser sobrescreve in-place) — modo {d['modo_silencio']}/{d['modo_respiro']}.{et1_respiro}{et1_formato}
 - [ ] **2. Transcrever** — `invisible-legenda-arquivos` (02_OTIMIZADOS → .json por segmento)
 - [ ] **3.1 Legendar** — `invisible-legendas-aplicador` (02_OTIMIZADOS → 03_PREPARADOS) — estilo {estilo_desc}
 {et_32}
+{et_33}
 - [ ] **4. Combinar** — `invisible-video-combinador` (03_PREPARADOS → 04_COMBINADOS; salva MATRIZ.md e pede OK; .json de combinação OFF por padrão)
 {et_5}
 {et_6}
@@ -319,9 +365,19 @@ def main() -> int:
     with open(plan_path, "w", encoding="utf-8") as f:
         f.write(render_plan(args.nome, args.data, d))
 
+    # Se o plano tem títulos de gancho (etapa 3.3), grava o titulos.json ao lado do
+    # PLAN — é o mapa base→{texto,emoji} que a invisible-video-titulo-gancho consome.
+    titulos_path = None
+    titulo_g = d.get("titulo_ganchos") or {}
+    if titulo_g:
+        titulos_path = os.path.join(lote_dir, "titulos.json")
+        with open(titulos_path, "w", encoding="utf-8") as f:
+            json.dump(titulo_g, f, ensure_ascii=False, indent=2)
+
     print(json.dumps({
         "lote_dir": lote_dir,
         "plan": plan_path,
+        "titulos_json": titulos_path,
         "pastas": criadas,
         "decisoes": d,
     }, ensure_ascii=False, indent=2))

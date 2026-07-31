@@ -1,7 +1,7 @@
 ---
 name: invisible-video-lote-plano
 description: >
-  Planeja um novo lote de produção de vídeo e monta o esqueleto dele. Conduz uma conversa curta com o usuário para capturar as PREFERÊNCIAS do lote — estilo de legenda, quais variações de gancho usar (e se com fonte/fundo customizados), qual pasta de trilha, se os finalizados serão acelerados e em qual velocidade, e se ao fim os links dos criativos serão enviados a alguém/um grupo da Invisible via Office Boy (default de destino Sandro Coelho) —, então cria a pasta do lote na raiz do laboratório com a estrutura de pastas da esteira v2.6.0 (01_BRUTAS, 02_OTIMIZADOS, 03_PREPARADOS, 04_COMBINADOS, 99_FINALIZADOS) e grava um PLAN_LOTE.md com as decisões e os checkboxes de cada etapa. NÃO decide a matriz de combinações (isso é do combinador, na execução) nem processa qualquer mídia — só planeja e cria a estrutura vazia. A pasta nasce VAZIA: ao fim, instrui o usuário a jogar as brutas em 01_BRUTAS e rodar a invisible-video-lote-producao. O PLAN_LOTE.md é o contrato lido pela invisible-video-lote-producao. Use quando o usuário pedir "planejar um lote novo", "criar um lote de vídeo", "começar um lote", "montar a estrutura de um lote", "novo lote do Gurgel/Filhos do Trovão...". Não requer ffmpeg nem nada — só cria pastas e um documento.
+  Planeja um novo lote de produção de vídeo e monta o esqueleto dele. Conduz uma conversa curta com o usuário para capturar as PREFERÊNCIAS do lote — estilo de legenda, quais variações de gancho usar (e se com fonte/fundo customizados), qual pasta de trilha, se os finalizados serão acelerados e em qual velocidade, se cada gancho leva um TÍTULO / gancho visual (cápsula + emoji, capturando a frase e o emoji de cada gancho em titulo_ganchos), se ao fim os links dos criativos serão enviados a alguém/um grupo da Invisible via Office Boy (default de destino Sandro Coelho), e o MODO DE EXECUÇÃO da produção (passo-a-passo, default, que pausa a cada etapa; ou automatico, que roda do início ao fim sem pedir autorização, upload e notificação inclusos) —, então cria a pasta do lote na raiz do laboratório com a estrutura de pastas da esteira v2.6.0 (01_BRUTAS, 02_OTIMIZADOS, 03_PREPARADOS, 04_COMBINADOS, 99_FINALIZADOS) e grava um PLAN_LOTE.md com as decisões e os checkboxes de cada etapa. NÃO decide a matriz de combinações (isso é do combinador, na execução) nem processa qualquer mídia — só planeja e cria a estrutura vazia. A pasta nasce VAZIA: ao fim, instrui o usuário a jogar as brutas em 01_BRUTAS e rodar a invisible-video-lote-producao. O PLAN_LOTE.md é o contrato lido pela invisible-video-lote-producao. Use quando o usuário pedir "planejar um lote novo", "criar um lote de vídeo", "começar um lote", "montar a estrutura de um lote", "novo lote do Gurgel/Filhos do Trovão...". Não requer ffmpeg nem nada — só cria pastas e um documento.
 ---
 
 # Planejador de Lote de Vídeo
@@ -120,6 +120,28 @@ vazia** — nenhuma decisão aqui depende de ver o material, então não peça b
    etapa 8 nasce pulada (`notificar_destino: ""`). O envio em si é da
    `invisible-video-lote-producao`; aqui você só captura o destino.
 
+10. **Título / gancho visual** (opcional, etapa 3.3). Pergunte se cada gancho abre com
+    um **título em cápsula + emoji** (gancho visual, ~3s no início) — a
+    `invisible-video-titulo-gancho`. Se sim, **capture uma frase e um emoji por
+    gancho**. A frase é copy DITADA pelo usuário (não a transcrição); o emoji você pode
+    sugerir pelo sentido da frase (barato de trocar) e confirmar. Monte o mapa
+    `titulo_ganchos` com a BASE de cada gancho como chave:
+    `{"DS_VAV138_GANCHO_1": {"texto": "...", "emoji": "👀"}, ...}` (vertical e retrato do
+    mesmo gancho compartilham a chave). Vazio (`{}`, default) = sem título, etapa 3.3
+    nasce pulada. **Você não vê as brutas** (a pasta nasce vazia), então pergunte quais
+    ganchos o lote terá (ex.: "VAV138 G1, VAV138 G2, ...") pra montar as chaves — ou
+    deixe o usuário ditar as chaves. O `criar_lote.py` grava o `titulos.json` ao lado do
+    PLAN a partir desse mapa.
+
+11. **Modo de execução** (opcional). Pergunte como o lote deve rodar:
+    - **`passo-a-passo`** (default): a produção pausa a cada etapa e pede autorização.
+      Seguro pra lote novo/experimental.
+    - **`automatico`**: a produção roda do início ao fim SEM parar — incluindo upload ao
+      Drive e o envio da mensagem ao grupo. É pra deixar rodando e chegar pronto (sem
+      travar num gate de madrugada). **Avise o trade-off:** erro no meio vai inteiro pro
+      Drive e pro grupo antes de revisão; use só em lote de padrão já validado (ex.: DS).
+    Grave em `modo_execucao`. Default `passo-a-passo` se o usuário não pedir o contrário.
+
 Resuma as escolhas em uma frase e confirme antes de criar.
 
 ## Criar a estrutura
@@ -153,9 +175,20 @@ Escreva as decisões num JSON temporário (campos ausentes assumem o default):
   "nome_prefixo": "DME_VAV",
   "nome_inicio": 252,
   "nome_ordem": "leva por leva: ganchos 1..5 base, depois V2, depois V3",
-  "notificar_destino": "Sandro Coelho"
+  "notificar_destino": "Sandro Coelho",
+  "titulo_ganchos": {
+    "DME_VAV252_GANCHO_1": {"texto": "NÃO tem filhos entre 2 e 6 anos?", "emoji": "👀"}
+  },
+  "modo_execucao": "passo-a-passo"
 }
 ```
+
+> **Título (etapa 3.3):** `titulo_ganchos: {}` (default) desliga — nasce pulada.
+> Preenchido, o `criar_lote.py` grava um `titulos.json` ao lado do PLAN e a produção
+> aplica o título a cada gancho legendado. Chave = BASE do gancho (sem formato).
+>
+> **Modo de execução:** `passo-a-passo` (default) pausa a cada etapa; `automatico` roda
+> tudo sem parar (upload + notificação inclusos). A produção respeita o que o plano diz.
 
 > **Nomeação (etapa 7):** `nome_prefixo: ""` (default) desliga a etapa — ela nasce
 > pulada. Preencher `nome_prefixo` liga a renomeação in-place em `99_FINALIZADOS`.
